@@ -4,8 +4,8 @@ allow_defined_top = true
 exclude_files = {".luacheckrc"}
 
 globals = {
-    "minetest", "core", 
-    
+    "minetest", "core",
+
     --mod provided
     "dungeon_loot", "fl_workshop", "fl_player", "fl_stone", "fl_trees", "fl_topsoil", "fl_plantlife"
 }
