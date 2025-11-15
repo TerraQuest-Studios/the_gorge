@@ -1,10 +1,7 @@
 
-core.register_on_generated(function(minp, maxp, blockseed)
-    local vm, emin, emax = core.get_mapgen_object("voxelmanip")
+core.register_on_generated(function(vm, minp, maxp, blockseed)
 	core.generate_decorations(vm, minp, maxp)
 	core.generate_ores(vm, minp, maxp)
-	vm:write_to_map()
 	vm:calc_lighting()
     vm:update_liquids()
-    -- core.fix_light(minp, emax)
 end)
