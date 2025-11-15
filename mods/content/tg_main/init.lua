@@ -2,8 +2,9 @@ local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath(mod_name)
 
 tg_main = {
+	skip_intro = true, -- skip the intro/welcome.. I need to work!!
 	mg_name = nil,
-    dev_mode = false,
+  dev_mode = true,
 }
 
 tg_main.mg_name = core.get_mapgen_setting("mg_name") or "singlenode"
