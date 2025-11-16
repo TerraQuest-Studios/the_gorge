@@ -1,4 +1,17 @@
 core.register_on_joinplayer(function(player)
+  local current_huds = {} --player:hud_get_all()
+
+  --luanti is stupid, get huds next server step
+  core.after(0, function()
+    current_huds = player:hud_get_all()
+    for id, hud in ipairs(current_huds) do
+        --avoid screwing over our huds
+        if hud.type ~= "text" and hud.type ~= "image" then
+            player:hud_remove(id)
+        end
+    end
+  end)
+
   local messages = {
     [[
             Welcome to The Gorge
@@ -85,6 +98,12 @@ core.register_on_joinplayer(function(player)
               player:hud_remove(base_background)
               player:hud_remove(text_message)
               player:hud_remove(fade_overlay_hud)
+
+              for id, hud in ipairs(current_huds) do
+                if hud.type ~= "text" and hud.type ~= "image" then
+                  player:hud_add(hud)
+                end
+              end
             else
               player:hud_change(text_message, "text", messages[current_message])
               fade_in_opacity = 225
