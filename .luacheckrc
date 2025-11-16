@@ -21,5 +21,5 @@ read_globals = {
     "vector", "ItemStack", "dump", "DIR_DELIM", "VoxelArea", "Settings", "PcgRandom", "VoxelManip", "PseudoRandom",
 
     --mod produced
-    "tg_main", "tg_mapgen", "aom_wrench",
+    "tg_main", "tg_mapgen", "aom_wrench", "tg_stairs",
 }
