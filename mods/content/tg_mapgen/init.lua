@@ -1,8 +1,6 @@
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath(mod_name)
 
-tg_mapgen = {}
-
 core.register_alias("placeholder", "tg_nodes:placeholder")
 core.register_alias("mapgen_stone", "air")
 core.register_alias("mapgen_water_source", "air")

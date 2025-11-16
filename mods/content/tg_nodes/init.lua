@@ -1,8 +1,5 @@
 local mod_name = core.get_current_modname()
-local mod_path = core.get_modpath(mod_name)
 local S = core.get_translator(mod_name)
-
-tg_nodes = {}
 
 core.register_node("tg_nodes:placeholder", {
 	description = S("Placeholder Node"),
@@ -77,8 +74,6 @@ local function createPlant(name, des,shape)
 	if tg_main.dev_mode == true then
 		node_groups["dig_immediate"] = 3
 	end
-	local param1 = "none"
-	local param2 = "none"
 	core.register_node("tg_nodes:"..name, {
 		description = S(des),
 		groups = node_groups,

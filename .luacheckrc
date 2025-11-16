@@ -1,7 +1,7 @@
 unused_args = false
 allow_defined_top = true
 
-exclude_files = {".luacheckrc"}
+exclude_files = {".luacheckrc", "mods/content/aom_wrench/**"}
 
 globals = {
     "minetest", "core",
@@ -21,5 +21,5 @@ read_globals = {
     "vector", "ItemStack", "dump", "DIR_DELIM", "VoxelArea", "Settings", "PcgRandom", "VoxelManip", "PseudoRandom",
 
     --mod produced
-    "tg_main",
+    "tg_main", "tg_mapgen", "aom_wrench",
 }
