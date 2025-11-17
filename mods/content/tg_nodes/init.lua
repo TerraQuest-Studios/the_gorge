@@ -159,11 +159,11 @@ core.register_node("tg_nodes:fern", {
 		waving = 0, -- there is no wind down here
 		paramtype = "light",
 		drawtype = "mesh",
-  	mesh = "fern.glb",
+		mesh = "fern.glb",
     visual_scale = 16.0,
 		tiles = {"fern.png"},
 		paramtype2 = "4dir",
-  	use_texture_alpha = "clip",
+		use_texture_alpha = "clip",
 		sunlight_propagates = true,
 		walkable = false,
 		selection_box = {
