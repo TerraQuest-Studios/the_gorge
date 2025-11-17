@@ -68,7 +68,48 @@ end
 ---@param name string
 ---@param des string
 ---@param shape shape|nil
-local function createPlant(name, des,shape)
+local function createPlant(name, des,shape,texture)
+	local node_groups = { full_solid = 1, solid = 1, }
+	--- easy breaking when in dev_mode
+	if tg_main.dev_mode == true then
+		node_groups["dig_immediate"] = 3
+	end
+	local this_texture = "tg_nodes_"..name..".png"
+	if texture then
+		this_texture = "tg_nodes_"..texture
+	end
+	local scale = 1.0
+	if string.find(texture,"8x8") then
+		scale = 2.0
+	end
+	core.register_node("tg_nodes:"..name, {
+		description = S(des),
+		groups = node_groups,
+		tiles = {
+			{
+				name = this_texture
+			},
+		},
+    visual_scale = scale,
+		-- waving = 1, -- there is no wind down here
+		buildable_to = true,  -- If true, placed nodes can replace this node
+    floodable = false,
+		paramtype = "light",
+		drawtype = "plantlike",
+		sunlight_propagates = true,
+		walkable = false,
+		selection_box = {
+			type = "fixed",
+			fixed = shape or shapes.box
+		},
+	})
+end
+
+--- same as createNodes but for lights
+---@param name string
+---@param des string
+---@param shape shape|nil
+local function createWallLight(name, des,shape,light_level)
 	local node_groups = { full_solid = 1, solid = 1, }
 	--- easy breaking when in dev_mode
 	if tg_main.dev_mode == true then
@@ -82,18 +123,17 @@ local function createPlant(name, des,shape)
 				name = "tg_nodes_"..name..".png"
 			},
 		},
-		-- waving = 1, -- there is no wind down here
+		drawtype = "signlike",
 		paramtype = "light",
-		drawtype = "plantlike",
+		paramtype2 = "wallmounted",
+		light_source = light_level,
 		sunlight_propagates = true,
-		walkable = false,
 		selection_box = {
 			type = "fixed",
 			fixed = shape or shapes.box
 		},
 	})
 end
-
 
 createNode("stone","stone")
 createNode("stone_slab","stone slab",shapes.slab,"stone")
@@ -103,5 +143,32 @@ createNode("cave_ground_2","cave ground, feels moist")
 createNode("dirt","dirt, cold")
 createNode("cave_ground_dirt","cave ground, with dirt")
 
-createPlant("short_grass","grass, they tickle",shapes.tiny_box)
-createPlant("plant","grass, they tickle",shapes.slim_box)
+createPlant("short_grass","Grass, they tickle",shapes.tiny_box,"plants.png^[sheet:16x16:7,0")
+createPlant("plant","Plant, they tickle",shapes.slim_box,"plants.png^[sheet:16x16:6,1")
+createPlant("caladium","Caladium, odd looking plants.",shapes.slim_box,"plants.png^[sheet:16x16:6,0")
+createPlant("fungus","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[sheet:16x16:9,0")
+createPlant("fungus_small","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[sheet:16x16:9,1")
+createPlant("shrub","Shrub, it' dry.",shapes.slim_box,"plants.png^[sheet:8x8:0,0")
+
+createWallLight("led","led, blinding.",shapes.box,9)
+
+--- trying out higher res plants, for
+core.register_node("tg_nodes:fern", {
+		description = S("fern, very lushes"),
+		groups = {dig_immediate = 3},
+		waving = 0, -- there is no wind down here
+		paramtype = "light",
+		drawtype = "mesh",
+  	mesh = "fern.glb",
+    visual_scale = 16.0,
+		tiles = {"fern.png"},
+		paramtype2 = "4dir",
+  	use_texture_alpha = "clip",
+		sunlight_propagates = true,
+		walkable = false,
+		selection_box = {
+			type = "fixed",
+			fixed = shapes.slim_box
+		},
+})
+

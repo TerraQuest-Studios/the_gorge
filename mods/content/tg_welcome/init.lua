@@ -84,6 +84,11 @@ core.register_on_joinplayer(function(player)
             player:hud_remove(base_background)
             player:hud_remove(text_message)
             player:hud_remove(fade_overlay_hud)
+            for id, hud in ipairs(current_huds) do
+                if hud.type ~= "text" and hud.type ~= "image" then
+                    player:hud_add(hud)
+                end
+            end
         else
             if fade_out_opacity > 0 and fade_out_opacity < 255 then
                 player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:" .. fade_out_opacity)
