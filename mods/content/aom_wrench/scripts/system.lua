@@ -1,6 +1,3 @@
-local mod_name = core.get_current_modname()
-local mod_path = core.get_modpath(mod_name)
-local S = core.get_translator(mod_name)
 
 aom_wrench.pl = {}
 local pl = aom_wrench.pl
@@ -52,8 +49,10 @@ end
 
 function aom_wrench.get_shell(player)
     local creative = (player and core.is_creative_enabled(player:get_player_name()) or false)
-    ---@diagnostic disable-next-line: undefined-global
-    if (not creative) and core.get_modpath("aom_gamemodes") then creative = aom_gamemodes.player_has_tag(player, "creative") end
+    if (not creative) and core.get_modpath("aom_gamemodes") then
+        local aom_gamemodes = _G["aom_gamemodes"]
+        creative = aom_gamemodes.player_has_tag(player, "creative")
+    end
     return {
         name = "",
         node = {name="air"},
@@ -83,7 +82,8 @@ end
 function aom_wrench.get_pointed_thing(player, eyepos, liquids)
     if not eyepos then eyepos = aom_wrench.get_eyepos(player) end
     local range = aom_wrench.get_tool_range(player)
-    local ray = core.raycast(eyepos, vector.add(eyepos, vector.multiply(player:get_look_dir(), range)), false, (liquids == true))
+    local target_pos = vector.add(eyepos, vector.multiply(player:get_look_dir(), range))
+    local ray = core.raycast(eyepos, target_pos, false, (liquids == true))
     for pointed_thing in ray do
         if pointed_thing.type == "node" then
             return pointed_thing
@@ -341,7 +341,7 @@ function aom_wrench.do_building(player, dtime, itemstack)
 
             -- don't oom
             if (not creative) and core.get_modpath("node_updates") then
-                ---@diagnostic disable-next-line: undefined-global
+                local node_updates = _G["node_updates"]
                 node_updates.cause_adjacent_update(build_pos, "place", player)
                 core.sound_play(("aom_wrench_plip"), {
                     gain = 0.1,

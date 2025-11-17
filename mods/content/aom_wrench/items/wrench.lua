@@ -1,8 +1,5 @@
 local mod_name = core.get_current_modname()
-local mod_path = core.get_modpath(mod_name)
 local S = core.get_translator(mod_name)
-
-local pl = aom_wrench.pl
 
 aom_wrench.max_dist = 16
 
@@ -174,7 +171,7 @@ aom_wrench.prototype = {
         aom_wrench.do_building(player, dtime, itemstack)
     end,
     _on_select = function(itemstack, player)
-        local pi = aom_wrench.check_player(player)
+        aom_wrench.check_player(player)
         aom_wrench.update_hud(player)
     end,
     _on_deselect = function(itemstack, player)
@@ -214,7 +211,7 @@ core.register_tool("aom_wrench:wrench", {
 })
 
 if core.get_modpath("aom_tcraft") then
----@diagnostic disable: undefined-global
+    local aom_tcraft = _G["aom_tcraft"]
     aom_tcraft.register_craft({
         output = "aom_wrench:wrench",
         items = {
