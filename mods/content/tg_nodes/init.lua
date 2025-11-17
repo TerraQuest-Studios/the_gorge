@@ -90,10 +90,10 @@ local function createPlant(name, des,shape,texture)
 				name = this_texture
 			},
 		},
-    visual_scale = scale,
+		visual_scale = scale,
 		-- waving = 1, -- there is no wind down here
 		buildable_to = true,  -- If true, placed nodes can replace this node
-    floodable = false,
+		floodable = false,
 		paramtype = "light",
 		drawtype = "plantlike",
 		sunlight_propagates = true,
@@ -160,7 +160,7 @@ core.register_node("tg_nodes:fern", {
 		paramtype = "light",
 		drawtype = "mesh",
 		mesh = "fern.glb",
-    visual_scale = 16.0,
+		visual_scale = 16.0,
 		tiles = {"fern.png"},
 		paramtype2 = "4dir",
 		use_texture_alpha = "clip",
@@ -171,4 +171,3 @@ core.register_node("tg_nodes:fern", {
 			fixed = shapes.slim_box
 		},
 })
-

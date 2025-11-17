@@ -13,6 +13,10 @@ core.register_on_joinplayer(function(player)
     end)
 
     local messages = {
+        -- empty message, for timing.
+        [[
+        ]],
+        --
         [[
             Welcome to The Gorge
             Trapped deep within a shadowy ravine
@@ -43,7 +47,7 @@ core.register_on_joinplayer(function(player)
 
     local text_message = player:hud_add({
         hud_elem_type = "text",
-        position = { x = 0.5, y = 0.5 },
+        position = { x = 0.43, y = 0.5 }, -- 0.42 seems to center the text better.
         text = messages[current_message],
         alignment = { x = 0, y = 0 },
         scale = { x = 100, y = 100 },
