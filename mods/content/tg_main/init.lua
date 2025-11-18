@@ -9,7 +9,7 @@ tg_main.mg_name = core.get_mapgen_setting("mg_name") or "singlenode"
 -- This stops normal gameplay functions from running.
 tg_main.dev_mode = (tg_main.mg_name == "flat") or core.is_creative_enabled()
 -- Skip intro if on mapgen "flat".
-tg_main.skip_intro = false --(tg_main.mg_name == "flat")
+tg_main.skip_intro = true --(tg_main.mg_name == "flat")
 
 dofile(mod_path .. "/scripts" .. "/math.lua")
 dofile(mod_path .. "/scripts" .. "/debug.lua")

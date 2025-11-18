@@ -1,6 +1,16 @@
 local mod_name = core.get_current_modname()
 local S = core.get_translator(mod_name)
 
+tg_nodes = {}
+
+-- define the sound/sound_group here
+local sounds = {
+	gravel = "tg_gravel_footstep",
+	stone = "",
+	concrete = "",
+}
+tg_nodes["sounds"] = sounds
+
 core.register_node("tg_nodes:placeholder", {
 	description = S("Placeholder Node"),
 	groups = { full_solid = 1, solid = 1, },
@@ -28,9 +38,10 @@ local shapes = {
 --- easily get going with nodes
 ---@param name string
 ---@param des string
+---@param sound_spec table
 ---@param shape shape|nil
 ---@param texture string|nil : leave nil. the base node texture (name of a base node)
-local function createNode(name,des,shape,texture)
+local function createNode(name,des,sound_spec,shape,texture)
 	local node_groups = { full_solid = 1, solid = 1, }
 	--- easy breaking when in dev_mode
 	if tg_main.dev_mode == true then
@@ -53,6 +64,9 @@ local function createNode(name,des,shape,texture)
 			{
 				name = this_texture,
 			},
+		},
+		sounds = {
+			footstep = sound_spec,
 		},
 		paramtype = param1,
 		paramtype2 = param2,
@@ -135,22 +149,25 @@ local function createWallLight(name, des,shape,light_level)
 	})
 end
 
-createNode("stone","stone")
-createNode("stone_slab","stone slab",shapes.slab,"stone")
-createNode("stone_stairs","stone stairs",shapes.stairs,"stone")
-createNode("cave_ground","cave ground")
-createNode("cave_ground_2","cave ground, feels moist")
-createNode("dirt","dirt, cold")
-createNode("cave_ground_dirt","cave ground, with dirt")
-
-createPlant("short_grass","Grass, they tickle",shapes.tiny_box,"plants.png^[sheet:16x16:7,0")
-createPlant("plant","Plant, they tickle",shapes.slim_box,"plants.png^[sheet:16x16:6,1")
-createPlant("caladium","Caladium, odd looking plants.",shapes.slim_box,"plants.png^[sheet:16x16:6,0")
-createPlant("fungus","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[sheet:16x16:9,0")
-createPlant("fungus_small","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[sheet:16x16:9,1")
-createPlant("shrub","Shrub, it' dry.",shapes.slim_box,"plants.png^[sheet:8x8:0,0")
-
-createWallLight("led","led, blinding.",shapes.box,9)
+core.register_node("tg_nodes:fog", {
+	description = S("Fog, hard to look past."),
+	groups =  { full_solid = 1, solid = 1, },
+	tiles = {
+		{
+			name = "tg_nodes_fog.png^[opacity:90",
+		},
+	},
+	use_texture_alpha = "blend",
+	-- backface_culling = false,
+	paramtype = "light",
+	drawtype = "glasslike",
+	node_box = {
+		type = "fixed",
+		fixed = shapes.box
+	},
+	sunlight_propagates = false,
+	walkable = false,
+})
 
 --- trying out higher res plants, for
 core.register_node("tg_nodes:fern", {
@@ -171,3 +188,39 @@ core.register_node("tg_nodes:fern", {
 			fixed = shapes.slim_box
 		},
 })
+--- trying out higher res plants, for
+core.register_node("tg_nodes:king_trumpet", {
+		description = S("king_trumpet, very lushes"),
+		groups = {dig_immediate = 3},
+		waving = 0, -- there is no wind down here
+		paramtype = "light",
+		drawtype = "mesh",
+		mesh = "king_trumpet.glb",
+		visual_scale = 16.0,
+		tiles = {"king_trumpet.png"},
+		paramtype2 = "4dir",
+		use_texture_alpha = "clip",
+		sunlight_propagates = true,
+		walkable = false,
+		selection_box = {
+			type = "fixed",
+			fixed = shapes.slim_box
+		},
+})
+
+createNode("stone","stone",{name = sounds.gravel,gain = 0.4})
+createNode("stone_slab","stone slab",{name = sounds.gravel,gain = 0.4},shapes.slab,"stone")
+createNode("stone_stairs","stone stairs",{name = sounds.gravel,gain = 0.4},shapes.stairs,"stone")
+createNode("cave_ground","cave ground",{name = sounds.gravel,gain = 0.4})
+createNode("cave_ground_2","cave ground, feels moist",{name = sounds.gravel,gain = 0.4})
+createNode("dirt","dirt, cold",{name = sounds.gravel,gain = 0.4})
+createNode("cave_ground_dirt","cave ground, with dirt",{name = sounds.gravel,gain = 0.4,})
+
+createPlant("short_grass","Grass, they tickle",shapes.tiny_box,"plants.png^[sheet:16x16:7,0")
+createPlant("plant","Plant, they tickle",shapes.slim_box,"plants.png^[sheet:16x16:6,1")
+createPlant("caladium","Caladium, odd looking plants.",shapes.slim_box,"plants.png^[sheet:16x16:6,0")
+createPlant("fungus","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[sheet:16x16:9,0")
+createPlant("fungus_small","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[sheet:16x16:9,1")
+createPlant("shrub","Shrub, it' dry.",shapes.slim_box,"plants.png^[sheet:8x8:0,0")
+
+createWallLight("led","led, blinding.",shapes.box,9)
