@@ -7,7 +7,8 @@ tg_nodes = {}
 local sounds = {
 	gravel = "tg_gravel_footstep",
 	stone = "",
-	concrete = "",
+	concrete = "tg_concrete_footstep",
+	paper = "tg_paper_footstep",
 }
 tg_nodes["sounds"] = sounds
 
@@ -35,7 +36,7 @@ local shapes = {
 	slim_box = { -0.2, -0.5, -0.2, 0.2, 0.3, 0.2 }, -- same as tiny_box, just taller
 	double = {-0.5, -0.5, -0.5, 0.5, 1.5, 0.5}, -- a like a locker or pillar
 	beam = { -0.2, -0.5, -0.2, 0.2, 0.5, 0.2 }, -- same as tiny_box, just taller
-	sheet = { -0.4, -0.5, -0.4, 0.4, -0.49, 0.4 },
+	sheet = { -0.5, -0.5, -0.5, 0.5, -0.49, 0.5 },
 	panel = { -0.5, -0.5, -0.5, 0.5, -0.4, 0.5 },
 	rails = {
 		{-0.4, -0.5, -0.5, -0.2, -0.4, 0.5},
@@ -111,7 +112,7 @@ local function createMisc(name,des,sound_spec,shape,texture)
 		}
 	end
 	local is_walkable = true
-	if shape == shapes.panel then
+	if shape == shapes.panel or shape == shapes.sheet then
 		is_walkable = false
 	end
 	core.register_node("tg_nodes:"..name, {
@@ -454,18 +455,19 @@ createNode("cave_ground_2","cave ground, feels moist",{name = sounds.gravel,gain
 createNode("dirt","dirt, cold",{name = sounds.gravel,gain = 0.3})
 createNode("dirt_slab","dirt, cold",{name = sounds.gravel,gain = 0.3},shapes.slab,"dirt")
 createNode("cave_ground_dirt","cave ground, with dirt",{name = sounds.gravel,gain = 0.3,})
-createNode("concrete","concrete, no one is taking care of this.",{name = sounds.gravel,gain = 0.3,})
-createNode("concrete_stair","concrete, no one is taking care of this.",{name = sounds.gravel,gain = 0.3,},shapes.stairs,"concrete")
-createNode("concrete_slab","concrete, no one is taking care of this.",{name = sounds.gravel,gain = 0.3,},shapes.slab,"concrete")
-createNode("concrete_floor","concrete floor, almost like sand paper.",{name = sounds.gravel,gain = 0.3,})
+createNode("concrete","concrete, no one is taking care of this.",{name = sounds.concrete,gain = 0.3,})
+createNode("concrete_stair","concrete, no one is taking care of this.",{name = sounds.concrete,gain = 0.3,},shapes.stairs,"concrete")
+createNode("concrete_slab","concrete, no one is taking care of this.",{name = sounds.concrete,gain = 0.3,},shapes.slab,"concrete")
+createNode("concrete_floor","concrete floor, almost like sand paper.",{name = sounds.concrete,gain = 0.3,})
 
 createMisc("locker","Locker, LET ME IN!!",{name = sounds.gravel,gain = 0.3,},shapes.double,{{name="tg_nodes_misc.png^[sheet:16x16:3,0"},{name="tg_nodes_misc.png^[sheet:16x8:0,0"}})
-createMisc("paper","Paper",{name = sounds.gravel,gain = 0.3,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:0,3"}})
+createMisc("paper","Paper",{name = sounds.paper,gain = 0.3,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:0,3"}})
+createMisc("paper_1","Paper",{name = sounds.paper,gain = 0.3,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:1,3"}})
 -- sticky notes, 4 texture options.. the quickest implementation is multiple nodes
-createMisc("stick_notes","Sticky Note, one of these had gotta have something important on it.",{name = sounds.gravel,gain = 0.3,},shapes.panel,{{name="tg_nodes_misc.png^[sheet:16x16:0,4"}})
-createMisc("stick_notes_1","Sticky Note, one of these had gotta have something important on it.",{name = sounds.gravel,gain = 0.3,},shapes.panel,{{name="tg_nodes_misc.png^[sheet:16x16:1,4"}})
-createMisc("stick_notes_2","Sticky Note, one of these had gotta have something important on it.",{name = sounds.gravel,gain = 0.3,},shapes.panel,{{name="tg_nodes_misc.png^[sheet:16x16:2,4"}})
-createMisc("stick_notes_3","Sticky Note, one of these had gotta have something important on it.",{name = sounds.gravel,gain = 0.3,},shapes.panel,{{name="tg_nodes_misc.png^[sheet:16x16:3,4"}})
+createMisc("stick_notes","Sticky Note, one of these had gotta have something important on it.",{name = sounds.paper,gain = 0.9,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:0,4"}})
+createMisc("stick_notes_1","Sticky Note, one of these had gotta have something important on it.",{name = sounds.paper,gain = 0.9,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:1,4"}})
+createMisc("stick_notes_2","Sticky Note, one of these had gotta have something important on it.",{name = sounds.paper,gain = 0.9,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:2,4"}})
+createMisc("stick_notes_3","Sticky Note, one of these had gotta have something important on it.",{name = sounds.paper,gain = 0.9,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:3,4"}})
 
 createPlant("short_grass","Grass, they tickle",shapes.tiny_box,"plants.png^[sheet:16x16:7,0")
 createPlant("plant","Plant, they tickle",shapes.slim_box,"plants.png^[sheet:16x16:6,1")
