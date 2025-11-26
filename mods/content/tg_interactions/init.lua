@@ -5,6 +5,10 @@ tg_interactions = {}
 
 local gravity = -9.8
 
+local function debug(msg)
+  core.log("[entity]: " .. msg)
+end
+
 function tg_interactions.register_entity()
   local function drop(self)
     self.object:get_luaentity().physical = true
@@ -31,30 +35,31 @@ function tg_interactions.register_entity()
     _acc = 0,
     _weight = 2,
     _speed = 3, -- speed should change depending on how far the player is
+    _popup_msg = "drag\nx",
 
     on_step = function(self, dtime, moveresult)
-      core.log("I do be stepping")
+      debug("I do be stepping")
       if self.object:get_luaentity()._being_dragged == false then
-        core.log("no drag on me")
+        debug("no drag on me")
       else
         -- if _being_dragged get all objects within radius, if player
         -- and player name is equal to dragger.. get closer
         -- if no players are around then no drag.
-        core.log("i am getting dragged")
+        debug("i am getting dragged")
         local cur_pos = self.object:get_pos()
         local max_distance = 2
         local entites = core.get_objects_inside_radius(cur_pos, max_distance)
         local found_player = false
         for index, value in ipairs(entites) do
           if value:is_player() then
-            core.log("we have found a player")
+            debug("we have found a player")
             local player_name = value:get_player_name()
             if player_name == self.object:get_luaentity()._dragged_by then
               found_player = true
               self.object:get_luaentity().physical = false
               local player_pos = value:get_pos()
               local player_distance = tg_main.distance(player_pos, cur_pos)
-              if  player_distance > 1.2 then
+              if player_distance > 1.2 then
                 local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
                 local dirX = player_pos.x - cur_pos.x
                 local dirY = player_pos.y - cur_pos.y
@@ -65,7 +70,7 @@ function tg_interactions.register_entity()
                 local obj_speed = self.object:get_luaentity()._speed
                 -- local speed = (self.object:get_luaentity()._speed * player_distance) * dtime
                 local speed = math.min(obj_speed * dtime, 1)
-                self.object:move_to(tg_main.lerp(cur_pos,mid_point,speed), true)
+                self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
                 self.object:set_yaw(angle)
               end
             else
@@ -73,7 +78,7 @@ function tg_interactions.register_entity()
           end
         end
         if #entites <= 1 or found_player == false then
-          core.log("dragger is gone")
+          debug("dragger is gone")
           drop(self)
         end
 
@@ -82,20 +87,58 @@ function tg_interactions.register_entity()
         -- if player is at least .5m away from the object move closer to player
         -- tg_main.distance(cur_pos,)
       end
-      core.log("dragger: " .. self.object:get_luaentity()._dragged_by)
+      debug("dragger: " .. self.object:get_luaentity()._dragged_by)
     end,
     on_rightclick = function(self, clicker)
       local cur_value = self._being_dragged
       self.object:get_luaentity()._being_dragged = not cur_value
       self.object:get_luaentity()._dragged_by = clicker:get_player_name()
       local obj_weight = self.object:get_luaentity()._weight
-      clicker:set_physics_override({speed = 1.1/obj_weight,jump = 0.5, speed_fast = 2.1/obj_weight})
+      clicker:set_physics_override({ speed = 1.1 / obj_weight, jump = 0.5, speed_fast = 2.1 / obj_weight })
       if cur_value == true then
         drop(self)
-        clicker:set_physics_override({speed = 1,jump = 1, speed_fast = 1})
+        clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
       end
     end,
   })
 end
 
 tg_interactions.register_entity()
+
+-- player hover over interactables
+core.register_globalstep(function(dtime)
+  local players = core.get_connected_players()
+  if #players > 0 then
+    for _, player in ipairs(players) do
+      local eye_height = player:get_properties().eye_height
+      local player_look_dir = player:get_look_dir()
+      local pos = player:get_pos():add(player_look_dir)
+      local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
+      local new_pos = player:get_look_dir():multiply(4):add(player_pos)
+      local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
+
+      core.log("so what is this: "..dump(raycast_result))
+      if raycast_result == nil then
+        return
+      end
+      if raycast_result.type == "object" then
+
+        -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
+        -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
+        local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
+        core.log("who dis: "..hover_popup)
+      end
+
+
+      -- local text_message = player:hud_add({
+      --   hud_elem_type = "text",
+      --   -- position = { x = 0.43, y = 0.5 }, -- 0.42 seems to center the text better.
+      --   text = messages[current_message],
+      --   alignment = { x = 0, y = 0 },
+      --   scale = { x = 100, y = 100 },
+      --   number = 0xFFFFFF,
+      --   size = { x = 4, y = 4 },
+      -- })
+    end
+  end
+end)

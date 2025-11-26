@@ -299,7 +299,7 @@ core.register_node("tg_nodes:cables", {
 		paramtype2 = "facedir",
 		-- use_texture_alpha = "clip",
 		-- sunlight_propagates = true,
-		-- walkable = false,
+		walkable = false,
 		node_box = {
 			type = "fixed",
 			fixed = shapes.panel
@@ -421,7 +421,7 @@ function tg_nodes.defNode(name,sound_spec)
 				shape = shapes.rails
 				sel_box = {
 					type = "fixed",
-					fixed = shapes.slab
+					fixed = shapes.panel
 				}
 			end
 		end
@@ -478,7 +478,7 @@ createPlant("fungus","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[shee
 createPlant("fungus_small","Fungus, a King trumpet.",shapes.tiny_box,"plants.png^[sheet:16x16:9,1")
 createPlant("shrub","Shrub, it' dry.",shapes.slim_box,"plants.png^[sheet:8x8:0,0")
 
-createWallLight("led","led, blinding.",shapes.panel,9)
+createWallLight("led","led, blinding.",shapes.panel,12)
 
 tg_nodes.defNode("steel_enclosure",{name = sounds.gravel,gain = 0.3,})
 tg_nodes.defNode("concrete_tiled",{name = sounds.gravel,gain = 0.3,})
