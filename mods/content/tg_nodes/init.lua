@@ -481,3 +481,4 @@ createPlant("shrub","Shrub, it' dry.",shapes.slim_box,"plants.png^[sheet:8x8:0,0
 createWallLight("led","led, blinding.",shapes.panel,9)
 
 tg_nodes.defNode("steel_enclosure",{name = sounds.gravel,gain = 0.3,})
+tg_nodes.defNode("concrete_tiled",{name = sounds.gravel,gain = 0.3,})
