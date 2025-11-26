@@ -25,6 +25,11 @@ local wood_types = {
     {"oak", "[combine:16x16^[noalpha^[colorize:#563d2d"}
 }
 
+local node_groups = { full_solid = 1, solid = 1, }
+--- easy breaking when in dev_mode
+if tg_main.dev_mode == true then
+    node_groups["dig_immediate"] = 3
+end
 for name, nodebox in pairs(furnitures) do
     for _, wood_type in pairs(wood_types) do
         minetest.register_node("tg_furniture:" .. wood_type[1] .. "_" .. name, {
@@ -43,7 +48,7 @@ for name, nodebox in pairs(furnitures) do
                 type = "fixed",
                 fixed = nodebox
             },
-            groups = {dig_tree = 1, oddly_breakable_by_hand = 2},
+            groups = node_groups
         })
     end
 end

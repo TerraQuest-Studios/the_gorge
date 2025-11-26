@@ -9,33 +9,29 @@ local function debug(msg)
   core.log("[entity]: " .. msg)
 end
 
-function tg_interactions.register_entity()
+---comment
+---@param name string
+---@param model_type string "mesh"|"node"
+---@param model string model_name or mod_name:node
+---@param texture string
+---@param shape shape
+---@param weight number
+function tg_interactions.register_entity(name, model_type, model, texture, shape, weight)
   local function drop(self)
     self.object:get_luaentity().physical = true
     self.object:get_luaentity()._being_dragged = false
     self.object:get_luaentity()._dragged_by = ""
   end
-  core.register_entity(mod_name .. ":" .. "draggable", {
-    initial_properties = {
-      -- visual = "mesh",
-      -- mesh = "tubes.glb",
-      -- visual_size = { x = 10, y = 10, z = 10 },
-      visual = "wielditem",
-      wield_item = "tg_furniture:oak_chair",
-      visual_size = { x = 0.65, y = 0.65, z = 0.65 }, -- i guess this is the size for drawtype node
-      textures = { "tubes.png" },
-      physical = true,
-      -- collide_with_objects = true,
-      collisionbox = tg_nodes["shapes"].slim_box,
-      selectionbox = tg_nodes["shapes"].slim_box,
-    },
+  local def = {
     _being_dragged = false,
     _dragged_by = "",
 
     _acc = 0,
-    _weight = 2,
+    _weight = weight,
     _speed = 3, -- speed should change depending on how far the player is
     _popup_msg = "drag\nx",
+    _prev_sound = nil,
+    _sound_tick = 0,
 
     on_step = function(self, dtime, moveresult)
       debug("I do be stepping")
@@ -72,6 +68,31 @@ function tg_interactions.register_entity()
                 local speed = math.min(obj_speed * dtime, 1)
                 self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
                 self.object:set_yaw(angle)
+
+                -- play sound while being dragged
+                local tick = self.object:get_luaentity()._sound_tick
+                tick = tick + 1
+                self.object:get_luaentity()._sound_tick = tick
+                if tick >= 15 then
+                  self.object:get_luaentity()._sound_tick = 0
+                  local cur_sound = self.object:get_luaentity()._prev_sound
+                  if cur_sound ~= nil then
+                    -- core.sound_stop(cur_sound)
+                    core.sound_fade(cur_sound, 120, 0)
+                  end
+                  local pitch = 1
+                  if weight >= 3 then
+                    pitch = 0.8
+                  elseif weight <= 2 then
+                    pitch = 1.4
+                  end
+                  local playing_sound = core.sound_play({ name = "tg_interactions_drag" }, {
+                    gain = 1.0,     -- default
+                    fade = 0.0,     -- default
+                    pitch = pitch,  -- 1.0, -- default
+                  })
+                  self.object:get_luaentity()._prev_sound = playing_sound
+                end
               end
             else
             end
@@ -99,11 +120,40 @@ function tg_interactions.register_entity()
         drop(self)
         clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
       end
-    end,
-  })
+    end
+  }
+  if model_type == "mesh" then
+    def.initial_properties = {
+      visual = "mesh",
+      mesh = model,
+      visual_size = { x = 10, y = 10, z = 10 },
+      -- visual = "wielditem",
+      -- wield_item = "tg_furniture:oak_chair",
+      -- visual_size = { x = 0.65, y = 0.65, z = 0.65 }, -- i guess this is the size for drawtype node
+      textures = { texture },
+      physical = true,
+      -- collide_with_objects = true,
+      collisionbox = shape,
+      selectionbox = shape,
+    }
+  elseif model_type == "node" then
+    def.initial_properties = {
+      visual = "wielditem",
+      wield_item = model,
+      visual_size = { x = 0.65, y = 0.65, z = 0.65 }, -- i guess this is the size for drawtype node
+      textures = { texture },
+      physical = true,
+      -- collide_with_objects = true,
+      collisionbox = shape,
+      selectionbox = shape,
+    }
+  end
+  core.register_entity(mod_name .. ":draggable_" .. name, def)
 end
 
-tg_interactions.register_entity()
+tg_interactions.register_entity("chair", "node", "tg_furniture:oak_chair", "tg_ndoes_steel_enclosure.png",
+  tg_nodes["shapes"].slim_box, 2)
+tg_interactions.register_entity("pipes", "mesh", "tubes.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
 
 -- player hover over interactables
 core.register_globalstep(function(dtime)
@@ -117,16 +167,15 @@ core.register_globalstep(function(dtime)
       local new_pos = player:get_look_dir():multiply(4):add(player_pos)
       local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
-      core.log("so what is this: "..dump(raycast_result))
+      core.log("so what is this: " .. dump(raycast_result))
       if raycast_result == nil then
         return
       end
       if raycast_result.type == "object" then
-
         -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
         -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
-        local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
-        core.log("who dis: "..hover_popup)
+        -- local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
+        -- core.log("who dis: " .. hover_popup)
       end
 
 
