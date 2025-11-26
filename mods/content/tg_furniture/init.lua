@@ -34,8 +34,9 @@ for name, nodebox in pairs(furnitures) do
             paramtype2 = "facedir",
             tiles = {
                 {
-                    name = wood_type[2],
-                    align_style = "world",
+                    -- name = wood_type[2],
+                    -- align_style = "world",
+                    name = "tg_nodes_steel_enclosure.png",
                 }
             },
             node_box = {
