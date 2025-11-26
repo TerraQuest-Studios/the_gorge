@@ -13,3 +13,4 @@ tg_main.skip_intro = true --(tg_main.mg_name == "flat")
 
 dofile(mod_path .. "/scripts" .. "/math.lua")
 dofile(mod_path .. "/scripts" .. "/debug.lua")
+dofile(mod_path .. "/scripts" .. "/utils.lua")

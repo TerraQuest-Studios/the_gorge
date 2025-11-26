@@ -45,6 +45,8 @@ local shapes = {
 	half_slab= { -0.5, -0.5, -0.5, 0.5, 0.0, 0.0 },
 }
 
+tg_nodes["shapes"] = shapes
+
 --- easily get going with nodes
 ---@param name string
 ---@param des string
