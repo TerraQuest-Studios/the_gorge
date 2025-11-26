@@ -1,4 +1,8 @@
-core.register_on_joinplayer(function(player)
+core.register_on_newplayer(function(player)
+    local start_pos = {x=-43, y=2, z=-18.5}
+    
+    player:set_pos(start_pos)
+
     local current_huds = {} --player:hud_get_all()
 
     --luanti is stupid, get huds next server step
@@ -84,7 +88,7 @@ core.register_on_joinplayer(function(player)
     end)
 
     core.register_globalstep(function(dtime)
-        if tg_main.skip_intro == true then
+        --[[ if tg_main.skip_intro == true then
             player:hud_remove(base_background)
             player:hud_remove(text_message)
             player:hud_remove(fade_overlay_hud)
@@ -93,7 +97,7 @@ core.register_on_joinplayer(function(player)
                     player:hud_add(hud)
                 end
             end
-        else
+        else ]]
             if fade_out_opacity > 0 and fade_out_opacity < 255 then
                 player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:" .. fade_out_opacity)
                 fade_out_opacity = fade_out_opacity + 100 * dtime
@@ -113,6 +117,11 @@ core.register_on_joinplayer(function(player)
                                     player:hud_add(hud)
                                 end
                             end
+
+                            --reset the player incase they did dumb things
+                            player:set_pos(start_pos)
+                            player:set_look_vertical(0)
+                            player:set_look_horizontal(0)
                         else
                             player:hud_change(text_message, "text", messages[current_message])
                             fade_in_opacity = 225
@@ -120,6 +129,6 @@ core.register_on_joinplayer(function(player)
                     end)
                 end
             end
-        end
+        --[[ end ]]
     end)
 end)
