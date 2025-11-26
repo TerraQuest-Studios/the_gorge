@@ -28,6 +28,10 @@ function tg_interactions.register_entity()
     _being_dragged = false,
     _dragged_by = "",
 
+    _acc = 0,
+    _weight = 2,
+    _speed = 3, -- speed should change depending on how far the player is
+
     on_step = function(self, dtime, moveresult)
       core.log("I do be stepping")
       if self.object:get_luaentity()._being_dragged == false then
@@ -49,14 +53,19 @@ function tg_interactions.register_entity()
               found_player = true
               self.object:get_luaentity().physical = false
               local player_pos = value:get_pos()
-              if tg_main.distance(player_pos, cur_pos) > 1.2 then
+              local player_distance = tg_main.distance(player_pos, cur_pos)
+              if  player_distance > 1.2 then
                 local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
                 local dirX = player_pos.x - cur_pos.x
                 local dirY = player_pos.y - cur_pos.y
                 -- Calculate angle in radians
                 local angle = math.atan2(dirY, dirX)
 
-                self.object:move_to(tg_main.calculateMidpoint(player_pos, cur_pos), true)
+                local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
+                local obj_speed = self.object:get_luaentity()._speed
+                -- local speed = (self.object:get_luaentity()._speed * player_distance) * dtime
+                local speed = math.min(obj_speed * dtime, 1)
+                self.object:move_to(tg_main.lerp(cur_pos,mid_point,speed), true)
                 self.object:set_yaw(angle)
               end
             else
@@ -79,8 +88,11 @@ function tg_interactions.register_entity()
       local cur_value = self._being_dragged
       self.object:get_luaentity()._being_dragged = not cur_value
       self.object:get_luaentity()._dragged_by = clicker:get_player_name()
+      local obj_weight = self.object:get_luaentity()._weight
+      clicker:set_physics_override({speed = 1.1/obj_weight,jump = 0.5, speed_fast = 2.1/obj_weight})
       if cur_value == true then
         drop(self)
+        clicker:set_physics_override({speed = 1,jump = 1, speed_fast = 1})
       end
     end,
   })

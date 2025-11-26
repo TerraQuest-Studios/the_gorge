@@ -42,7 +42,6 @@ core.register_on_joinplayer(function(player, last_login)
 				exposure_correction = 0.35,
 				speed_dark_bright = 1500,
 				speed_bright_dark = 700,
-				
 			},
 			boom = {
 				intensity = 0.05,
