@@ -29,26 +29,26 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     _acc = 0,
     _weight = weight,
     _speed = 3, -- speed should change depending on how far the player is
-    _popup_msg = "drag\nx",
+    _popup_msg = "drag me",
     _prev_sound = nil,
     _sound_tick = 0,
 
     on_step = function(self, dtime, moveresult)
-      debug("I do be stepping")
+      -- debug("I do be stepping")
       if self.object:get_luaentity()._being_dragged == false then
-        debug("no drag on me")
+        -- debug("no drag on me")
       else
         -- if _being_dragged get all objects within radius, if player
         -- and player name is equal to dragger.. get closer
         -- if no players are around then no drag.
-        debug("i am getting dragged")
+        -- debug("i am getting dragged")
         local cur_pos = self.object:get_pos()
         local max_distance = 2
         local entites = core.get_objects_inside_radius(cur_pos, max_distance)
         local found_player = false
         for index, value in ipairs(entites) do
           if value:is_player() then
-            debug("we have found a player")
+            -- debug("we have found a player")
             local player_name = value:get_player_name()
             if player_name == self.object:get_luaentity()._dragged_by then
               found_player = true
@@ -87,9 +87,9 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
                     pitch = 1.4
                   end
                   local playing_sound = core.sound_play({ name = "tg_interactions_drag" }, {
-                    gain = 1.0,     -- default
-                    fade = 0.0,     -- default
-                    pitch = pitch,  -- 1.0, -- default
+                    gain = 1.0,    -- default
+                    fade = 0.0,    -- default
+                    pitch = pitch, -- 1.0, -- default
                   })
                   self.object:get_luaentity()._prev_sound = playing_sound
                 end
@@ -99,16 +99,11 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
           end
         end
         if #entites <= 1 or found_player == false then
-          debug("dragger is gone")
+          -- debug("dragger is gone")
           drop(self)
         end
-
-        -- local player =
-
-        -- if player is at least .5m away from the object move closer to player
-        -- tg_main.distance(cur_pos,)
       end
-      debug("dragger: " .. self.object:get_luaentity()._dragged_by)
+      -- debug("dragger: " .. self.object:get_luaentity()._dragged_by)
     end,
     on_rightclick = function(self, clicker)
       local cur_value = self._being_dragged
@@ -155,8 +150,52 @@ tg_interactions.register_entity("chair", "node", "tg_furniture:oak_chair", "tg_n
   tg_nodes["shapes"].slim_box, 2)
 tg_interactions.register_entity("pipes", "mesh", "tubes.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
 
+---@class player_huds
+---@field player_name string
+---@field huds table
+
+---@class all_huds
+---@field player_huds table
+
+---@type all_huds
+local all_huds
+
+tg_interactions["huds"] = all_huds
+
+local function getPlayerHuds(player_name)
+  ---@type player_huds
+  local players_hud
+  if all_huds ~= nil then
+    for _, value in ipairs(all_huds) do
+      if value.player_name == player_name then
+        players_hud = value
+      end
+    end
+  end
+  if players_hud == nil then
+    -- player does not have a hud
+    -- need to create the hud element if the player needs it
+    -- note that we cannot change the hud if there is no hud to start with
+    players_hud = { player_name = player_name, huds = {} }
+  end
+  if all_huds ~= nil then
+    table.insert(all_huds, players_hud)
+  end
+  return players_hud
+end
+
 -- player hover over interactables
 core.register_globalstep(function(dtime)
+  local msg = {
+    hud_elem_type = "text",
+    name = "popup",
+    scale = { x = 50, y = 50 },
+    number = 0xFFFFFF,
+    z_index = -300,
+    text = "where are you? i do not see you..",
+    world_pos = { x = 0, y = 1, z = 0 },
+  }
+
   local players = core.get_connected_players()
   if #players > 0 then
     for _, player in ipairs(players) do
@@ -167,27 +206,43 @@ core.register_globalstep(function(dtime)
       local new_pos = player:get_look_dir():multiply(4):add(player_pos)
       local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
-      core.log("so what is this: " .. dump(raycast_result))
+      -- core.log("so what is this: " .. dump(raycast_result))
       if raycast_result == nil then
         return
       end
+      local hud_pos = nil
+      local popup_msg = player:hud_add(msg)
+
+      -- need to know to remove or change the current hud at all times
+      local player_name = player:get_player_name()
+      local players_hud = nil
+      players_hud = getPlayerHuds(player_name)
       if raycast_result.type == "object" then
         -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
         -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
-        -- local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
+        if raycast_result.ref:get_luaentity() == nil then
+          return
+        end
+        local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
+        hud_pos = vector.add(raycast_result.ref:get_pos(), vector.new(0, 0.5, 0))
+
+        -- msg["text"] = hover_popup
+        -- msg["world_pos"] = hud_pos
+        for index, value in ipairs(players_hud.huds) do
+          player:hud_remove(value)
+        end
+        players_hud.huds = {}
+
+        local new_hud = player:hud_add(msg)
+        table.insert(players_hud.huds, new_hud)
+        -- player:hud_change(popup_msg, msg)
+        tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
+
         -- core.log("who dis: " .. hover_popup)
+        -- core.log("what is the pos? "..dump(hud_pos))
+      else
+        player:hud_remove(popup_msg)
       end
-
-
-      -- local text_message = player:hud_add({
-      --   hud_elem_type = "text",
-      --   -- position = { x = 0.43, y = 0.5 }, -- 0.42 seems to center the text better.
-      --   text = messages[current_message],
-      --   alignment = { x = 0, y = 0 },
-      --   scale = { x = 100, y = 100 },
-      --   number = 0xFFFFFF,
-      --   size = { x = 4, y = 4 },
-      -- })
     end
   end
 end)
