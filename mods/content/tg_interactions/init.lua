@@ -22,6 +22,7 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     self.object:get_luaentity()._being_dragged = false
     self.object:get_luaentity()._dragged_by = ""
   end
+  local popup_text = {"[ drag ]","[ let go ]"}
   local def = {
     _being_dragged = false,
     _dragged_by = "",
@@ -29,13 +30,14 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     _acc = 0,
     _weight = weight,
     _speed = 3, -- speed should change depending on how far the player is
-    _popup_msg = "drag me",
+    _popup_msg = popup_text[1],
     _prev_sound = nil,
     _sound_tick = 0,
 
     on_step = function(self, dtime, moveresult)
       -- debug("I do be stepping")
       if self.object:get_luaentity()._being_dragged == false then
+        self.object:get_luaentity()._popup_msg = popup_text[1]
         -- debug("no drag on me")
       else
         -- if _being_dragged get all objects within radius, if player
@@ -112,8 +114,11 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
       local obj_weight = self.object:get_luaentity()._weight
       clicker:set_physics_override({ speed = 1.1 / obj_weight, jump = 0.5, speed_fast = 2.1 / obj_weight })
       if cur_value == true then
+        self.object:get_luaentity()._popup_msg = popup_text[1]
         drop(self)
         clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
+      else
+        self.object:get_luaentity()._popup_msg = popup_text[2]
       end
     end
   }
@@ -157,8 +162,8 @@ tg_interactions.register_entity("pipes", "mesh", "tubes.glb", "tubes.png", tg_no
 ---@class all_huds
 ---@field player_huds table
 
----@type all_huds
-local all_huds
+---@type table
+local all_huds = {}
 
 tg_interactions["huds"] = all_huds
 
@@ -173,26 +178,30 @@ local function getPlayerHuds(player_name)
     end
   end
   if players_hud == nil then
+    -- core.log("player's huds not found")
     -- player does not have a hud
     -- need to create the hud element if the player needs it
     -- note that we cannot change the hud if there is no hud to start with
     players_hud = { player_name = player_name, huds = {} }
   end
-  if all_huds ~= nil then
-    table.insert(all_huds, players_hud)
+  if all_huds == nil then
+    all_huds = {}
   end
+  table.insert(all_huds, players_hud)
   return players_hud
 end
 
 -- player hover over interactables
 core.register_globalstep(function(dtime)
   local msg = {
-    hud_elem_type = "text",
+    hud_elem_type = "waypoint",
     name = "popup",
+    precision = 0,
     scale = { x = 50, y = 50 },
     number = 0xFFFFFF,
     z_index = -300,
-    text = "where are you? i do not see you..",
+    alignment = 0,
+    -- text = "where are you? i do not see you..",
     world_pos = { x = 0, y = 1, z = 0 },
   }
 
@@ -211,37 +220,39 @@ core.register_globalstep(function(dtime)
         return
       end
       local hud_pos = nil
-      local popup_msg = player:hud_add(msg)
+      -- local popup_msg = player:hud_add(msg)
 
       -- need to know to remove or change the current hud at all times
       local player_name = player:get_player_name()
       local players_hud = nil
       players_hud = getPlayerHuds(player_name)
+      -- core.log("does the player have huds? "..dump(players_hud.huds))
+      for index, value in pairs(players_hud.huds) do
+        -- core.log("wtf is this:"..value)
+        player:hud_remove(value)
+      end
+      players_hud.huds = {}
       if raycast_result.type == "object" then
-        -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
         -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
         if raycast_result.ref:get_luaentity() == nil then
           return
         end
         local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
-        hud_pos = vector.add(raycast_result.ref:get_pos(), vector.new(0, 0.5, 0))
+        hud_pos = vector.add(raycast_result.ref:get_pos(), vector.new(0, 0.1, 0))
 
         -- msg["text"] = hover_popup
         -- msg["world_pos"] = hud_pos
-        for index, value in ipairs(players_hud.huds) do
-          player:hud_remove(value)
-        end
-        players_hud.huds = {}
 
+        msg["name"] = hover_popup
+        msg["world_pos"] = hud_pos
         local new_hud = player:hud_add(msg)
         table.insert(players_hud.huds, new_hud)
-        -- player:hud_change(popup_msg, msg)
-        tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
+        -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
 
         -- core.log("who dis: " .. hover_popup)
         -- core.log("what is the pos? "..dump(hud_pos))
       else
-        player:hud_remove(popup_msg)
+        -- player:hud_remove(popup_msg)
       end
     end
   end
