@@ -3,6 +3,11 @@ local S = core.get_translator(mod_name)
 
 tg_interactions = {}
 
+-- NOTE: for something to get the "interactable" popup
+-- it have "_interactable = 1"
+
+local reach = 3.5 -- things within will show interacable/ popup on hover
+
 local gravity = -9.8
 
 local function debug(msg)
@@ -22,7 +27,7 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     self.object:get_luaentity()._being_dragged = false
     self.object:get_luaentity()._dragged_by = ""
   end
-  local popup_text = {"[ drag ]","[ let go ]"}
+  local popup_text = { "[ drag ]", "[ let go ]" }
   local def = {
     _being_dragged = false,
     _dragged_by = "",
@@ -33,6 +38,7 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     _popup_msg = popup_text[1],
     _prev_sound = nil,
     _sound_tick = 0,
+    _interactable = 1,
 
     on_step = function(self, dtime, moveresult)
       -- debug("I do be stepping")
@@ -194,10 +200,10 @@ end
 -- player hover over interactables
 core.register_globalstep(function(dtime)
   local msg = {
-    hud_elem_type = "waypoint",
-    name = "popup",
+    type = "waypoint",
+    name = "",
     precision = 0,
-    scale = { x = 50, y = 50 },
+    scale = { x = 80, y = 80 },
     number = 0xFFFFFF,
     z_index = -300,
     alignment = 0,
@@ -212,13 +218,10 @@ core.register_globalstep(function(dtime)
       local player_look_dir = player:get_look_dir()
       local pos = player:get_pos():add(player_look_dir)
       local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
-      local new_pos = player:get_look_dir():multiply(4):add(player_pos)
+      local new_pos = player:get_look_dir():multiply(reach):add(player_pos)
       local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
       -- core.log("so what is this: " .. dump(raycast_result))
-      if raycast_result == nil then
-        return
-      end
       local hud_pos = nil
       -- local popup_msg = player:hud_add(msg)
 
@@ -227,12 +230,41 @@ core.register_globalstep(function(dtime)
       local players_hud = nil
       players_hud = getPlayerHuds(player_name)
       -- core.log("does the player have huds? "..dump(players_hud.huds))
+
       for index, value in pairs(players_hud.huds) do
         -- core.log("wtf is this:"..value)
         player:hud_remove(value)
       end
       players_hud.huds = {}
-      if raycast_result.type == "object" then
+      --- in radius --
+      local within_radius = core.get_objects_inside_radius(player_pos, reach)
+      local interacble_indicator = {
+        -- type = "waypoint",
+        -- name = "o",
+        type = "image_waypoint",
+        text = "tg_nodes_misc.png^[sheet:16x16:0,5",
+        -- precision = 0,
+        scale = { x = 2, y = 2 },
+        number = 0xFFFFFF,
+        z_index = -300,
+        alignment = 0,
+        -- text = "where are you? i do not see you..",
+        world_pos = { x = 0, y = 1, z = 0 },
+      }
+      for index, value in ipairs(within_radius) do
+        -- TODO(): check if "interactable"
+        if not value:is_player() then
+          if value:get_luaentity()._interactable == 1 then
+            local obj_pos = value:get_pos()
+            interacble_indicator["world_pos"] = obj_pos
+            local indicator = player:hud_add(interacble_indicator)
+            table.insert(players_hud.huds, indicator)
+            -- core.log("where am i? " .. dump())
+          end
+        end
+      end
+      --- in radius ---
+      if raycast_result ~= nil and raycast_result.type == "object" then
         -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
         if raycast_result.ref:get_luaentity() == nil then
           return
