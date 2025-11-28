@@ -8,11 +8,26 @@ tg_interactions = {}
 
 local reach = 3.5 -- things within will show interacable/ popup on hover
 
-local gravity = -9.8/4
+local gravity = -9.8 / 4
 
 local function debug(msg)
   core.log("[entity]: " .. msg)
 end
+
+local players_dragging = {}
+
+-- local function getDragging(player)
+--   local players = core.get_connected_players()
+--   if #players > 0 then
+--     local found_player = false
+--     for _, value in ipairs(players) do
+--       local player_name = player:get_player_name()
+--       if value == player_name then
+--         found_player = true
+--       end
+--     end
+--   end
+-- end
 
 local function restorePlayerMovement(dragged_by)
   local players = core.get_connected_players()
@@ -21,6 +36,7 @@ local function restorePlayerMovement(dragged_by)
       local player_name = player:get_player_name()
       if dragged_by == player_name then
         player:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
+        players_dragging[player_name] = false
       end
     end
   end
@@ -40,6 +56,7 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     local dragged_by = self.object:get_luaentity()._dragged_by
     restorePlayerMovement(dragged_by)
     self.object:get_luaentity()._dragged_by = ""
+    players_dragging[dragged_by] = false
   end
   local popup_text = { "[ drag ]", "[ let go ]" }
   local def = {
@@ -131,6 +148,15 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
       -- debug("dragger: " .. self.object:get_luaentity()._dragged_by)
     end,
     on_rightclick = function(self, clicker)
+      local player_name = clicker:get_player_name()
+      if players_dragging[player_name] == true then
+        drop(self)
+        return
+      end
+      if clicker._dragging == true then
+        -- do nothing
+        return
+      end
       local cur_value = self._being_dragged
       self.object:get_luaentity()._being_dragged = not cur_value
       self.object:get_luaentity()._dragged_by = clicker:get_player_name()
@@ -140,8 +166,11 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
         self.object:get_luaentity()._popup_msg = popup_text[1]
         drop(self)
         clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
+        players_dragging[player_name] = false
       else
+        -- getDragging()
         self.object:get_luaentity()._popup_msg = popup_text[2]
+        players_dragging[player_name] = true
       end
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
