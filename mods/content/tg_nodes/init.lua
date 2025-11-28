@@ -449,9 +449,9 @@ function tg_nodes.defNode(name,sound_spec)
 	end
 end
 
-createNode("stone","stone",{name = sounds.gravel,gain = 0.3})
-createNode("stone_slab","stone slab",{name = sounds.gravel,gain = 0.3},shapes.slab,"stone")
-createNode("stone_stairs","stone stairs",{name = sounds.gravel,gain = 0.3},shapes.stairs,"stone")
+createNode("stone","stone",{name = sounds.concrete,gain = 0.3})
+createNode("stone_slab","stone slab",{name = sounds.concrete,gain = 0.3},shapes.slab,"stone")
+createNode("stone_stairs","stone stairs",{name = sounds.concrete,gain = 0.3},shapes.stairs,"stone")
 createNode("cave_ground","cave ground",{name = sounds.gravel,gain = 0.3})
 createNode("cave_ground_2","cave ground, feels moist",{name = sounds.gravel,gain = 0.3})
 createNode("dirt","dirt, cold",{name = sounds.gravel,gain = 0.3})
@@ -462,7 +462,7 @@ createNode("concrete_stair","concrete, no one is taking care of this.",{name = s
 createNode("concrete_slab","concrete, no one is taking care of this.",{name = sounds.concrete,gain = 0.3,},shapes.slab,"concrete")
 createNode("concrete_floor","concrete floor, almost like sand paper.",{name = sounds.concrete,gain = 0.3,})
 
-createMisc("locker","Locker, LET ME IN!!",{name = sounds.gravel,gain = 0.3,},shapes.double,{{name="tg_nodes_misc.png^[sheet:16x16:3,0"},{name="tg_nodes_misc.png^[sheet:16x8:0,0"}})
+createMisc("locker","Locker, LET ME IN!!",{name = sounds.concrete,gain = 0.3,},shapes.double,{{name="tg_nodes_misc.png^[sheet:16x16:3,0"},{name="tg_nodes_misc.png^[sheet:16x8:0,0"}})
 createMisc("paper","Paper",{name = sounds.paper,gain = 0.3,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:0,3"}})
 createMisc("paper_1","Paper",{name = sounds.paper,gain = 0.3,},shapes.sheet,{{name="tg_nodes_misc.png^[sheet:16x16:1,3"}})
 -- sticky notes, 4 texture options.. the quickest implementation is multiple nodes
@@ -480,5 +480,5 @@ createPlant("shrub","Shrub, it' dry.",shapes.slim_box,"plants.png^[sheet:8x8:0,0
 
 createWallLight("led","led, blinding.",shapes.panel,12)
 
-tg_nodes.defNode("steel_enclosure",{name = sounds.gravel,gain = 0.3,})
-tg_nodes.defNode("concrete_tiled",{name = sounds.gravel,gain = 0.3,})
+tg_nodes.defNode("steel_enclosure",{name = sounds.concrete,gain = 0.3,})
+tg_nodes.defNode("concrete_tiled",{name = sounds.concrete,gain = 0.3,})
