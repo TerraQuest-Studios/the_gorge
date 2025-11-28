@@ -8,14 +8,14 @@ tg_interactions = {}
 
 local reach = 3.5 -- things within will show interacable/ popup on hover
 
-local gravity = -9.8
+local gravity = -9.8/4
 
 local function debug(msg)
   core.log("[entity]: " .. msg)
 end
 
 local function restorePlayerMovement(dragged_by)
- local players = core.get_connected_players()
+  local players = core.get_connected_players()
   if #players > 0 then
     for _, player in ipairs(players) do
       local player_name = player:get_player_name()
@@ -56,7 +56,7 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
 
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
-      self.object:set_velocity(vector.add(velocity,vector.new(0,gravity,0)))
+      self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       velocity = self.object:get_velocity()
       -- debug("I do be stepping")
       if self.object:get_luaentity()._being_dragged == false then
