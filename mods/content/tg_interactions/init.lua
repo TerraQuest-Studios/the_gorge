@@ -1,6 +1,8 @@
 local mod_name = core.get_current_modname()
 local S = core.get_translator(mod_name)
 
+local shapes = tg_nodes["shapes"]
+
 tg_interactions = {}
 
 -- NOTE: for something to get the "interactable" popup
@@ -49,7 +51,7 @@ end
 ---@param texture string
 ---@param shape shape
 ---@param weight number
-function tg_interactions.register_entity(name, model_type, model, texture, shape, weight)
+function tg_interactions.register_draggable(name, model_type, model, texture, shape, weight)
   local function drop(self)
     self.object:get_luaentity().physical = true
     self.object:get_luaentity()._being_dragged = false
@@ -168,7 +170,6 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
         clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
         players_dragging[player_name] = false
       else
-        -- getDragging()
         self.object:get_luaentity()._popup_msg = popup_text[2]
         players_dragging[player_name] = true
       end
@@ -204,14 +205,163 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
       -- collide_with_objects = true,
       collisionbox = shape,
       selectionbox = shape,
+      stepheight = 1.05, -- this is not working
     }
   end
   core.register_entity(mod_name .. ":draggable_" .. name, def)
 end
 
-tg_interactions.register_entity("chair", "node", "tg_furniture:oak_chair", "tg_ndoes_steel_enclosure.png",
+---comment
+---@param name any
+---@param model_type any
+---@param model any
+---@param texture any
+---@param shape any
+---@param popup_text table
+---@param cmd table
+-- function tg_interactions.register_interactable(name, model_type,model,texture,shape,popup_text)
+function tg_interactions.register_interactable(name, model_type, model, texture, shape, params)
+  local def = {
+    _interactable = 1,
+    on_step = function(self, dtime, moveresult)
+    end,
+    on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
+      if tg_main.dev_mode == true then
+        self.object:remove()
+      end
+    end,
+  }
+  if params ~= nil then
+    if #params >= 0 then
+      for index, value in pairs(params) do
+        def[index] = value
+      end
+    end
+  end
+  if model_type == "mesh" then
+    def.initial_properties = {
+      visual = "mesh",
+      mesh = model,
+      visual_size = { x = 10, y = 10, z = 10 },
+      -- visual = "wielditem",
+      -- wield_item = "tg_furniture:oak_chair",
+      -- visual_size = { x = 0.65, y = 0.65, z = 0.65 }, -- i guess this is the size for drawtype node
+      textures = { texture },
+      physical = true,
+      -- collide_with_objects = true,
+      collisionbox = shape,
+      selectionbox = shape,
+    }
+  elseif model_type == "node" then
+    def.initial_properties = {
+      visual = "wielditem",
+      wield_item = model,
+      visual_size = { x = 0.65, y = 0.65, z = 0.65 }, -- i guess this is the size for drawtype node
+      textures = { texture },
+      physical = true,
+      -- collide_with_objects = true,
+      collisionbox = shape,
+      selectionbox = shape,
+    }
+  elseif model_type == "none" then
+    def.initial_properties = {
+      visual = "sprite",
+      textures = { texture },
+      use_texture_alpha = true,
+      physical = false,
+      collisionbox = shape,
+      selectionbox = shape,
+    }
+  end
+  core.register_entity(mod_name .. ":" .. name, def)
+end
+
+tg_interactions.register_draggable("chair", "node", "tg_furniture:oak_chair", "tg_ndoes_steel_enclosure.png",
   tg_nodes["shapes"].slim_box, 2)
-tg_interactions.register_entity("pipes", "mesh", "tubes.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
+tg_interactions.register_draggable("pipes", "mesh", "tubes.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
+tg_interactions.register_draggable("power_source", "mesh", "tubes_right.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
+
+tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+  {
+    _popup_msg = "[ switch on power ]",
+    on_rightclick = function(self, clicker)
+      tg_power.togglePower()
+      if tg_power.power == true then
+        self.object:get_luaentity()._popup_msg = "[ switch on power ]"
+      else
+        self.object:get_luaentity()._popup_msg = "[ switch off power ]"
+      end
+    end,
+  }
+)
+
+tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+  {
+    _popup_msg = "[ note ]",
+    on_rightclick = function(self, clicker)
+      core.log("NOTE READS: \"took me a few attemps to get this note up here..\"")
+    end,
+  })
+tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+  {
+    _popup_msg = "[ search locker ]",
+    on_rightclick = function(self, clicker)
+      core.chat_send_all("..this locker is empty")
+      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,              -- default
+        fade = 100.0,              -- default
+        pitch = 1.8,             -- 1.0, -- default
+      })
+      if tg_main.dev_mode == false then
+        self.object:remove()
+      else
+        core.log("after first interaction this will be removed in normal gameplay.")
+      end
+    end,
+  })
+tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+  {
+    _popup_msg = "[ search locker ]",
+    on_rightclick = function(self, clicker)
+      core.chat_send_all("hmm, a radiation suit. i should slip this on.")
+      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,              -- default
+        fade = 100.0,              -- default
+        pitch = 1.8,             -- 1.0, -- default
+      })
+      if tg_main.dev_mode == false then
+        self.object:remove()
+      else
+        core.log("after first interaction this will be removed in normal gameplay.")
+      end
+    end,
+  })
+tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.slab,
+  {
+    _popup_msg = "[ pickup tape ]",
+    on_rightclick = function(self, clicker)
+      core.chat_send_all("this should come in handy.")
+      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,              -- default
+        fade = 100.0,              -- default
+        pitch = 1.8,             -- 1.0, -- default
+      })
+      if tg_main.dev_mode == false then
+        self.object:remove()
+      else
+        core.log("after first interaction this will be removed in normal gameplay.")
+      end
+    end,
+  })
+-- tg_interactions.register_interactable("power_switch","none","","tg_nodes_misc.png^[sheet:16x16:0,6",shapes.slim_box,{"[ switch on power ]","[ switch off power ]"}, tg_power.power)
+
+
+
+
+
+----------------
+-- HUD POPUP
+----------------
 
 ---@class player_huds
 ---@field player_name string
