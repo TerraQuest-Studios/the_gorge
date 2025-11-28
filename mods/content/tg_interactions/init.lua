@@ -41,6 +41,7 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     _interactable = 1,
 
     on_step = function(self, dtime, moveresult)
+      self.object:set_velocity(vector.new(0,gravity,0))
       -- debug("I do be stepping")
       if self.object:get_luaentity()._being_dragged == false then
         self.object:get_luaentity()._popup_msg = popup_text[1]
