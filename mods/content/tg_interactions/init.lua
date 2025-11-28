@@ -126,7 +126,13 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
       else
         self.object:get_luaentity()._popup_msg = popup_text[2]
       end
-    end
+    end,
+    on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
+      if tg_main.dev_mode == true then
+        self.object:remove()
+        puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
+      end
+    end,
   }
   if model_type == "mesh" then
     def.initial_properties = {
