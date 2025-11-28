@@ -14,6 +14,18 @@ local function debug(msg)
   core.log("[entity]: " .. msg)
 end
 
+local function restorePlayerMovement(dragged_by)
+ local players = core.get_connected_players()
+  if #players > 0 then
+    for _, player in ipairs(players) do
+      local player_name = player:get_player_name()
+      if dragged_by == player_name then
+        player:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
+      end
+    end
+  end
+end
+
 ---comment
 ---@param name string
 ---@param model_type string "mesh"|"node"
@@ -25,6 +37,8 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
   local function drop(self)
     self.object:get_luaentity().physical = true
     self.object:get_luaentity()._being_dragged = false
+    local dragged_by = self.object:get_luaentity()._dragged_by
+    restorePlayerMovement(dragged_by)
     self.object:get_luaentity()._dragged_by = ""
   end
   local popup_text = { "[ drag ]", "[ let go ]" }
@@ -41,7 +55,9 @@ function tg_interactions.register_entity(name, model_type, model, texture, shape
     _interactable = 1,
 
     on_step = function(self, dtime, moveresult)
-      self.object:set_velocity(vector.new(0,gravity,0))
+      local velocity = self.object:get_velocity()
+      self.object:set_velocity(vector.add(velocity,vector.new(0,gravity,0)))
+      velocity = self.object:get_velocity()
       -- debug("I do be stepping")
       if self.object:get_luaentity()._being_dragged == false then
         self.object:get_luaentity()._popup_msg = popup_text[1]
