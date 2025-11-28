@@ -299,7 +299,7 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
   {
     _popup_msg = "[ note ]",
     on_rightclick = function(self, clicker)
-      core.log("NOTE READS: \"took me a few attemps to get this note up here..\"")
+      core.chat_send_all("NOTE READS: \"took me a few attemps to get this note up here..\"")
     end,
   })
 tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,

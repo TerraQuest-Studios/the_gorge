@@ -1,6 +1,6 @@
 core.register_on_newplayer(function(player)
     local start_pos = {x=-43, y=2, z=-18.5}
-    
+
     player:set_pos(start_pos)
 
     local current_huds = {} --player:hud_get_all()
