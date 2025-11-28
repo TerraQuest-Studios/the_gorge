@@ -279,7 +279,7 @@ end
 tg_interactions.register_draggable("chair", "node", "tg_furniture:oak_chair", "tg_ndoes_steel_enclosure.png",
   tg_nodes["shapes"].slim_box, 2)
 tg_interactions.register_draggable("pipes", "mesh", "tubes.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
-tg_interactions.register_draggable("power_source", "mesh", "tubes_right.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
+tg_interactions.register_draggable("power_core", "mesh", "power_core.glb", "power_core.png", tg_nodes["shapes"].slab, 4)
 
 tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
   {
@@ -352,6 +352,25 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
         core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
+  })
+
+tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", shapes.door,
+  {
+    _interactable = 0,
+    -- _popup_msg = "[ open door ]",
+    on_step = function(self, dtime, moveresult)
+      local velocity = self.object:get_velocity()
+      self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
+      velocity = self.object:get_velocity()
+    end,
+    -- on_rightclick = function(self, clicker)
+    --   core.chat_send_all("this should be opening")
+    --   local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+    --     gain = 1.0,              -- default
+    --     fade = 100.0,              -- default
+    --     pitch = 1.8,             -- 1.0, -- default
+    --   })
+    -- end,
   })
 -- tg_interactions.register_interactable("power_switch","none","","tg_nodes_misc.png^[sheet:16x16:0,6",shapes.slim_box,{"[ switch on power ]","[ switch off power ]"}, tg_power.power)
 

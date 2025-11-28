@@ -28,6 +28,7 @@ core.register_node("tg_nodes:placeholder", {
 ---@class shape
 local shapes = {
 	box = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 },
+	door = { -1, -0.5, -1, 0.5, 3.0, 0.5 },
 	slab = { -0.5, -0.5, -0.5, 0.5, 0.0, 0.5 },
 	stairs = {
 		{ -0.5, -0.5, -0.5, 0.5, 0,   0.5 },
