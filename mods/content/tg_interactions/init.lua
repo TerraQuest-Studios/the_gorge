@@ -44,6 +44,123 @@ local function restorePlayerMovement(dragged_by)
   end
 end
 
+---get player from name
+---@param player_name string
+---@return table|nil
+local function getPlayer(player_name)
+  local players = core.get_connected_players()
+  if #players > 0 then
+    for _, player in pairs(players) do
+      local p_name = player:get_player_name()
+      if p_name == player_name then
+        return player
+      end
+    end
+  end
+  return nil
+end
+
+local global_collected = {} -- keycode,visted_area etc..
+
+---@class collection
+---@field name string
+
+---@class player_collection
+---@field player_name string
+---@field collection collection{}
+
+---@type player_collection{}
+local players_collections
+
+---comment
+---@param player_name string
+---@return player_collection
+local function getPlayerCollection(player_name)
+  ---@type player_collection
+  local p_c
+
+  -- inti players_collections if needed
+  if players_collections == nil then
+    players_collections = {}
+  end
+
+  if #players_collections >= 1 then
+    for index, value in ipairs(players_collections) do
+      if value.player_name == player_name then
+        p_c = value
+      end
+    end
+  end
+  if p_c == nil then
+    p_c = { player_name = player_name, collection = {} }
+    table.insert(players_collections, p_c)
+  end
+  return p_c
+end
+
+---comment
+---@param player_name string
+---@param item_name table
+local function addToPlayerCollection(player_name, item_name)
+  local player_c = getPlayerCollection(player_name)
+  table.insert(player_c.collection, { name = item_name })
+  for key, value in ipairs(players_collections) do
+    if value.player_name == player_c.player_name then
+      value = player_c
+    end
+  end
+end
+
+---comment
+---@param player_name string
+---@param item_name string
+local function removeFromPlayerCollection(player_name, item_name)
+  -- ---@type collection
+  -- local new_collection = { name = item_name.name, id = 10 }
+
+  local player_c = getPlayerCollection(player_name)
+  for index, value in ipairs(player_c.collection) do
+    if value.name == item_name then
+      -- if value.id == collection.id then
+      table.remove(player_c.collection, index)
+      -- end
+    end
+  end
+  for key, value in ipairs(players_collections) do
+    if value.player_name == player_c.player_name then
+      value = player_c
+    end
+  end
+end
+
+---comment
+---@param player_name string
+---@param name_of_collection string
+local function playerHasCollection(player_name, name_of_collection)
+  ---@type collection
+  -- local new_collection = { name = name_of_collection.name, id = 10 }
+  -- local player_c = getPlayerCollection(player_name)
+  if players_collections == nil or #players_collections <= 0 then
+    return
+  end
+  ---@param player_c player_collection
+  for key, player_c in ipairs(players_collections) do
+    if player_c.player_name == player_name then
+      if player_c.collection == nil or #player_c.collection <= 0 then
+        return false
+      end
+      ---@param coll collection
+      for index, coll in ipairs(player_c.collection) do
+        if coll.name == name_of_collection then
+          -- core.log("pass?" .. coll.name)
+          return true
+        end
+      end
+    end
+  end
+  return false
+end
+
 ---comment
 ---@param name string
 ---@param model_type string "mesh"|"node"
@@ -57,6 +174,19 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     self.object:get_luaentity()._being_dragged = false
     local dragged_by = self.object:get_luaentity()._dragged_by
     restorePlayerMovement(dragged_by)
+
+    removeFromPlayerCollection(dragged_by, self.object:get_luaentity().name)
+
+    -- core.log("wait is this not running??")
+    -- local player = getPlayer(dragged_by)
+    -- if player ~= nil then
+    --   local object_name = self.object:get_luaentity().name
+    --   -- player:get_properties()._dragging = object_name
+    --   -- core.log("lua: "..dump(player:get_properties()))
+    --   core.log("player dragging: "..dump(player._dragging))
+    --   core.log("object name: "..object_name)
+    --   core.log("object: "..dump(self.object:get_luaentity().id))
+    -- end
     self.object:get_luaentity()._dragged_by = ""
     players_dragging[dragged_by] = false
   end
@@ -152,17 +282,24 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     on_rightclick = function(self, clicker)
       local player_name = clicker:get_player_name()
       local dragged_by = self.object:get_luaentity()._dragged_by
+
+      -- already holding, drop.
       if players_dragging[player_name] == true then
         drop(self)
         return
       end
+
+      -- prevent other player from interacting
       if player_name ~= dragged_by and dragged_by ~= "" then
         return
       end
+
+      -- not sure what this is doing??
       if clicker._dragging == true then
         -- do nothing
         return
       end
+
       local cur_value = self._being_dragged
       self.object:get_luaentity()._being_dragged = not cur_value
       self.object:get_luaentity()._dragged_by = clicker:get_player_name()
@@ -176,10 +313,13 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       else
         self.object:get_luaentity()._popup_msg = popup_text[2]
         players_dragging[player_name] = true
+
+        addToPlayerCollection(player_name, self.object:get_luaentity().name)
       end
+      -- core.log("collections" .. dump(players_collections))
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
-      if tg_main.dev_mode == false then
+      if tg_main.dev_mode == true then
         self.object:remove()
         puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
       end
@@ -230,7 +370,7 @@ function tg_interactions.register_interactable(name, model_type, model, texture,
     on_step = function(self, dtime, moveresult)
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
-      if tg_main.dev_mode == false then
+      if tg_main.dev_mode == true then
         self.object:remove()
       end
     end,
@@ -312,14 +452,14 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
     on_rightclick = function(self, clicker)
       core.chat_send_all("..this locker is empty")
       local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,              -- default
-        fade = 100.0,              -- default
-        pitch = 1.8,             -- 1.0, -- default
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
       else
-        core.log("after first interaction this will be removed in normal gameplay.")
+        -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
   })
@@ -329,14 +469,14 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
     on_rightclick = function(self, clicker)
       core.chat_send_all("hmm, a radiation suit. i should slip this on.")
       local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,              -- default
-        fade = 100.0,              -- default
-        pitch = 1.8,             -- 1.0, -- default
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
       else
-        core.log("after first interaction this will be removed in normal gameplay.")
+        -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
   })
@@ -346,14 +486,14 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
     on_rightclick = function(self, clicker)
       core.chat_send_all("this should come in handy.")
       local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,              -- default
-        fade = 100.0,              -- default
-        pitch = 1.8,             -- 1.0, -- default
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
       else
-        core.log("after first interaction this will be removed in normal gameplay.")
+        -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
   })
@@ -378,6 +518,68 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
   })
 -- tg_interactions.register_interactable("power_switch","none","","tg_nodes_misc.png^[sheet:16x16:0,6",shapes.slim_box,{"[ switch on power ]","[ switch off power ]"}, tg_power.power)
 
+tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.box,
+  {
+    _interactable = 1,
+    -- _popup_msg = "[ open door ]",
+    on_step = function(self, dtime, moveresult)
+      local item_name = mod_name .. ":draggable_power_core"
+      local cur_pos = self.object:get_pos()
+      local max_distance = 2
+      local near_by = core.get_objects_inside_radius(cur_pos, max_distance)
+      local has_core = false
+      for index, value in ipairs(near_by) do
+        if value:is_player() then
+          local player_name = value:get_player_name()
+          local has_power_source = playerHasCollection(player_name, mod_name .. ":draggable_power_core")
+          -- core.log("has source? " .. dump(has_power_source))
+          if has_power_source == true then
+            self.object:get_luaentity()._popup_msg = "[ insert power core ]"
+          else
+            self.object:get_luaentity()._popup_msg = "[ needs power core ]"
+          end
+        else
+          if value:get_luaentity().name == item_name then
+            has_core = true
+          end
+        end
+      end
+      if has_core == true then
+        tg_power.power_core(true)
+        self.object:get_luaentity()._popup_msg = "[ remove power core ]"
+        else
+        tg_power.power_core(false)
+      end
+    end,
+    on_rightclick = function(self, clicker)
+      local item_name = mod_name .. ":draggable_power_core"
+      local player_name = clicker:get_player_name()
+      local has_power_source = playerHasCollection(player_name, item_name)
+      if has_power_source == true then
+        removeFromPlayerCollection(player_name, item_name)
+        local cur_pos = self.object:get_pos()
+        local max_distance = 3
+        local entites = core.get_objects_inside_radius(cur_pos, max_distance)
+        local found_player = false
+        for index, value in ipairs(entites) do
+          if not value:is_player() then
+            if value:get_luaentity().name == item_name then
+              -- value:get_luaentity().drop()
+              value:move_to(cur_pos)
+              return
+            end
+          end
+        end
+      end
+    end,
+    --   core.chat_send_all("this should be opening")
+    --   local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+    --     gain = 1.0,              -- default
+    --     fade = 100.0,              -- default
+    --     pitch = 1.8,             -- 1.0, -- default
+    --   })
+    -- end,
+  })
 
 
 

@@ -9,7 +9,7 @@ tg_main.mg_name = core.get_mapgen_setting("mg_name") or "singlenode"
 -- This stops normal gameplay functions from running.
 tg_main.dev_mode = core.is_creative_enabled() -- or (tg_main.mg_name == "flat")
 -- Skip intro if on mapgen "flat".
-tg_main.skip_intro = false --(tg_main.mg_name == "flat")
+tg_main.skip_intro = false                    --(tg_main.mg_name == "flat")
 
 dofile(mod_path .. "/scripts" .. "/math.lua")
 dofile(mod_path .. "/scripts" .. "/debug.lua")
@@ -23,19 +23,51 @@ dofile(mod_path .. "/scripts" .. "/utils.lua")
 -- yes this is not the best way to go about it, but it is the quickest
 local all_objects = {
   {
-    name = "tg_interactions:locker_suit",
+    name = "tg_interactions:draggable_chair",
     pos = {
-      x = 4.0139999389648438,
+      x = -4.3116002082824707,
       y = 3,
-      z = -15.535000801086426,
+      z = -31.713199615478516,
     }
   },
   {
     name = "tg_interactions:locker_empty",
     pos = {
-      x = 7.0309996604919434,
+      x = -4.9889998435974121,
       y = 3,
-      z = -17.200000762939453,
+      z = -11.50100040435791,
+    }
+  },
+  {
+    name = "tg_interactions:draggable_chair",
+    pos = {
+      x = 1.6128000020980835,
+      y = 8,
+      z = -33.389301300048828,
+    }
+  },
+  {
+    name = "tg_interactions:draggable_chair",
+    pos = {
+      x = -2.2829999923706055,
+      y = 3,
+      z = -32.315200805664063,
+    }
+  },
+  {
+    name = "tg_interactions:draggable_chair",
+    pos = {
+      x = -1.3517999649047852,
+      y = 8,
+      z = -33.845699310302734,
+    }
+  },
+  {
+    name = "tg_interactions:tape",
+    pos = {
+      x = 1.9549999237060547,
+      y = 8.8280000686645508,
+      z = -31.96099853515625,
     }
   },
   {
@@ -49,17 +81,25 @@ local all_objects = {
   {
     name = "tg_interactions:locker_empty",
     pos = {
+      x = 1.0369000434875488,
+      y = 3,
+      z = -13.399999618530273,
+    }
+  },
+  {
+    name = "tg_interactions:locker_empty",
+    pos = {
       x = 2.9938998222351074,
       y = 3,
       z = -11.566999435424805,
     }
   },
   {
-    name = "tg_interactions:draggable_chair",
+    name = "tg_interactions:draggable_power_core",
     pos = {
-      x = 1.6128000020980835,
-      y = 8,
-      z = -33.389301300048828,
+      x = 8.6449995040893555,
+      y = 2,
+      z = -46.169898986816406,
     }
   },
   {
@@ -73,65 +113,17 @@ local all_objects = {
   {
     name = "tg_interactions:locker_empty",
     pos = {
-      x = 1.0369000434875488,
+      x = 7.0309996604919434,
       y = 3,
-      z = -13.399999618530273,
+      z = -17.200000762939453,
     }
   },
   {
-    name = "tg_interactions:locker_empty",
+    name = "tg_interactions:locker_suit",
     pos = {
-      x = -7.4379997253417969,
+      x = 4.0139999389648438,
       y = 3,
-      z = -14.085000991821289,
-    }
-  },
-  {
-    name = "tg_interactions:tape",
-    pos = {
-      x = 1.9549999237060547,
-      y = 8.8280000686645508,
-      z = -31.96099853515625,
-    }
-  },
-  {
-    name = "tg_interactions:draggable_chair",
-    pos = {
-      x = -4.3278999328613281,
-      y = 3,
-      z = -31.876699447631836,
-    }
-  },
-  {
-    name = "tg_interactions:draggable_chair",
-    pos = {
-      x = -1.3517999649047852,
-      y = 8,
-      z = -33.845699310302734,
-    }
-  },
-  {
-    name = "tg_interactions:draggable_chair",
-    pos = {
-      x = -2.6198999881744385,
-      y = 3,
-      z = -32.778499603271484,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = -4.9889998435974121,
-      y = 3,
-      z = -11.50100040435791,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = -7.4769997596740723,
-      y = 3,
-      z = -15.991999626159668,
+      z = -15.535000801086426,
     }
   },
   {
@@ -143,27 +135,51 @@ local all_objects = {
     }
   },
   {
-    name = "tg_interactions:draggable_pipes",
-    pos = {
-      x = -15.2,
-      y = 3,
-      z = -24.200799942016602,
-    }
-  },
-  {
-    name = "tg_interactions:power_switch",
-    pos = {
-      x = -12.55,
-      y = 3,
-      z = -43.017002105712891,
-    }
-  },
-  {
     name = "tg_interactions:random_note",
     pos = {
       x = -12.982000350952148,
-      y = 6.45,
+      y = 6.4499998092651367,
       z = -24.991001129150391,
+    }
+  },
+  {
+    name = "tg_interactions:power_gen",
+    pos = {
+      x = -15.069000244140625,
+      y = 3.2528998851776123,
+      z = -45.200000762939453,
+    }
+  },
+  {
+    name = "tg_interactions:locker_empty",
+    pos = {
+      x = -7.4379997253417969,
+      y = 3,
+      z = -14.085000991821289,
+    }
+  },
+  {
+    name = "tg_interactions:draggable_chair",
+    pos = {
+      x = -17.130901336669922,
+      y = 2,
+      z = -24.030200958251953,
+    }
+  },
+  {
+    name = "tg_interactions:locker_empty",
+    pos = {
+      x = -7.4769997596740723,
+      y = 3,
+      z = -15.991999626159668,
+    }
+  },
+  {
+    name = "tg_interactions:draggable_chair",
+    pos = {
+      x = -7.9124999046325684,
+      y = 2,
+      z = -36.799900054931641,
     }
   },
   {
@@ -175,17 +191,9 @@ local all_objects = {
     }
   },
   {
-    name = "tg_interactions:draggable_power_core",
-    pos = {
-      x = -15.004300117492676,
-      y = 2,
-      z = -43.112098693847656,
-    }
-  },
-  {
     name = "tg_interactions:draggable_chair",
     pos = {
-      x = -8.6951999664306641,
+      x = -8.6950998306274414,
       y = 2,
       z = -35.984298706054688,
     }
@@ -199,19 +207,19 @@ local all_objects = {
     }
   },
   {
-    name = "tg_interactions:draggable_chair",
+    name = "tg_interactions:draggable_pipes",
     pos = {
-      x = -17.130901336669922,
-      y = 2,
-      z = -24.030200958251953,
+      x = -15.199999809265137,
+      y = 3,
+      z = -24.200799942016602,
     }
   },
   {
-    name = "tg_interactions:draggable_chair",
+    name = "tg_interactions:power_switch",
     pos = {
-      x = -7.9124999046325684,
-      y = 2,
-      z = -36.799900054931641,
+      x = -12.550000190734863,
+      y = 3,
+      z = -43.017002105712891,
     }
   },
 }
@@ -224,20 +232,6 @@ core.register_on_newplayer(function(player)
       core.add_entity(value.pos, value.name)
     end
 
-    --log the entities
-    -- local entites = core.get_objects_inside_radius(player:get_pos(), 200)
-    -- local jsoned = {}
-    -- for index, value in ipairs(entites) do
-    -- 	if not value:is_player() then
-    -- 		-- debug("we have found a player")
-    -- 		-- local player_name = value:get_player_name()
-    -- 		local obj_name = value.name
-    -- 		local pos = value:get_pos()
-    -- 		local json = { object = dump(value), pos = dump(pos) }
-    -- 		table.insert(jsoned, json)
-    -- 		core.log(string.format("[ %s ] pos:%s", dump(value), dump(pos)))
-    -- 	end
-    -- end
     -- local file, err = io.open("all_objects.json", "w")
     -- if err then return 0 end
     -- if file ~= nil then
@@ -258,11 +252,44 @@ core.register_chatcommand("resetobjects", {
     -- local what = core.registered_chatcommands["clearobjects"].func()
     -- core.log("so we got: "..dump(what))
     -- core.log(dump(core.registered_chatcommands["kick"]))
-    core.clear_objects({mode = "full"})
+    core.clear_objects({ mode = "full" })
     for index, value in ipairs(all_objects) do
-    	core.add_entity(value.pos, value.name)
+      core.add_entity(value.pos, value.name)
     end
     core.log("objects have been reset")
+  end,
+})
+
+core.register_chatcommand("logobjects", {
+  params = "logobjetcs <privilege>",
+  description = "reset's all objects",
+  privs = { privs = true }, -- Require the "privs" privilege to run
+  func = function(name, param)
+    local players = core.get_connected_players()
+    local player
+
+    if #players > 0 then
+      for _, f_player in ipairs(players) do
+        if f_player:get_player_name() == name then
+          player = f_player
+        end
+      end
+    end
+
+    --log the entities
+    local entites = core.get_objects_inside_radius(player:get_pos(), 200)
+    local jsoned = {}
+    for index, value in ipairs(entites) do
+      if not value:is_player() then
+        -- debug("we have found a player")
+        -- local player_name = value:get_player_name()
+        local obj_name = value.name
+        local pos = value:get_pos()
+        local json = { object = dump(value), pos = dump(pos) }
+        table.insert(jsoned, json)
+        core.log(string.format("[ %s ] pos:%s", dump(value), dump(pos)))
+      end
+    end
   end,
 })
 
