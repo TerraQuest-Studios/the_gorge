@@ -145,7 +145,7 @@ local all_objects = {
   {
     name = "tg_interactions:draggable_pipes",
     pos = {
-      x = -14.369298934936523,
+      x = -15.2,
       y = 3,
       z = -24.200799942016602,
     }
@@ -257,11 +257,12 @@ core.register_chatcommand("resetobjects", {
     -- core.registered_chatcommands["clearobjects"].func("full")
     -- local what = core.registered_chatcommands["clearobjects"].func()
     -- core.log("so we got: "..dump(what))
-    core.log(dump(core.registered_chatcommands["kick"]))
-    -- for index, value in ipairs(all_objects) do
-    -- 	core.add_entity(value.pos, value.name)
-    -- end
-    core.log("not working currently")
+    -- core.log(dump(core.registered_chatcommands["kick"]))
+    core.clear_objects({mode = "full"})
+    for index, value in ipairs(all_objects) do
+    	core.add_entity(value.pos, value.name)
+    end
+    core.log("objects have been reset")
   end,
 })
 
@@ -272,14 +273,5 @@ core.register_chatcommand("basepower", {
   privs = { privs = true }, -- Require the "privs" privilege to run
   func = function(name, param)
     tg_power.togglePower()
-    -- core.registered_chatcommands["clearobjects"].func()
-    -- core.registered_chatcommands["clearobjects"].func("full")
-    -- local what = core.registered_chatcommands["clearobjects"].func()
-    -- core.log("so we got: "..dump(what))
-    -- core.log(dump(core.registered_chatcommands["kick"]))
-    -- for index, value in ipairs(all_objects) do
-    -- 	core.add_entity(value.pos, value.name)
-    -- end
-    -- core.log("not working currently")
   end,
 })
