@@ -175,7 +175,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       end
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
-      if tg_main.dev_mode == true then
+      if tg_main.dev_mode == false then
         self.object:remove()
         puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
       end
@@ -226,7 +226,7 @@ function tg_interactions.register_interactable(name, model_type, model, texture,
     on_step = function(self, dtime, moveresult)
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
-      if tg_main.dev_mode == true then
+      if tg_main.dev_mode == false then
         self.object:remove()
       end
     end,

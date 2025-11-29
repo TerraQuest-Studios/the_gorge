@@ -7,9 +7,9 @@ tg_main = {}
 tg_main.mg_name = core.get_mapgen_setting("mg_name") or "singlenode"
 -- Enter dev mode if mapgen "flat" or creative setting is `true`.
 -- This stops normal gameplay functions from running.
-tg_main.dev_mode = true   -- (tg_main.mg_name == "flat") or core.is_creative_enabled()
+tg_main.dev_mode = core.is_creative_enabled() -- or (tg_main.mg_name == "flat")
 -- Skip intro if on mapgen "flat".
-tg_main.skip_intro = true --(tg_main.mg_name == "flat")
+tg_main.skip_intro = false --(tg_main.mg_name == "flat")
 
 dofile(mod_path .. "/scripts" .. "/math.lua")
 dofile(mod_path .. "/scripts" .. "/debug.lua")
@@ -262,5 +262,24 @@ core.register_chatcommand("resetobjects", {
     -- 	core.add_entity(value.pos, value.name)
     -- end
     core.log("not working currently")
+  end,
+})
+
+-- core.register_chatcommand(mod_name .. ":" .. "resetobjects", {
+core.register_chatcommand("basepower", {
+  params = "resetobjects <privilege>",
+  description = "reset's all objects",
+  privs = { privs = true }, -- Require the "privs" privilege to run
+  func = function(name, param)
+    tg_power.togglePower()
+    -- core.registered_chatcommands["clearobjects"].func()
+    -- core.registered_chatcommands["clearobjects"].func("full")
+    -- local what = core.registered_chatcommands["clearobjects"].func()
+    -- core.log("so we got: "..dump(what))
+    -- core.log(dump(core.registered_chatcommands["kick"]))
+    -- for index, value in ipairs(all_objects) do
+    -- 	core.add_entity(value.pos, value.name)
+    -- end
+    -- core.log("not working currently")
   end,
 })

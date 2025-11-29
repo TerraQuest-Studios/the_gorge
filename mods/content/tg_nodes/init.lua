@@ -232,6 +232,60 @@ local function createWallLight(name, des, shape, light_level)
 	})
 end
 
+--- same as createNodes but for lights
+---@param name string
+---@param des string
+---@param shape shape|nil
+local function createWallLight2(name, des, shape, light_level)
+	local node_groups = { full_solid = 1, solid = 1, }
+	--- easy breaking when in dev_mode
+	if tg_main.dev_mode == true then
+		node_groups["dig_immediate"] = 3
+	end
+	core.register_node("tg_nodes:" .. name, {
+		description = S(des),
+		groups = node_groups,
+		tiles = {
+			{
+				name = "tg_nodes_" .. name .. ".png"
+			},
+		},
+		drawtype = "signlike",
+		paramtype = "light",
+		paramtype2 = "wallmounted",
+		light_source = light_level,
+		walkable = false,
+		sunlight_propagates = true,
+		selection_box = {
+			type = "fixed",
+			fixed = shape or shapes.box
+		},
+		on_construct = function(pos)
+			-- core.get_node_timer(pos):start(1.0)
+		end,
+		-- on_timer = function(pos, elapsed, node, timeout)
+		-- 	local power = tg_power.getPower()
+		-- 	if power == false then
+		-- 		-- core.log("light should be off")
+		-- 		if not string.find(node.name, "off") then
+		-- 			-- local meta = core.get_meta(pos)
+		-- 			local updated_node = node
+		-- 			-- updated_node.light_source = 1
+		-- 			-- core.set_node(pos, updated_node)
+		-- 			core.swap_node(pos, { name = "tg_nodes:led_off", param2 = node.param2})
+		-- 		end
+		-- 	else
+		-- 		if string.find(node.name, "off") then
+		-- 		-- core.log("light should be on")
+		-- 		core.swap_node(pos, { name = "tg_nodes:led_on", param2 = node.param2 })
+		-- 		end
+		-- 	end
+		-- 	-- core.log("is the power on? " .. dump(power))
+		-- 	core.get_node_timer(pos):start(1.0)
+		-- end,
+	})
+end
+
 core.register_node("tg_nodes:fog", {
 	description = S("Fog, hard to look past."),
 	groups = { full_solid = 1, solid = 1, },
@@ -514,6 +568,7 @@ createPlant("shrub", "Shrub, it' dry.", shapes.slim_box, "plants.png^[sheet:8x8:
 
 createWallLight("led_on", "led, blinding.", shapes.panel, 10)
 createWallLight("led_off", "led, blinding.", shapes.panel, 0)
+createWallLight2("led_on_red", "led, blinding.", shapes.panel, 7)
 
 tg_nodes.defNode("steel_enclosure", { name = sounds.concrete, gain = 0.3, })
 tg_nodes.defNode("concrete_tiled", { name = sounds.concrete, gain = 0.3, })
