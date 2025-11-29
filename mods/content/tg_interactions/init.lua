@@ -151,8 +151,12 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     end,
     on_rightclick = function(self, clicker)
       local player_name = clicker:get_player_name()
+      local dragged_by = self.object:get_luaentity()._dragged_by
       if players_dragging[player_name] == true then
         drop(self)
+        return
+      end
+      if player_name ~= dragged_by and dragged_by ~= "" then
         return
       end
       if clicker._dragging == true then
