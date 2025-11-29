@@ -549,6 +549,7 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
         self.object:get_luaentity()._popup_msg = "[ remove power core ]"
         else
         tg_power.power_core(false)
+        self.object:get_luaentity()._popup_msg = "[ needs power core ]"
       end
     end,
     on_rightclick = function(self, clicker)
