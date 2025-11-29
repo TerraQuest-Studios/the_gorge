@@ -10,7 +10,7 @@ tg_interactions = {}
 
 local reach = 3.5 -- things within will show interacable/ popup on hover
 
-local gravity = -9.8 / 4
+local gravity = -0.9
 
 local function debug(msg)
   core.log("[entity]: " .. msg)
@@ -30,6 +30,12 @@ local players_dragging = {}
 --     end
 --   end
 -- end
+
+-- v is {x,y,z}, damping in range (0,1): higher -> stops faster
+local function apply_damping(v, damping, dt)
+  local f = math.max(0, 1 - damping * dt) -- damping is e.g. 2.0 (per second)
+  return { x = v.x * f, y = v.y * f, z = v.z * f }
+end
 
 local function restorePlayerMovement(dragged_by)
   local players = core.get_connected_players()
@@ -202,21 +208,78 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     _prev_sound = nil,
     _sound_tick = 0,
     _interactable = 1,
-
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       velocity = self.object:get_velocity()
+
+      -- usage in on_step
+      self.object:set_velocity(apply_damping(velocity, 3.0, dtime))
+
+      -- self.object:set_velocity(vector.subtract(velocity,gravity))
       -- debug("I do be stepping")
+
+
+      -- play sound while being dragged
+      local tick = self.object:get_luaentity()._sound_tick
+      tick = tick + 1
+      self.object:get_luaentity()._sound_tick = tick
+      if tick >= 35 then
+        self.object:get_luaentity()._sound_tick = 0
+
+        local vel = self.object:get_velocity()
+        if vel.x ~= 0 and vel.z ~= 0 then
+          -- self.object:move_to(vector.new(player_pos.x,cur_pos.y,player_pos.z), true)
+          -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
+          -- self.object:add_velocity(vector.subtract(vector.new(mid_point.x, cur_pos.y, mid_point.z), cur_pos))
+
+          local cur_sound = self.object:get_luaentity()._prev_sound
+          if cur_sound ~= nil then
+            -- core.sound_stop(cur_sound)
+            core.sound_fade(cur_sound, 120, 0)
+          end
+          local pitch = 1
+          if weight >= 3 then
+            pitch = 0.8
+          elseif weight <= 2 then
+            pitch = 1.4
+          end
+          local playing_sound = core.sound_play({ name = "tg_interactions_drag" }, {
+            gain = 1.0,    -- default
+            fade = 0.0,    -- default
+            pitch = pitch, -- 1.0, -- default
+          })
+          self.object:get_luaentity()._prev_sound = playing_sound
+        end
+      end
+
+      local cur_pos = self.object:get_pos()
       if self.object:get_luaentity()._being_dragged == false then
         self.object:get_luaentity()._popup_msg = popup_text[1]
-        -- debug("no drag on me")
+        -- self.object:set_velocity(vector.new(0, gravity, 0)) -- come to a complete stop when player lets go
+
+        -- --push way
+        -- local entites = core.get_objects_inside_radius(cur_pos, 0.9)
+        -- local pushed = false
+        -- for index, value in ipairs(entites) do
+        --   local entity_pos = value:get_pos()
+        --   if cur_pos ~= entity_pos then
+        --     local dirX = entity_pos.x - cur_pos.x
+        --     local dirY = entity_pos.y - cur_pos.y
+        --     -- Calculate angle in radians
+        --     local angle = math.atan2(dirY, dirX)
+        --     self.object:set_yaw(angle)
+        --     self.object:set_velocity(vector.subtract(cur_pos, vector.new(entity_pos.x, cur_pos.y, entity_pos.z)))
+        --     pushed = true
+        --   end
+        -- end
+        -- if pushed == false then
+        -- end
       else
         -- if _being_dragged get all objects within radius, if player
         -- and player name is equal to dragger.. get closer
         -- if no players are around then no drag.
         -- debug("i am getting dragged")
-        local cur_pos = self.object:get_pos()
         local max_distance = 2
         local entites = core.get_objects_inside_radius(cur_pos, max_distance)
         local found_player = false
@@ -235,38 +298,14 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
                 local dirY = player_pos.y - cur_pos.y
                 -- Calculate angle in radians
                 local angle = math.atan2(dirY, dirX)
+                self.object:set_yaw(angle)
 
                 local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
                 local obj_speed = self.object:get_luaentity()._speed
                 -- local speed = (self.object:get_luaentity()._speed * player_distance) * dtime
                 local speed = math.min(obj_speed * dtime, 1)
-                self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
-                self.object:set_yaw(angle)
-
-                -- play sound while being dragged
-                local tick = self.object:get_luaentity()._sound_tick
-                tick = tick + 1
-                self.object:get_luaentity()._sound_tick = tick
-                if tick >= 15 then
-                  self.object:get_luaentity()._sound_tick = 0
-                  local cur_sound = self.object:get_luaentity()._prev_sound
-                  if cur_sound ~= nil then
-                    -- core.sound_stop(cur_sound)
-                    core.sound_fade(cur_sound, 120, 0)
-                  end
-                  local pitch = 1
-                  if weight >= 3 then
-                    pitch = 0.8
-                  elseif weight <= 2 then
-                    pitch = 1.4
-                  end
-                  local playing_sound = core.sound_play({ name = "tg_interactions_drag" }, {
-                    gain = 1.0,    -- default
-                    fade = 0.0,    -- default
-                    pitch = pitch, -- 1.0, -- default
-                  })
-                  self.object:get_luaentity()._prev_sound = playing_sound
-                end
+                -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
+                self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
               end
             else
             end
@@ -319,9 +358,23 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       -- core.log("collections" .. dump(players_collections))
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
-      if tg_main.dev_mode == true then
-        self.object:remove()
-        puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
+      local player_pos = puncher:get_pos()
+      local cur_pos = self.object:get_pos()
+      if puncher:get_player_control().sneak == true then
+        if tg_main.dev_mode == true then
+          self.object:remove()
+          puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
+        end
+      else
+        -- self.object:set_velocity(vector.add(cur_pos, vector.new(player_pos.x, cur_pos.y+0.5, player_pos.z)))
+        local dirX = player_pos.x - cur_pos.x
+        local dirY = player_pos.y - cur_pos.y
+        -- Calculate angle in radians
+        local angle = math.atan2(dirY, dirX)
+        self.object:set_yaw(angle)
+        local speed = 3/ (1+weight)
+        local vel = vector.multiply(vector.add(dir,vector.new(0,cur_pos.y+0.1,0)),speed)
+        self.object:set_velocity(vel)
       end
     end,
   }
@@ -338,6 +391,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       -- collide_with_objects = true,
       collisionbox = shape,
       selectionbox = shape,
+      stepheight = 0.6, -- this is not working
     }
   elseif model_type == "node" then
     def.initial_properties = {
@@ -349,7 +403,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       -- collide_with_objects = true,
       collisionbox = shape,
       selectionbox = shape,
-      stepheight = 1.05, -- this is not working
+      stepheight = 0.6, -- this is not working
     }
   end
   core.register_entity(mod_name .. ":draggable_" .. name, def)
@@ -370,8 +424,10 @@ function tg_interactions.register_interactable(name, model_type, model, texture,
     on_step = function(self, dtime, moveresult)
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
-      if tg_main.dev_mode == true then
-        self.object:remove()
+      if puncher:get_player_control().sneak == true then
+        if tg_main.dev_mode == true then
+          self.object:remove()
+        end
       end
     end,
   }
@@ -547,7 +603,7 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
       if has_core == true then
         tg_power.power_core(true)
         self.object:get_luaentity()._popup_msg = "[ remove power core ]"
-        else
+      else
         tg_power.power_core(false)
         self.object:get_luaentity()._popup_msg = "[ needs power core ]"
       end
