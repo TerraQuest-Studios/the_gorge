@@ -11,6 +11,9 @@ tg_main.dev_mode = core.is_creative_enabled() -- or (tg_main.mg_name == "flat")
 -- Skip intro if on mapgen "flat".
 tg_main.skip_intro = false                    --(tg_main.mg_name == "flat")
 
+-- the player's defualt reach
+tg_main.reach = 3
+
 dofile(mod_path .. "/scripts" .. "/math.lua")
 dofile(mod_path .. "/scripts" .. "/debug.lua")
 dofile(mod_path .. "/scripts" .. "/utils.lua")

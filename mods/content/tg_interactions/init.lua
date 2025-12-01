@@ -601,10 +601,10 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
         end
       end
       if has_core == true then
-        tg_power.power_core(true)
+        tg_power.setPowerCore(true)
         self.object:get_luaentity()._popup_msg = "[ remove power core ]"
       else
-        tg_power.power_core(false)
+        tg_power.setPowerCore(false)
         self.object:get_luaentity()._popup_msg = "[ needs power core ]"
       end
     end,
