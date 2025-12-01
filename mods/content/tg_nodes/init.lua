@@ -3,6 +3,13 @@ local S = core.get_translator(mod_name)
 
 tg_nodes = {}
 
+local defualt_groups =  {full_solid = 1, solid = 1,}
+
+--- easy breaking when in dev_mode, else no breaking
+if tg_main.dev_mode == true then
+	defualt_groups["dig_immediate"] = 3
+end
+
 -- define the sound/sound_group here
 local sounds = {
 	gravel = "tg_gravel_footstep",
@@ -56,11 +63,6 @@ tg_nodes["shapes"] = shapes
 ---@param shape shape|nil
 ---@param texture string|nil : leave nil. the base node texture (name of a base node)
 local function createNode(name, des, sound_spec, shape, texture)
-	local node_groups = { full_solid = 1, solid = 1, }
-	--- easy breaking when in dev_mode
-	if tg_main.dev_mode == true then
-		node_groups["dig_immediate"] = 3
-	end
 	local this_texture = "tg_nodes_" .. name .. ".png"
 	if texture then
 		this_texture = "tg_nodes_" .. texture .. ".png"
@@ -73,7 +75,7 @@ local function createNode(name, des, sound_spec, shape, texture)
 	end
 	core.register_node("tg_nodes:" .. name, {
 		description = S(des),
-		groups = node_groups,
+		groups = defualt_groups,
 		tiles = {
 			{
 				name = this_texture,
@@ -100,28 +102,24 @@ end
 ---@param shape shape
 ---@param texture table : leave nil. the base node texture (name of a base node)
 local function createMisc(name, des, sound_spec, shape, texture)
-	local node_groups = { full_solid = 1, solid = 1, }
-	--- easy breaking when in dev_mode
-	local node_box = {
-		type = "fixed",
-		fixed = shape or shapes.box
-	}
 	local selectable = nil
-	if tg_main.dev_mode == true then
-		node_groups["dig_immediate"] = 3
-	else
+	if tg_main.dev_mode == false then
 		selectable = {
 			type = "fixed",
 			fixed = { 0, 0, 0, 0, 0, 0 }
 		}
 	end
+	local node_box = {
+		type = "fixed",
+		fixed = shape or shapes.box
+	}
 	local is_walkable = true
 	if shape == shapes.panel or shape == shapes.sheet then
 		is_walkable = false
 	end
 	core.register_node("tg_nodes:" .. name, {
 		description = S(des),
-		groups = node_groups,
+		groups = defualt_groups,
 		tiles = texture,
 		sounds = {
 			footstep = sound_spec,
@@ -142,11 +140,6 @@ end
 ---@param des string
 ---@param shape shape|nil
 local function createPlant(name, des, shape, texture)
-	local node_groups = { full_solid = 1, solid = 1, }
-	--- easy breaking when in dev_mode
-	if tg_main.dev_mode == true then
-		node_groups["dig_immediate"] = 3
-	end
 	local this_texture = "tg_nodes_" .. name .. ".png"
 	if texture then
 		this_texture = "tg_nodes_" .. texture
@@ -157,7 +150,7 @@ local function createPlant(name, des, shape, texture)
 	end
 	core.register_node("tg_nodes:" .. name, {
 		description = S(des),
-		groups = node_groups,
+		groups = defualt_groups,
 		tiles = {
 			{
 				name = this_texture
@@ -183,14 +176,9 @@ end
 ---@param des string
 ---@param shape shape|nil
 local function createWallLight(name, des, shape, light_level)
-	local node_groups = { full_solid = 1, solid = 1, }
-	--- easy breaking when in dev_mode
-	if tg_main.dev_mode == true then
-		node_groups["dig_immediate"] = 3
-	end
 	core.register_node("tg_nodes:" .. name, {
 		description = S(des),
-		groups = node_groups,
+		groups = defualt_groups,
 		tiles = {
 			{
 				name = "tg_nodes_" .. name .. ".png"
@@ -237,14 +225,9 @@ end
 ---@param des string
 ---@param shape shape|nil
 local function createWallLight2(name, des, shape, light_level)
-	local node_groups = { full_solid = 1, solid = 1, }
-	--- easy breaking when in dev_mode
-	if tg_main.dev_mode == true then
-		node_groups["dig_immediate"] = 3
-	end
 	core.register_node("tg_nodes:" .. name, {
 		description = S(des),
-		groups = node_groups,
+		groups = defualt_groups,
 		tiles = {
 			{
 				name = "tg_nodes_" .. name .. ".png"
@@ -288,7 +271,7 @@ end
 
 core.register_node("tg_nodes:fog", {
 	description = S("Fog, hard to look past."),
-	groups = { full_solid = 1, solid = 1, },
+	groups = defualt_groups,
 	tiles = {
 		{
 			name = "tg_nodes_fog.png^[opacity:90",
@@ -308,7 +291,7 @@ core.register_node("tg_nodes:fog", {
 
 core.register_node("tg_nodes:fern", {
 	description = S("fern, very lushes"),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	waving = 0, -- there is no wind down here
 	paramtype = "light",
 	drawtype = "mesh",
@@ -327,7 +310,7 @@ core.register_node("tg_nodes:fern", {
 
 core.register_node("tg_nodes:king_trumpet", {
 	description = S("king_trumpet, very lushes"),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	waving = 0, -- there is no wind down here
 	paramtype = "light",
 	drawtype = "mesh",
@@ -346,7 +329,7 @@ core.register_node("tg_nodes:king_trumpet", {
 
 core.register_node("tg_nodes:beam", {
 	description = S("beam, cold to the touch."),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	waving = 0, -- there is no wind down here
 	paramtype = "light",
 	drawtype = "mesh",
@@ -369,7 +352,7 @@ core.register_node("tg_nodes:beam", {
 
 core.register_node("tg_nodes:cables", {
 	description = S("cables, I don't don't trust these."),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	paramtype = "light",
 	drawtype = "mesh",
 	mesh = "cables.glb",
@@ -392,7 +375,7 @@ core.register_node("tg_nodes:cables", {
 
 core.register_node("tg_nodes:tubes", {
 	description = S("tubes, for transfering liquids."),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	paramtype = "light",
 	drawtype = "mesh",
 	mesh = "tubes.glb",
@@ -413,7 +396,7 @@ core.register_node("tg_nodes:tubes", {
 })
 core.register_node("tg_nodes:tubes_left", {
 	description = S("tubes_left, for transfering liquids."),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	paramtype = "light",
 	drawtype = "mesh",
 	mesh = "tubes_left.glb",
@@ -434,7 +417,7 @@ core.register_node("tg_nodes:tubes_left", {
 })
 core.register_node("tg_nodes:tubes_right", {
 	description = S("tubes_right, for transfering liquids."),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	paramtype = "light",
 	drawtype = "mesh",
 	mesh = "tubes_right.glb",
@@ -455,7 +438,7 @@ core.register_node("tg_nodes:tubes_right", {
 })
 core.register_node("tg_nodes:tubes_down", {
 	description = S("tubes_down, for transfering liquids."),
-	groups = { dig_immediate = 3 },
+	groups = defualt_groups,
 	paramtype = "light",
 	drawtype = "mesh",
 	mesh = "tubes_down.glb",
@@ -476,11 +459,6 @@ core.register_node("tg_nodes:tubes_down", {
 })
 
 function tg_nodes.defNode(name, sound_spec)
-	local node_groups = { full_solid = 1, solid = 1, }
-	--- easy breaking when in dev_mode
-	if tg_main.dev_mode == true then
-		node_groups["dig_immediate"] = 3
-	end
 	local nodes_to_register = { name, name .. "_stairs", name .. "_slab", name .. "_panel", name .. "_rails" }
 	for index, value in ipairs(nodes_to_register) do
 		local param1 = "none"
@@ -510,7 +488,7 @@ function tg_nodes.defNode(name, sound_spec)
 		}
 		core.register_node("tg_nodes:" .. value, {
 			description = S(value),
-			groups = node_groups,
+			groups = defualt_groups,
 			tiles = {
 				{
 					name = "tg_nodes_" .. name .. ".png",
@@ -566,7 +544,7 @@ createPlant("fungus", "Fungus, a King trumpet.", shapes.tiny_box, "plants.png^[s
 createPlant("fungus_small", "Fungus, a King trumpet.", shapes.tiny_box, "plants.png^[sheet:16x16:9,1")
 createPlant("shrub", "Shrub, it' dry.", shapes.slim_box, "plants.png^[sheet:8x8:0,0")
 
-createWallLight("led_on", "led, blinding.", shapes.panel, 10)
+createWallLight("led_on", "led, blinding.", shapes.panel, 13)
 createWallLight("led_off", "led, blinding.", shapes.panel, 0)
 createWallLight2("led_on_red", "led, blinding.", shapes.panel, 7)
 
