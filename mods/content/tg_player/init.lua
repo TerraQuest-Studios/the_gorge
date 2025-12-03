@@ -22,17 +22,18 @@ function tg_player.pi(player)
 end
 
 core.register_on_joinplayer(function(player, last_login)
-	if tg_player.dev_mode then
-		player:set_sky({
-			base_color = "#777",
-			type = "plain",
-			clouds = false,
-		})
-	else
-		player:set_camera({
-			mode = "first",
-		})
-	end
+	player:set_sky({
+		base_color = "#777",
+		-- base_color = "#681c0e",
+		type = "plain",
+		clouds = false,
+	})
+	player:set_camera({
+		mode = "first",
+	})
+	-- if tg_main.dev_mode == true then
+	-- else
+	-- end
 	local props = player:get_properties()
 	props.textures = { "player.png" }
 	player:set_properties(props)
