@@ -340,6 +340,10 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         return
       end
 
+      local obj_pos = self.object:get_pos()
+      local player_pos = clicker:get_pos()
+      clicker:move_to(vector.new(obj_pos.x,player_pos.y,obj_pos.z),{continuous=true})
+
       local cur_value = self._being_dragged
       self.object:get_luaentity()._being_dragged = not cur_value
       self.object:get_luaentity()._dragged_by = clicker:get_player_name()
