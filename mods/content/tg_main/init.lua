@@ -3,6 +3,10 @@ local mod_path = core.get_modpath(mod_name)
 
 tg_main = {}
 
+dofile(mod_path .. "/scripts" .. "/math.lua")
+dofile(mod_path .. "/scripts" .. "/debug.lua")
+dofile(mod_path .. "/scripts" .. "/utils.lua")
+
 -- Either "flat" or "singlenode".
 tg_main.mg_name = core.get_mapgen_setting("mg_name") or "singlenode"
 -- Enter dev mode if mapgen "flat" or creative setting is `true`.
@@ -12,11 +16,17 @@ tg_main.dev_mode = core.is_creative_enabled() -- or (tg_main.mg_name == "flat")
 tg_main.skip_intro = false                    --(tg_main.mg_name == "flat")
 
 -- the player's defualt reach
-tg_main.reach = 3
+tg_main.reach = 1.5
 
-dofile(mod_path .. "/scripts" .. "/math.lua")
-dofile(mod_path .. "/scripts" .. "/debug.lua")
-dofile(mod_path .. "/scripts" .. "/utils.lua")
+-- extend the reach
+if core.is_creative_enabled() == true then
+  tg_main.reach = 3
+end
+
+core.override_item("", {
+  range = tg_main.reach,
+})
+
 
 ------
 -- all the objects that should be in world
