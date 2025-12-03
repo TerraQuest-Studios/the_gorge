@@ -20,11 +20,14 @@ tg_main.reach = 1.5
 
 -- extend the reach
 if core.is_creative_enabled() == true then
-  tg_main.reach = 3
+  tg_main.reach = 5.0
 end
 
 core.override_item("", {
   range = tg_main.reach,
+  wield_image = "player.png^[sheet:16x13:4,8",
+  wield_scale = {x = 0.5, y = 0.5, z = 0.5},
+  -- color = "#fcdca4",
 })
 
 
