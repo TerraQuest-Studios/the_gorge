@@ -8,7 +8,8 @@ tg_interactions = {}
 -- NOTE: for something to get the "interactable" popup
 -- it have "_interactable = 1"
 
-local reach = 3.5 -- things within will show interacable/ popup on hover
+-- local reach = 3.5 -- things within will show interacable/ popup on hover
+tg_interactions.popup_radius = 3.5
 
 local gravity = -0.9
 
@@ -702,7 +703,7 @@ core.register_globalstep(function(dtime)
       local player_look_dir = player:get_look_dir()
       local pos = player:get_pos():add(player_look_dir)
       local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
-      local new_pos = player:get_look_dir():multiply(reach):add(player_pos)
+      local new_pos = player:get_look_dir():multiply(tg_main.reach-1):add(player_pos)
       local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
       -- core.log("so what is this: " .. dump(raycast_result))
@@ -721,7 +722,7 @@ core.register_globalstep(function(dtime)
       end
       players_hud.huds = {}
       --- in radius --
-      local within_radius = core.get_objects_inside_radius(player_pos, reach)
+      local within_radius = core.get_objects_inside_radius(player_pos, tg_interactions.popup_radius)
       local interacble_indicator = {
         -- type = "waypoint",
         -- name = "o",
