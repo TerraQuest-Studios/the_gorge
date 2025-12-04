@@ -342,7 +342,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
 
       local obj_pos = self.object:get_pos()
       local player_pos = clicker:get_pos()
-      clicker:move_to(vector.new(obj_pos.x,player_pos.y,obj_pos.z),{continuous=true})
+      clicker:move_to(vector.new(obj_pos.x, player_pos.y, obj_pos.z), { continuous = true })
 
       local cur_value = self._being_dragged
       self.object:get_luaentity()._being_dragged = not cur_value
@@ -377,8 +377,8 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         -- Calculate angle in radians
         local angle = math.atan2(dirY, dirX)
         self.object:set_yaw(angle)
-        local speed = 3/ (1+weight)
-        local vel = vector.multiply(vector.add(dir,vector.new(0,cur_pos.y+0.1,0)),speed)
+        local speed = 3 / (1 + weight)
+        local vel = vector.multiply(vector.add(dir, vector.new(0, cur_pos.y + 0.1, 0)), speed)
         self.object:set_velocity(vel)
       end
     end,
@@ -707,7 +707,7 @@ core.register_globalstep(function(dtime)
       local player_look_dir = player:get_look_dir()
       local pos = player:get_pos():add(player_look_dir)
       local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
-      local new_pos = player:get_look_dir():multiply(tg_main.reach-1):add(player_pos)
+      local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
       local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
       -- core.log("so what is this: " .. dump(raycast_result))
@@ -743,12 +743,14 @@ core.register_globalstep(function(dtime)
       for index, value in ipairs(within_radius) do
         -- TODO(): check if "interactable"
         if not value:is_player() then
-          if value:get_luaentity()._interactable == 1 then
-            local obj_pos = value:get_pos()
-            interacble_indicator["world_pos"] = obj_pos
-            local indicator = player:hud_add(interacble_indicator)
-            table.insert(players_hud.huds, indicator)
-            -- core.log("where am i? " .. dump())
+          if value:get_luaentity() ~= nil then
+            if value:get_luaentity()._interactable == 1 then
+              local obj_pos = value:get_pos()
+              interacble_indicator["world_pos"] = obj_pos
+              local indicator = player:hud_add(interacble_indicator)
+              table.insert(players_hud.huds, indicator)
+              -- core.log("where am i? " .. dump())
+            end
           end
         end
       end
@@ -776,5 +778,73 @@ core.register_globalstep(function(dtime)
         -- player:hud_remove(popup_msg)
       end
     end
+  end
+end)
+
+
+local all_objects = core.registered_entities
+
+core.register_tool(mod_name .. ":" .. "spawner", {
+  description = "spawn tg related stuff",
+  inventory_image = "tg_interactions_tool.png",
+  on_use = function(itemstack, user, pointed_thing)
+    return -- lets just prevent breaking stuff with this
+  end,
+  on_place = function(itemstack, placer, pointed_thing)
+    --should instead raytrace what the player is looking at
+    -- maybe if they are holding shift, so that it is more percise
+
+    -- show list of objects
+    -- name, model if any
+    -- on click spawn object
+    local to_list = { "image[3,1;1,1;tg_interactions_tool.png;]" }
+    local size = vector.new(2, 0, 2)
+    local pos_x = 2
+    local pos_y = 0
+    local max_items = 9
+    for value, _ in pairs(all_objects) do
+      if string.find(value, mod_name) then
+        table.insert(to_list,
+          string.format("button[%s,%s;%s,%s;object;%s]", pos_x, pos_y, size.x, size.z,
+            string.gsub(value, mod_name .. ":", "")))
+        pos_x = pos_x + size.x
+        if pos_x >= (max_items * size.z) then
+          pos_y = pos_y + size.z
+          pos_x = 0
+        end
+      end
+    end
+    -- core.log("so what do we have?"..dump(to_list))
+    core.show_formspec(placer:get_player_name(), "tg_interactions_menu", table.concat({
+      "formspec_version[10]",
+      "size[" .. max_items * size.x .. "," .. "10" .. "]",
+      -- "container[1,1]",
+      "image[1,3;1,1;tg_interactions_tool.png;]",
+      table.concat(to_list),
+      "button[1,1;1,1;NAME?;ok ok]",
+      -- "container_end[]",
+      -- "list[current_player;main;0,0;8,4;]",
+    }))
+  end,
+
+
+  -- short_description = "",
+})
+
+core.register_on_player_receive_fields(function(player, formname, fields)
+  if formname == "tg_interactions_menu" then
+    if fields["object"] == nil then
+      return
+    end
+    core.log("what field?" .. dump(fields))
+    local eye_height = player:get_properties().eye_height
+    local player_look_dir = player:get_look_dir()
+    local pos = player:get_pos():add(player_look_dir)
+    local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
+    local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
+    local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
+
+    core.add_entity(raycast_result.above, mod_name..":"..fields["object"])
+    -- core.add_entity(raycast_result.above, fields["object"], [staticdata])
   end
 end)
