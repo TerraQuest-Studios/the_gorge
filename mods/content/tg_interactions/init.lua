@@ -606,18 +606,18 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
   }
 )
 
-tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
   {
     _popup_msg = "[ relay ]",
     -- _toggleable = 0, -- default state 0
     -- _state = 0,      -- default state 0
-    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:1,5",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:3,5",
     _popup_hidden = true,
     pointable = false,
   }
 )
 
-tg_interactions.register_interactable("receiver", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+tg_interactions.register_interactable("receiver", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
   {
     _popup_msg = "[ receiver ]",
     _toggleable = 0, -- default state 0
@@ -977,7 +977,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
     objects = {
       [mod_name .. ":" .. "relay"] = true,
       [mod_name .. ":" .. "receiver"] = true,
-      [mod_name .. ":" .. "door"] = true,
+      [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
     },
   },
