@@ -500,6 +500,40 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
   }
 )
 
+tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+  {
+    _popup_msg = "[ toggle ]",
+    on_rightclick = function(self, clicker)
+      local pos = self.object:get_pos()
+      local distance = 3
+      -- if tg_power.power == true then
+      --   self.object:get_luaentity()._popup_msg = "[ switch on power ]"
+      -- else
+      --   self.object:get_luaentity()._popup_msg = "[ switch off power ]"
+      -- end
+      local near_by = core.get_objects_inside_radius(pos, distance)
+      for index, value in ipairs(near_by) do
+        if value:get_pos() ~= pos then
+          if not value:is_player() then
+            local toggleable = value:get_luaentity()._toggleable
+            if toggleable ~= nil then
+              core.log("ok found it")
+              if toggleable == 1 then
+                toggleable = 0
+              else
+                toggleable = 1
+              end
+              value:get_luaentity()._toggleable = toggleable
+            else
+              core.log("this cant be toggled")
+            end
+          end
+        end
+      end
+    end,
+  }
+)
+
 tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
   {
     _popup_msg = "[ note ]",
@@ -562,11 +596,36 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
 tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", shapes.door,
   {
     _interactable = 0,
+    _toggleable = 0, -- default state 0
+    _state = 0,      -- default state 0
     -- _popup_msg = "[ open door ]",
+    on_activate = function(self, staticdata, dtime_s)
+      local pos = self.object:get_pos()
+      local new_pos = vector.add(pos,vector.new(0.5,0,0))
+      self.object:set_pos(new_pos)
+    end,
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       velocity = self.object:get_velocity()
+      if self.object:get_luaentity()._toggleable ~= nil then
+        local pos = self.object:get_pos()
+        if self.object:get_luaentity()._toggleable == 1 then
+          if self.object:get_luaentity()._state == 1 then
+            core.log("ok moved forward")
+            self.object:get_luaentity()._state = 0
+            local dir = vector.new(1, 0, 0)
+            self.object:move_to(vector.add(pos, dir))
+          end
+        else
+          if self.object:get_luaentity()._state == 0 then
+            core.log("ok moved back")
+            self.object:get_luaentity()._state = 1
+            local dir = vector.new(-1, 0, 0)
+            self.object:move_to(vector.add(pos, dir))
+          end
+        end
+      end
     end,
     -- on_rightclick = function(self, clicker)
     --   core.chat_send_all("this should be opening")
@@ -844,7 +903,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
     local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
-    core.add_entity(raycast_result.above, mod_name..":"..fields["object"])
+    core.add_entity(raycast_result.above, mod_name .. ":" .. fields["object"])
     -- core.add_entity(raycast_result.above, fields["object"], [staticdata])
   end
 end)
