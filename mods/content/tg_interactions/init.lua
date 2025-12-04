@@ -17,6 +17,29 @@ local function debug(msg)
   core.log("[entity]: " .. msg)
 end
 
+---comment
+---@param object table
+---@param off_on boolean|nil
+local function signalToggle(object, off_on)
+  local cur_toggle = object:get_luaentity()._toggleable
+  local toggle_on = off_on or not cur_toggle -- set or bit flip
+
+  if object:get_luaentity()._toggleable ~= nil then
+    if object:get_luaentity()._toggleable == 1 then
+      if object:get_luaentity()._state == 1 then
+        core.log("state set 0")
+        object:get_luaentity()._state = 0
+      end
+    else
+      if object:get_luaentity()._state == 0 then
+        core.log("state set 1")
+        object:get_luaentity()._state = 1
+      end
+    end
+  end
+  return object
+end
+
 local players_dragging = {}
 
 -- local function getDragging(player)
@@ -500,34 +523,116 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
   }
 )
 
+local function find(pos, chain, distance)
+  local near_by = core.get_objects_inside_radius(pos, distance)
+  for index, value in pairs(near_by) do
+    local obj_pos = value:get_pos()
+    if obj_pos ~= pos then
+      -- core.log("we are not the same")
+      if not value:is_player() then
+        -- core.log("not the player")
+        if chain[vector.to_string(obj_pos)] == true then
+          -- do nothing
+          -- core.log("already searched")
+        else
+          chain[vector.to_string(obj_pos)] = true
+          if string.find(value:get_luaentity().name, "relay") then
+            core.log("relay")
+            find(obj_pos, chain, distance)
+            -- search again
+          elseif string.find(value:get_luaentity().name, "receiver") then
+            core.log("receiver!!!!")
+            local find_reciver = core.get_objects_inside_radius(obj_pos, distance * 2)
+            for r_i, r_v in pairs(find_reciver) do
+              local r_pos = r_v:get_pos()
+              if r_pos ~= obj_pos then
+                if not r_v:is_player() then
+                  if r_v:get_luaentity()._toggleable ~= nil then
+                    core.log("toggleable found")
+                    core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
+                    local toggle = r_v:get_luaentity()._toggleable
+                    if toggle == 0 then
+                      r_v:get_luaentity()._toggleable = 1
+                    else
+                      r_v:get_luaentity()._toggleable = 0
+                    end
+                    core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
+                  end
+                end
+              end
+            end
+          else
+            core.log("you did something wrong")
+          end
+
+          -- local toggleable = value:get_luaentity()._toggleable
+          -- if toggleable ~= nil then
+          --   core.log("ok found it")
+          --   if toggleable == 1 then
+          --     toggleable = 0
+          --   else
+          --     toggleable = 1
+          --   end
+          --   value:get_luaentity()._toggleable = toggleable
+          -- else
+          --   core.log("this cant be toggled")
+          -- end
+        end
+      end
+    end
+  end
+end
+
 tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
   {
-    _popup_msg = "[ toggle ]",
+    _popup_msg = "[ switch ]",
     on_rightclick = function(self, clicker)
+      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
+      })
+      local chain = {}
       local pos = self.object:get_pos()
-      local distance = 3
       -- if tg_power.power == true then
       --   self.object:get_luaentity()._popup_msg = "[ switch on power ]"
       -- else
       --   self.object:get_luaentity()._popup_msg = "[ switch off power ]"
       -- end
-      local near_by = core.get_objects_inside_radius(pos, distance)
-      for index, value in ipairs(near_by) do
-        if value:get_pos() ~= pos then
-          if not value:is_player() then
-            local toggleable = value:get_luaentity()._toggleable
-            if toggleable ~= nil then
-              core.log("ok found it")
-              if toggleable == 1 then
-                toggleable = 0
-              else
-                toggleable = 1
-              end
-              value:get_luaentity()._toggleable = toggleable
-            else
-              core.log("this cant be toggled")
-            end
-          end
+      chain[vector.to_string(pos)] = true
+      core.log("switch toggled")
+      find(pos, chain, 1.5)
+    end,
+  }
+)
+
+tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+  {
+    _popup_msg = "[ relay ]",
+    -- _toggleable = 0, -- default state 0
+    -- _state = 0,      -- default state 0
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:1,5",
+    _popup_hidden = true,
+    pointable = false,
+  }
+)
+
+tg_interactions.register_interactable("receiver", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+  {
+    _popup_msg = "[ receiver ]",
+    _toggleable = 0, -- default state 0
+    _state = 0,      -- default state 0
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:2,5",
+    _popup_hidden = true,
+    pointable = false,
+    on_step = function(self, dtime, moveresult)
+      if self.object:get_luaentity()._toggleable == 1 then
+        if self.object:get_luaentity()._state == 1 then
+          self.object:get_luaentity()._state = 0
+        end
+      else
+        if self.object:get_luaentity()._state == 0 then
+          self.object:get_luaentity()._state = 1
         end
       end
     end,
@@ -599,34 +704,47 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     _toggleable = 0, -- default state 0
     _state = 0,      -- default state 0
     -- _popup_msg = "[ open door ]",
+    pointable = false,
     on_activate = function(self, staticdata, dtime_s)
-      local pos = self.object:get_pos()
-      local new_pos = vector.add(pos,vector.new(0.5,0,0))
-      self.object:set_pos(new_pos)
+      -- to make sure the door gets centered
+      core.after(2, function()
+        local pos = self.object:get_pos()
+        local x = math.floor(pos.x)
+        if pos.x < 0 then
+          -- for negatives, floor(-1.2) = -2, so use math.ceil to keep integer part consistent
+          x = math.ceil(pos.x)
+        end
+        pos.x = x + 0.5
+        local new_pos = vector.new(pos.x, pos.y, pos.z)
+        -- core.log("pos: " .. dump(new_pos))
+        if pos.x % 1 == 0.5 then
+          -- core.log("has .5")
+          self.object:set_pos(new_pos)
+        else
+          -- core.log("does not")
+        end
+      end)
     end,
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       velocity = self.object:get_velocity()
-      if self.object:get_luaentity()._toggleable ~= nil then
-        local pos = self.object:get_pos()
-        if self.object:get_luaentity()._toggleable == 1 then
-          if self.object:get_luaentity()._state == 1 then
-            core.log("ok moved forward")
-            self.object:get_luaentity()._state = 0
-            local dir = vector.new(1, 0, 0)
-            self.object:move_to(vector.add(pos, dir))
-          end
-        else
-          if self.object:get_luaentity()._state == 0 then
-            core.log("ok moved back")
-            self.object:get_luaentity()._state = 1
-            local dir = vector.new(-1, 0, 0)
-            self.object:move_to(vector.add(pos, dir))
-          end
+      local pos = self.object:get_pos()
+      if self.object:get_luaentity()._toggleable == 1 then
+        if self.object:get_luaentity()._state == 1 then
+          self.object:get_luaentity()._state = 0
+          local dir = vector.new(1.8, 0, 0)
+          self.object:move_to(vector.add(pos, dir))
+        end
+      else
+        if self.object:get_luaentity()._state == 0 then
+          self.object:get_luaentity()._state = 1
+          local dir = vector.new(-1.8, 0, 0)
+          self.object:move_to(vector.add(pos, dir))
         end
       end
     end,
+
     -- on_rightclick = function(self, clicker)
     --   core.chat_send_all("this should be opening")
     --   local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
@@ -636,7 +754,6 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     --   })
     -- end,
   })
--- tg_interactions.register_interactable("power_switch","none","","tg_nodes_misc.png^[sheet:16x16:0,6",shapes.slim_box,{"[ switch on power ]","[ switch off power ]"}, tg_power.power)
 
 tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.box,
   {
@@ -804,11 +921,20 @@ core.register_globalstep(function(dtime)
         if not value:is_player() then
           if value:get_luaentity() ~= nil then
             if value:get_luaentity()._interactable == 1 then
-              local obj_pos = value:get_pos()
-              interacble_indicator["world_pos"] = obj_pos
-              local indicator = player:hud_add(interacble_indicator)
-              table.insert(players_hud.huds, indicator)
-              -- core.log("where am i? " .. dump())
+              if value:get_luaentity()._popup_hidden == true and player:get_wielded_item():get_name() ~= mod_name .. ":" .. "wrench" then
+              else
+                local obj_pos = value:get_pos()
+                interacble_indicator["world_pos"] = obj_pos
+                local popup_texture = value:get_luaentity()._popup_texture
+                if popup_texture ~= nil then
+                  interacble_indicator["text"] = popup_texture
+                else
+                  interacble_indicator["text"] = "tg_nodes_misc.png^[sheet:16x16:0,5"
+                end
+                local indicator = player:hud_add(interacble_indicator)
+                table.insert(players_hud.huds, indicator)
+                -- core.log("where am i? " .. dump())
+              end
             end
           end
         end
@@ -821,9 +947,6 @@ core.register_globalstep(function(dtime)
         end
         local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
         hud_pos = vector.add(raycast_result.ref:get_pos(), vector.new(0, 0.1, 0))
-
-        -- msg["text"] = hover_popup
-        -- msg["world_pos"] = hud_pos
 
         msg["name"] = hover_popup
         msg["world_pos"] = hud_pos
@@ -843,12 +966,25 @@ end)
 
 local all_objects = core.registered_entities
 
-core.register_tool(mod_name .. ":" .. "spawner", {
-  description = "spawn tg related stuff",
+core.register_tool(mod_name .. ":" .. "wrench", {
+  description = "Wrench, objects & wiring",
   inventory_image = "tg_interactions_tool.png",
-  on_use = function(itemstack, user, pointed_thing)
-    return -- lets just prevent breaking stuff with this
-  end,
+  pointabilities = {
+    -- nodes = {
+    --   ["default:stone"] = "blocking",
+    --   ["group:leaves"] = false,
+    -- },
+    objects = {
+      [mod_name .. ":" .. "relay"] = true,
+      [mod_name .. ":" .. "receiver"] = true,
+      [mod_name .. ":" .. "door"] = true,
+      -- ["group:ghosty"] = true,       -- (an armor group)
+    },
+  },
+
+  -- on_use = function(itemstack, user, pointed_thing)
+  --   -- return -- lets just prevent breaking stuff with this
+  -- end,
   on_place = function(itemstack, placer, pointed_thing)
     --should instead raytrace what the player is looking at
     -- maybe if they are holding shift, so that it is more percise
@@ -892,6 +1028,7 @@ core.register_tool(mod_name .. ":" .. "spawner", {
 
 core.register_on_player_receive_fields(function(player, formname, fields)
   if formname == "tg_interactions_menu" then
+    core.log("fields: " .. dump(fields))
     if fields["object"] == nil then
       return
     end
@@ -903,7 +1040,12 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
     local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
-    core.add_entity(raycast_result.above, mod_name .. ":" .. fields["object"])
+    if player:get_player_control().sneak == true then
+      core.add_entity(raycast_result.under, mod_name .. ":" .. fields["object"])
+    else
+      core.add_entity(raycast_result.above, mod_name .. ":" .. fields["object"])
+    end
+    core.close_formspec(player:get_player_name(), formname)
     -- core.add_entity(raycast_result.above, fields["object"], [staticdata])
   end
 end)
