@@ -509,7 +509,8 @@ tg_interactions.register_draggable("chair", "node", "tg_furniture:oak_chair", "t
 tg_interactions.register_draggable("pipes", "mesh", "tubes.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
 tg_interactions.register_draggable("power_core", "mesh", "power_core.glb", "power_core.png", tg_nodes["shapes"].slab, 4)
 
-tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.centerd_box,
   {
     _popup_msg = "[ switch on power ]",
     on_rightclick = function(self, clicker)
@@ -567,7 +568,7 @@ local function find(pos, chain, distance)
               end
             end
           else
-            core.log("you did something wrong")
+            core.log("wrong: " .. value:get_luaentity().name)
           end
 
           -- local toggleable = value:get_luaentity()._toggleable
@@ -588,7 +589,7 @@ local function find(pos, chain, distance)
   end
 end
 
-tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.centerd_box,
   {
     _popup_msg = "[ switch ]",
     on_rightclick = function(self, clicker)
@@ -606,7 +607,7 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
       -- end
       chain[vector.to_string(pos)] = true
       core.log("switch toggled")
-      find(pos, chain, 1.5)
+      find(pos, chain, 1.2)
     end,
   }
 )
@@ -644,14 +645,16 @@ tg_interactions.register_interactable("receiver", "none", "", "tg_nodes_misc.png
   }
 )
 
-tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .centerd_box,
   {
     _popup_msg = "[ note ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("NOTE READS: \"took me a few attemps to get this note up here..\"")
     end,
   })
-tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.centerd_box,
   {
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
@@ -668,7 +671,8 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
       end
     end,
   })
-tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.slim_box,
+tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .centerd_box,
   {
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
@@ -709,7 +713,7 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     _toggleable = 0, -- default state 0
     _state = 0,      -- default state 0
     -- _popup_msg = "[ open door ]",
-    pointable = false,
+    -- pointable = false,
     on_activate = function(self, staticdata, dtime_s)
       -- to make sure the door gets centered
       -- return
@@ -739,13 +743,13 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       if self.object:get_luaentity()._toggleable == 0 then
         if self.object:get_luaentity()._state == 1 then
           self.object:get_luaentity()._state = 0
-          local dir = vector.new(1.8, 0, 0)
+          local dir = vector.new(1.9, 0, 0)
           self.object:move_to(vector.add(pos, dir))
         end
       else
         if self.object:get_luaentity()._state == 0 then
           self.object:get_luaentity()._state = 1
-          local dir = vector.new(-1.8, 0, 0)
+          local dir = vector.new(-1.9, 0, 0)
           self.object:move_to(vector.add(pos, dir))
         end
       end
@@ -975,6 +979,7 @@ local all_objects = core.registered_entities
 core.register_tool(mod_name .. ":" .. "wrench", {
   description = "Wrench, objects & wiring",
   inventory_image = "tg_interactions_tool.png",
+  _to_player = nil,
   pointabilities = {
     -- nodes = {
     --   ["default:stone"] = "blocking",
@@ -998,34 +1003,47 @@ core.register_tool(mod_name .. ":" .. "wrench", {
     -- show list of objects
     -- name, model if any
     -- on click spawn object
-    local to_list = { "image[3,1;1,1;tg_interactions_tool.png;]" }
-    local size = vector.new(2, 0, 2)
-    local pos_x = 2
-    local pos_y = 0
-    local max_items = 9
-    for value, _ in pairs(all_objects) do
-      if string.find(value, mod_name) then
-        table.insert(to_list,
-          string.format("button[%s,%s;%s,%s;object;%s]", pos_x, pos_y, size.x, size.z,
-            string.gsub(value, mod_name .. ":", "")))
-        pos_x = pos_x + size.x
-        if pos_x >= (max_items * size.z) then
-          pos_y = pos_y + size.z
-          pos_x = 0
+    -- core.log("what to place: " .. dump(itemstack:get_meta():get_string("place")))
+    if placer:get_player_control().sneak == false then
+      local to_place = itemstack:get_meta():get_string("place")
+      if to_place ~= "" then
+        if placer:get_player_control().aux1 == true then
+            core.add_entity(pointed_thing.under, to_place)
+          else
+          core.add_entity(pointed_thing.above, to_place)
         end
       end
+    else
+      local to_list = { "image[3,1;1,1;tg_interactions_tool.png;]" }
+      local size = vector.new(2, 0, 2)
+      local pos_x = 2
+      local pos_y = 0
+      local max_items = 9
+      for value, _ in pairs(all_objects) do
+        if string.find(value, mod_name) then
+          table.insert(to_list,
+            string.format("button[%s,%s;%s,%s;object;%s]", pos_x, pos_y, size.x, size.z,
+              string.gsub(value, mod_name .. ":", "")))
+          pos_x = pos_x + size.x
+          if pos_x >= (max_items * size.z) then
+            pos_y = pos_y + size.z
+            pos_x = 0
+          end
+        end
+      end
+      -- core.log("so what do we have?"..dump(to_list))
+      core.show_formspec(placer:get_player_name(), "tg_interactions_menu", table.concat({
+        "formspec_version[10]",
+        "size[" .. max_items * size.x .. "," .. "10" .. "]",
+        -- "container[1,1]",
+        "image[1,3;1,1;tg_interactions_tool.png;]",
+        table.concat(to_list),
+        "button[1,1;1,1;NAME?;ok ok]",
+        -- "container_end[]",
+        -- "list[current_player;main;0,0;8,4;]",
+      }))
+      return
     end
-    -- core.log("so what do we have?"..dump(to_list))
-    core.show_formspec(placer:get_player_name(), "tg_interactions_menu", table.concat({
-      "formspec_version[10]",
-      "size[" .. max_items * size.x .. "," .. "10" .. "]",
-      -- "container[1,1]",
-      "image[1,3;1,1;tg_interactions_tool.png;]",
-      table.concat(to_list),
-      "button[1,1;1,1;NAME?;ok ok]",
-      -- "container_end[]",
-      -- "list[current_player;main;0,0;8,4;]",
-    }))
   end,
 
 
@@ -1039,18 +1057,24 @@ core.register_on_player_receive_fields(function(player, formname, fields)
       return
     end
     core.log("what field?" .. dump(fields))
-    local eye_height = player:get_properties().eye_height
-    local player_look_dir = player:get_look_dir()
-    local pos = player:get_pos():add(player_look_dir)
-    local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
-    local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
-    local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
-
-    if player:get_player_control().sneak == true then
-      core.add_entity(raycast_result.under, mod_name .. ":" .. fields["object"])
-    else
-      core.add_entity(raycast_result.above, mod_name .. ":" .. fields["object"])
-    end
+    -- local eye_height = player:get_properties().eye_height
+    -- local player_look_dir = player:get_look_dir()
+    -- local pos = player:get_pos():add(player_look_dir)
+    -- local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
+    -- local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
+    -- local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
+    -- if player:get_player_control().sneak == true then
+    --   core.add_entity(raycast_result.under, mod_name .. ":" .. fields["object"])
+    -- else
+    --   core.add_entity(raycast_result.above, mod_name .. ":" .. fields["object"])
+    -- end
+    local item = player:get_wielded_item()
+    local item_meta = item:get_meta()
+    local to_place = mod_name .. ":" .. fields["object"]
+    -- item_meta:set_string("place",to_place)
+    -- core.log("will place: "..to_place)
+    item_meta:set_string("place", to_place)
+    player:set_wielded_item(item)
     core.close_formspec(player:get_player_name(), formname)
     -- core.add_entity(raycast_result.above, fields["object"], [staticdata])
   end

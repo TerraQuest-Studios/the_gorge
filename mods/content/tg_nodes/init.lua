@@ -35,13 +35,14 @@ core.register_node("tg_nodes:placeholder", {
 ---@class shape
 local shapes = {
 	box = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 },
-	thicker_box = { -0.7, -0.7, -0.7, 0.7, 0.7, 0.7 },
-	door = { -1, -0.5, -1, 0.5, 3.0, 0.5 },
+	thicker_box = { -0.55, -0.55, -0.55, 0.55, 0.55, 0.55 },
+	door = { -1.0, -0.5, -0.2, 1.0, 2.5, 0.2 },
 	slab = { -0.5, -0.5, -0.5, 0.5, 0.0, 0.5 },
 	stairs = {
 		{ -0.5, -0.5, -0.5, 0.5, 0,   0.5 },
 		{ -0.5, 0,    0,    0.5, 0.5, 0.5 },
 	},
+	centerd_box = { -0.2, -0.2, -0.2, 0.2, 0.2, 0.2 }, -- small box touching the ground (plant / anything small)
 	tiny_box = { -0.2, -0.5, -0.2, 0.2, -0.1, 0.2 }, -- small box touching the ground (plant / anything small)
 	slim_box = { -0.2, -0.5, -0.2, 0.2, 0.3, 0.2 }, -- same as tiny_box, just taller
 	double = { -0.5, -0.5, -0.5, 0.5, 1.5, 0.5 },   -- a like a locker or pillar
