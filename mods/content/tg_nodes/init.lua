@@ -3,7 +3,7 @@ local S = core.get_translator(mod_name)
 
 tg_nodes = {}
 
-local defualt_groups =  {full_solid = 1, solid = 1,}
+local defualt_groups = { full_solid = 1, solid = 1, }
 
 --- easy breaking when in dev_mode, else no breaking
 if tg_main.dev_mode == true then
@@ -208,12 +208,15 @@ local function createWallLight(name, des, shape, light_level)
 					local updated_node = node
 					-- updated_node.light_source = 1
 					-- core.set_node(pos, updated_node)
-					core.swap_node(pos, { name = "tg_nodes:led_off", param2 = node.param2})
+					core.swap_node(pos, { name = "tg_nodes:led_off", param2 = node.param2 })
 				end
 			else
 				if string.find(node.name, "off") then
-				-- core.log("light should be on")
-				core.swap_node(pos, { name = "tg_nodes:led_on", param2 = node.param2 })
+					-- core.log("light should be on")
+					core.swap_node(pos, { name = "tg_nodes:led_on", param2 = node.param2 })
+					core.sound_play({ name = tg_nodes["sounds"].paper, gain = 0.01, pitch = 0.8 },
+						{ pos = { x = pos.x, y = pos.y, z = pos.z },
+						})
 				end
 			end
 			-- core.log("is the power on? " .. dump(power))

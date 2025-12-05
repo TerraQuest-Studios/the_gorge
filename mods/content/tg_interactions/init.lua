@@ -233,6 +233,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     _sound_tick = 0,
     _interactable = 1,
     on_step = function(self, dtime, moveresult)
+      local cur_pos = self.object:get_pos()
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       velocity = self.object:get_velocity()
@@ -269,6 +270,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
             pitch = 1.4
           end
           local playing_sound = core.sound_play({ name = "tg_interactions_drag" }, {
+            pos = { x = cur_pos.x, y = cur_pos.y, z = cur_pos.z },
             gain = 1.0,    -- default
             fade = 0.0,    -- default
             pitch = pitch, -- 1.0, -- default
@@ -276,8 +278,6 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
           self.object:get_luaentity()._prev_sound = playing_sound
         end
       end
-
-      local cur_pos = self.object:get_pos()
       if self.object:get_luaentity()._being_dragged == false then
         self.object:get_luaentity()._popup_msg = popup_text[1]
         -- self.object:set_velocity(vector.new(0, gravity, 0)) -- come to a complete stop when player lets go
@@ -513,6 +513,11 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
   {
     _popup_msg = "[ switch on power ]",
     on_rightclick = function(self, clicker)
+      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
+      })
       tg_power.togglePower()
       if tg_power.power == true then
         self.object:get_luaentity()._popup_msg = "[ switch on power ]"
@@ -707,30 +712,31 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     pointable = false,
     on_activate = function(self, staticdata, dtime_s)
       -- to make sure the door gets centered
-      core.after(2, function()
-        local pos = self.object:get_pos()
-        local x = math.floor(pos.x)
-        if pos.x < 0 then
-          -- for negatives, floor(-1.2) = -2, so use math.ceil to keep integer part consistent
-          x = math.ceil(pos.x)
-        end
-        pos.x = x + 0.5
-        local new_pos = vector.new(pos.x, pos.y, pos.z)
-        -- core.log("pos: " .. dump(new_pos))
-        if pos.x % 1 == 0.5 then
-          -- core.log("has .5")
-          self.object:set_pos(new_pos)
-        else
-          -- core.log("does not")
-        end
-      end)
+      -- return
+      -- core.after(2, function()
+      local pos = self.object:get_pos()
+      local x = math.floor(pos.x)
+      if pos.x < 0 then
+        -- for negatives, floor(-1.2) = -2, so use math.ceil to keep integer part consistent
+        x = math.ceil(pos.x)
+      end
+      pos.x = x + 0.5
+      local new_pos = vector.new(pos.x, pos.y, pos.z)
+      -- core.log("pos: " .. dump(new_pos))
+      if pos.x % 1 == 0.5 then
+        -- core.log("has .5")
+        self.object:set_pos(new_pos)
+      else
+        -- core.log("does not")
+      end
+      -- end)
     end,
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       velocity = self.object:get_velocity()
       local pos = self.object:get_pos()
-      if self.object:get_luaentity()._toggleable == 1 then
+      if self.object:get_luaentity()._toggleable == 0 then
         if self.object:get_luaentity()._state == 1 then
           self.object:get_luaentity()._state = 0
           local dir = vector.new(1.8, 0, 0)
