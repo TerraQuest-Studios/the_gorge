@@ -198,7 +198,8 @@ local function createWallLight(name, des, shape, light_level)
 			core.get_node_timer(pos):start(1.0)
 		end,
 		on_timer = function(pos, elapsed, node, timeout)
-			local power = tg_power.getPower()
+			node = node or core.get_node(pos)
+      local power = tg_power.getPower()
 			if power == false then
 				-- core.log("light should be off")
 				if not string.find(node.name, "off") then
