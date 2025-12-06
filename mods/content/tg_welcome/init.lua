@@ -1,7 +1,32 @@
-core.register_on_newplayer(function(player)
-    local start_pos = {x=-43, y=2, z=-18.5}
+local base_slide_duration = 5 -- in seconds (default is 5), what calculations for each slide should be based around
 
-    player:set_pos(start_pos)
+local startpos = vector.new(-43, 1.5, -18.5) -- position for player to spawn at
+
+local messages = {
+    [[
+        Welcome to The Gorge
+        Trapped deep within a shadowy ravine
+        With a thin line of sight to the outside world
+        Will you escape?
+    ]],
+    [[
+        Survive the depths and corners
+        Find hidden secrets
+        Gather the pieces you need to escape
+        Will you make it out in time?
+    ]],
+    [[
+        Good luck, adventurer
+        The Gorge awaits your courage and wit
+    ]]
+}
+
+local gametime = dofile(core.get_modpath("tg_main").."/gametime.lua")
+
+
+
+core.register_on_newplayer(function(player)
+    player:set_pos(startpos)
 
     local current_huds = {} --player:hud_get_all()
 
@@ -16,31 +41,10 @@ core.register_on_newplayer(function(player)
         end
     end)
 
-    local messages = {
-        -- empty message, for timing.
-        [[
-        ]],
-        --
-        [[
-            Welcome to The Gorge
-            Trapped deep within a shadowy ravine
-            With a thin line of sight to the outside world
-            Will you escape?
-        ]],
-        [[
-            Survive the depths and corners
-            Find hidden secrets
-            Gather the pieces you need to escape
-            Will you make it out in time?
-        ]],
-        [[
-            Good luck, adventurer
-            The Gorge awaits your courage and wit
-        ]]
-    }
+    local messageindex = 1 -- message index
+    local fadestep = 70 -- units per second, becomes 100 after 1st message
 
-    local current_message = 1
-
+    -- graphics
     local base_background = player:hud_add({
         hud_elem_type = "image",
         position = { x = 0.5, y = 0.5 },
@@ -52,7 +56,7 @@ core.register_on_newplayer(function(player)
     local text_message = player:hud_add({
         hud_elem_type = "text",
         position = { x = 0.43, y = 0.5 }, -- 0.42 seems to center the text better.
-        text = messages[current_message],
+        text = messages[messageindex],
         alignment = { x = 0, y = 0 },
         scale = { x = 100, y = 100 },
         number = 0xFFFFFF,
@@ -67,68 +71,75 @@ core.register_on_newplayer(function(player)
         alignment = { x = 0, y = 0 },
     })
 
-    local fade_in_opacity = 225
-    local fade_out_opacity = 225
-    local slide_duration = 10
-
-    core.register_globalstep(function(dtime)
-        if fade_in_opacity > 0 then
-            player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:" .. fade_in_opacity)
-            fade_in_opacity = fade_in_opacity - 100 * dtime
-            if fade_in_opacity < 0 then
-                fade_in_opacity = 0
-                --core.chat_send_all("fade in complete")
-
-                core.after(slide_duration, function()
-                    --core.chat_send_all("starting fade out")
-                    fade_out_opacity = 0.01
-                end)
-            end
+    -- fades in text
+    local fade_in -- declare prior so that we can use ourselves
+    fade_in = function(delay, opacity, afterfunc, ...)
+        opacity = opacity - (fadestep * delay)
+        if opacity < 0 then
+            opacity = 0
+            return afterfunc(...)
         end
-    end)
+        player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:"..opacity)
+        -- continue looping
+        gametime.after(0, fade_in, opacity, afterfunc, ...)
+    end
 
-    core.register_globalstep(function(dtime)
-        --[[ if tg_main.skip_intro == true then
+    -- fades out text
+    local fade_out -- ditto to `fade_in`
+    fade_out = function(delay, opacity, afterfunc, ...)
+        opacity = opacity + (fadestep * delay)
+        if opacity > 255 then
+            opacity = 255
+            return afterfunc(...)
+        end
+        player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:"..opacity)
+        -- continue looping
+        gametime.after(0, fade_out, opacity, afterfunc, ...)
+    end
+
+    local message_start -- being declared so it can be used by the `on_message`
+    -- after message has fully faded in, runs fade_out after a delay of the calculated length provided by `on_message`
+    local function on_message(len)
+        -- run an after for fadeout
+        gametime.after(len, function()
+            -- run function on after finish so that delay isn't transferred to fade_out parameters
+            fade_out(0, 0, message_start)
+        end)
+        messageindex = messageindex + 1 -- iterate through
+        -- turn into 100 after first message has been produced
+        if messageindex ~= 1 then fadestep = 100 end
+    end
+
+    -- change text, run fade_in
+    -- if no message can be found, end the welcome intro
+    message_start = function()
+        local message = messages[messageindex]
+        -- end of the line
+        if not message then
+            -- remove all graphics
             player:hud_remove(base_background)
             player:hud_remove(text_message)
             player:hud_remove(fade_overlay_hud)
+
+            -- restore huds
             for id, hud in ipairs(current_huds) do
                 if hud.type ~= "text" and hud.type ~= "image" then
                     player:hud_add(hud)
                 end
             end
-        else ]]
-            if fade_out_opacity > 0 and fade_out_opacity < 255 then
-                player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:" .. fade_out_opacity)
-                fade_out_opacity = fade_out_opacity + 100 * dtime
-                if fade_out_opacity > 255 then
-                    fade_out_opacity = 255
 
-                    core.after(2, function()
-                        --core.chat_send_all("fade out complete")
-                        current_message = current_message + 1
-                        if current_message > #messages then
-                            player:hud_remove(base_background)
-                            player:hud_remove(text_message)
-                            player:hud_remove(fade_overlay_hud)
+            --reset the player incase they did dumb things
+            player:set_pos(startpos)
+            player:set_look_vertical(0)
+            return player:set_look_horizontal(0)
+        end
+        -- continue with the welcome intro
+        local len = base_slide_duration * (#message/121) -- slide duration multiplied by amount of characters
+        -- divided by 121 for a percentage
+        player:hud_change(text_message, "text", message) -- modify text
+        fade_in(0, 255, on_message, len)
+    end
 
-                            for id, hud in ipairs(current_huds) do
-                                if hud.type ~= "text" and hud.type ~= "image" then
-                                    player:hud_add(hud)
-                                end
-                            end
-
-                            --reset the player incase they did dumb things
-                            player:set_pos(start_pos)
-                            player:set_look_vertical(0)
-                            player:set_look_horizontal(0)
-                        else
-                            player:hud_change(text_message, "text", messages[current_message])
-                            fade_in_opacity = 225
-                        end
-                    end)
-                end
-            end
-        --[[ end ]]
-    end)
+    -- start message after a second
+    core.after(1, message_start)
 end)
