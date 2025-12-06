@@ -299,7 +299,7 @@ core.register_chatcommand("logobjects", {
       if not value:is_player() then
         -- debug("we have found a player")
         -- local player_name = value:get_player_name()
-        local obj_name = value.name
+        -- local obj_name = value.name
         local pos = value:get_pos()
         local json = { object = dump(value), pos = dump(pos) }
         table.insert(jsoned, json)

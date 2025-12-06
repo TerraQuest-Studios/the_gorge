@@ -1,10 +1,7 @@
-local mod_name = core.get_current_modname()
-local S = core.get_translator(mod_name)
-
 tg_power = {}
 
-tg_power.power = false -- should be default offr 
-tg_power.power_core = false -- should be default offr 
+tg_power.power = false -- should be default offr
+tg_power.power_core = false -- should be default offr
 
 -- can;t have power without a power_source
 

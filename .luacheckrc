@@ -6,8 +6,18 @@ exclude_files = {".luacheckrc", "mods/content/aom_wrench/**"}
 globals = {
     "minetest", "core",
 
+    --from external deps
+    "mapsync",
+	"worldedit",
+	"travelnet",
+	"advtrains",
+	"serialize_lib",
+	"elevator",
+	"hyperloop",
+    "mtt",
+    "mtzip",
+
     --mod provided
-    "dungeon_loot", "fl_workshop", "fl_player", "fl_stone", "fl_trees", "fl_topsoil", "fl_plantlife"
 }
 
 read_globals = {
@@ -19,6 +29,9 @@ read_globals = {
 
     -- Builtin
     "vector", "ItemStack", "dump", "DIR_DELIM", "VoxelArea", "Settings", "PcgRandom", "VoxelManip", "PseudoRandom",
+
+    --from external deps
+    "hyperloop",
 
     --mod produced
     "tg_main", "tg_mapgen", "aom_wrench", "tg_stairs",
