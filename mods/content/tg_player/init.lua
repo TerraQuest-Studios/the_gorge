@@ -58,7 +58,7 @@ core.register_on_joinplayer(function(player, last_login)
 	})
 end)
 
--- player sneak
+-- player sneak & crouch
 core.register_globalstep(function(dtime)
 	local players = core.get_connected_players()
 	for index, player in pairs(players) do

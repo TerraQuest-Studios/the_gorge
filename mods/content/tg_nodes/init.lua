@@ -464,6 +464,31 @@ core.register_node("tg_nodes:tubes_down", {
 	},
 })
 
+core.register_node("tg_nodes:radio", {
+	description = S("Radio, nice tunes."),
+	groups = defualt_groups,
+	paramtype = "light",
+	drawtype = "mesh",
+	mesh = "radio.glb",
+	visual_scale = 10.0,
+	tiles = { "radio.png" },
+	paramtype2 = "facedir",
+	-- use_texture_alpha = "clip",
+	-- sunlight_propagates = true,
+	-- walkable = false,
+	node_box = {
+		type = "fixed",
+		fixed = shapes.tiny_box
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = shapes.tiny_box
+	},
+})
+
+---will create multiple node shapes
+---@param name any
+---@param sound_spec any
 function tg_nodes.defNode(name, sound_spec)
 	local nodes_to_register = { name, name .. "_stairs", name .. "_slab", name .. "_panel", name .. "_rails" }
 	for index, value in ipairs(nodes_to_register) do
@@ -556,3 +581,8 @@ createWallLight2("led_on_red", "led, blinding.", shapes.panel, 7)
 
 tg_nodes.defNode("steel_enclosure", { name = sounds.concrete, gain = 0.3, })
 tg_nodes.defNode("concrete_tiled", { name = sounds.concrete, gain = 0.3, })
+
+-- these two nodes need more work
+createNode("crate","crate, looks heavy",{name = sounds.stone})
+createNode("crate2","crate, looks heavy",{name = sounds.stone})
+------
