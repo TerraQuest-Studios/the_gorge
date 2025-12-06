@@ -1,7 +1,33 @@
-core.register_on_newplayer(function(player)
-    local start_pos = {x=-43, y=2, z=-18.5}
+local stallpos = vector.new(-50, 2, -13) -- inside a wall so we can't move
+local startpos = vector.new(-43, 2, -18.5)
 
-    player:set_pos(start_pos)
+local messages = {
+    -- empty message, for timing.
+    [[
+    ]],
+    --
+    [[
+        Welcome to The Gorge
+        Trapped deep within a shadowy ravine
+        With a thin line of sight to the outside world
+        Will you escape?
+    ]],
+    [[
+        Survive the depths and corners
+        Find hidden secrets
+        Gather the pieces you need to escape
+        Will you make it out in time?
+    ]],
+    [[
+        Good luck, adventurer
+        The Gorge awaits your courage and wit
+    ]]
+}
+
+
+
+core.register_on_newplayer(function(player)
+    player:set_pos(stallpos)
 
     local current_huds = {} --player:hud_get_all()
 
@@ -15,29 +41,6 @@ core.register_on_newplayer(function(player)
             end
         end
     end)
-
-    local messages = {
-        -- empty message, for timing.
-        [[
-        ]],
-        --
-        [[
-            Welcome to The Gorge
-            Trapped deep within a shadowy ravine
-            With a thin line of sight to the outside world
-            Will you escape?
-        ]],
-        [[
-            Survive the depths and corners
-            Find hidden secrets
-            Gather the pieces you need to escape
-            Will you make it out in time?
-        ]],
-        [[
-            Good luck, adventurer
-            The Gorge awaits your courage and wit
-        ]]
-    }
 
     local current_message = 1
 
@@ -119,7 +122,7 @@ core.register_on_newplayer(function(player)
                             end
 
                             --reset the player incase they did dumb things
-                            player:set_pos(start_pos)
+                            player:set_pos(startpos)
                             player:set_look_vertical(0)
                             player:set_look_horizontal(0)
                         else
