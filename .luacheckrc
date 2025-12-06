@@ -1,7 +1,7 @@
 unused_args = false
 allow_defined_top = true
 
-exclude_files = {".luacheckrc", "mods/content/aom_wrench/**"}
+exclude_files = {".luacheckrc"}
 
 globals = {
     "minetest", "core",
