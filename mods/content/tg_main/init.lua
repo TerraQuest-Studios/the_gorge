@@ -6,6 +6,7 @@ tg_main = {}
 dofile(mod_path .. "/scripts" .. "/math.lua")
 dofile(mod_path .. "/scripts" .. "/debug.lua")
 dofile(mod_path .. "/scripts" .. "/utils.lua")
+dofile(mod_path .. "/scripts" .. "/gametime.lua")
 
 -- Either "flat" or "singlenode".
 tg_main.mg_name = core.get_mapgen_setting("mg_name") or "singlenode"
