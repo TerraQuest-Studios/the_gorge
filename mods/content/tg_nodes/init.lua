@@ -206,7 +206,7 @@ local function createWallLight(name, des, shape, light_level)
 				-- core.log("light should be off")
 				if not string.find(node.name, "off") then
 					-- local meta = core.get_meta(pos)
-					local updated_node = node
+					-- local updated_node = node
 					-- updated_node.light_source = 1
 					-- core.set_node(pos, updated_node)
 					core.swap_node(pos, { name = "tg_nodes:led_off", param2 = node.param2 })
@@ -496,7 +496,8 @@ function tg_nodes.defNode(name, sound_spec)
 		local param2 = "none"
 		local shape = shapes.box
 		local sel_box = nil
-		if string.find(value, "stairs") or string.find(value, "slab") or string.find(value, "panel") or string.find(value, "rails") then
+		if string.find(value, "stairs") or string.find(value, "slab") or string.find(value, "panel")
+		or string.find(value, "rails") then
 			param1 = "light"
 			param2 = "facedir"
 			if string.find(value, "stairs") then

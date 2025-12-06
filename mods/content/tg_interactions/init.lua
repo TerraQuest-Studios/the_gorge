@@ -1,5 +1,4 @@
 local mod_name = core.get_current_modname()
-local S = core.get_translator(mod_name)
 
 local shapes = tg_nodes["shapes"]
 
@@ -13,10 +12,10 @@ tg_interactions.popup_radius = 3.5
 
 local gravity = -0.9
 
-local function debug(msg)
+--[[ local function debug(msg)
   core.log("[entity]: " .. msg)
 end
-
+ ]]
 ---comment
 ---@param object table
 ---@param off_on boolean|nil
