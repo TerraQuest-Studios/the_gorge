@@ -27,7 +27,9 @@ local funcs = {
     --- similar to `core.after`, expect provides the amount of time it took for function to be ran as first argument
     after = function(delay, func, ...)
         if not tonumber(delay) or core.is_nan(delay) then
-            error("gametime.after: invalid invocation - provided delay argument is not number or is an impossible number")
+            error(
+                "gametime.after: invalid invocation - provided delay argument is not number or is an impossible number"
+            )
         end
         if type(func) ~= "function" then
             error("gametime.after: invalid invocation - provided func argument is not a function. Got "..type(func))
