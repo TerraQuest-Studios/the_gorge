@@ -530,9 +530,9 @@ function tg_nodes.defNode(name, sound_spec)
 	end
 end
 
-createNode("stone", "stone")
-createNode("stone_slab", "stone slab", nil, shapes.slab, "stone")
-createNode("stone_stairs", "stone stairs", nil, shapes.stairs, "stone")
+createNode("stone", "stone", tg_sound.stone_defaults())
+createNode("stone_slab", "stone slab", tg_sound.stone_defaults(), shapes.slab, "stone")
+createNode("stone_stairs", "stone stairs", tg_sound.stone_defaults(), shapes.stairs, "stone")
 createNode("cave_ground", "cave ground", tg_sound.gravel_defaults())
 createNode("cave_ground_2", "cave ground, feels moist", tg_sound.gravel_defaults())
 createNode("dirt", "dirt, cold", tg_sound.gravel_defaults())

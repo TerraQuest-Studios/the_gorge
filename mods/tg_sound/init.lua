@@ -21,7 +21,7 @@ end
 -- stone
 function tg_sound.stone_defaults(snd)
     snd = snd or {}
-    snd.footstep = LSSG(snd.footstep, "", 0.5)
+    snd.footstep = LSSG(snd.footstep, "tg_rock_footstep", 0.5)
     return snd
 end
 
