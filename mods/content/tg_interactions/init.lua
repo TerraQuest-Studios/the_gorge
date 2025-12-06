@@ -19,7 +19,7 @@ end
 ---comment
 ---@param object table
 ---@param off_on boolean|nil
-local function signalToggle(object, off_on)
+--[[ local function signalToggle(object, off_on)
   local cur_toggle = object:get_luaentity()._toggleable
   local toggle_on = off_on or not cur_toggle -- set or bit flip
 
@@ -37,7 +37,7 @@ local function signalToggle(object, off_on)
     end
   end
   return object
-end
+end ]]
 
 local players_dragging = {}
 
@@ -76,7 +76,7 @@ end
 ---get player from name
 ---@param player_name string
 ---@return table|nil
-local function getPlayer(player_name)
+--[[ local function getPlayer(player_name)
   local players = core.get_connected_players()
   if #players > 0 then
     for _, player in pairs(players) do
@@ -87,9 +87,9 @@ local function getPlayer(player_name)
     end
   end
   return nil
-end
+end ]]
 
-local global_collected = {} -- keycode,visted_area etc..
+--local global_collected = {} -- keycode,visted_area etc..
 
 ---@class collection
 ---@field name string
@@ -133,11 +133,11 @@ end
 local function addToPlayerCollection(player_name, item_name)
   local player_c = getPlayerCollection(player_name)
   table.insert(player_c.collection, { name = item_name })
-  for key, value in ipairs(players_collections) do
+  --[[ for key, value in ipairs(players_collections) do
     if value.player_name == player_c.player_name then
       value = player_c
     end
-  end
+  end ]]
 end
 
 ---comment
@@ -155,11 +155,11 @@ local function removeFromPlayerCollection(player_name, item_name)
       -- end
     end
   end
-  for key, value in ipairs(players_collections) do
+  --[[ for key, value in ipairs(players_collections) do
     if value.player_name == player_c.player_name then
       value = player_c
     end
-  end
+  end ]]
 end
 
 ---comment
@@ -316,21 +316,21 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
               local player_pos = value:get_pos()
               local player_distance = tg_main.distance(player_pos, cur_pos)
               if player_distance > 1.2 then
-                local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
+                --local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
                 local dirX = player_pos.x - cur_pos.x
                 local dirY = player_pos.y - cur_pos.y
                 -- Calculate angle in radians
                 local angle = math.atan2(dirY, dirX)
                 self.object:set_yaw(angle)
 
-                local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
-                local obj_speed = self.object:get_luaentity()._speed
+                --local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
+                --local obj_speed = self.object:get_luaentity()._speed
                 -- local speed = (self.object:get_luaentity()._speed * player_distance) * dtime
-                local speed = math.min(obj_speed * dtime, 1)
+                --local speed = math.min(obj_speed * dtime, 1)
                 -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
                 self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
               end
-            else
+            --else
             end
           end
         end
@@ -513,7 +513,7 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
   {
     _popup_msg = "[ switch on power ]",
     on_rightclick = function(self, clicker)
-      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
@@ -536,6 +536,7 @@ local function find(pos, chain, distance)
       -- core.log("we are not the same")
       if not value:is_player() then
         -- core.log("not the player")
+        -- luacheck: ignore
         if chain[vector.to_string(obj_pos)] == true then
           -- do nothing
           -- core.log("already searched")
@@ -592,7 +593,7 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
   {
     _popup_msg = "[ switch ]",
     on_rightclick = function(self, clicker)
-      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound =  ]]core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
@@ -658,14 +659,14 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("..this locker is empty")
-      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
-      else
+      --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
@@ -676,14 +677,14 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("hmm, a radiation suit. i should slip this on.")
-      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
-      else
+      --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
@@ -693,14 +694,14 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
     _popup_msg = "[ pickup tape ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("this should come in handy.")
-      local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
-      else
+      --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
@@ -729,7 +730,7 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       if pos.x % 1 == 0.5 then
         -- core.log("has .5")
         self.object:set_pos(new_pos)
-      else
+      --else
         -- core.log("does not")
       end
       -- end)
@@ -737,7 +738,7 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
-      velocity = self.object:get_velocity()
+      --velocity = self.object:get_velocity()
       local pos = self.object:get_pos()
       if self.object:get_luaentity()._toggleable == 0 then
         if self.object:get_luaentity()._state == 1 then
@@ -807,7 +808,7 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
         local cur_pos = self.object:get_pos()
         local max_distance = 3
         local entites = core.get_objects_inside_radius(cur_pos, max_distance)
-        local found_player = false
+        --local found_player = false
         for index, value in ipairs(entites) do
           if not value:is_player() then
             if value:get_luaentity().name == item_name then
@@ -896,13 +897,12 @@ core.register_globalstep(function(dtime)
       local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
       -- core.log("so what is this: " .. dump(raycast_result))
-      local hud_pos = nil
+      --local hud_pos = nil
       -- local popup_msg = player:hud_add(msg)
 
       -- need to know to remove or change the current hud at all times
       local player_name = player:get_player_name()
-      local players_hud = nil
-      players_hud = getPlayerHuds(player_name)
+      local players_hud = getPlayerHuds(player_name)
       -- core.log("does the player have huds? "..dump(players_hud.huds))
 
       for index, value in pairs(players_hud.huds) do
@@ -930,7 +930,9 @@ core.register_globalstep(function(dtime)
         if not value:is_player() then
           if value:get_luaentity() ~= nil then
             if value:get_luaentity()._interactable == 1 then
-              if value:get_luaentity()._popup_hidden == true and player:get_wielded_item():get_name() ~= mod_name .. ":" .. "wrench" then
+              --luacheck: ignore
+              if value:get_luaentity()._popup_hidden == true
+              and player:get_wielded_item():get_name() ~= mod_name .. ":wrench" then
               else
                 local obj_pos = value:get_pos()
                 interacble_indicator["world_pos"] = obj_pos
