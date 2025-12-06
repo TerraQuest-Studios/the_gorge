@@ -76,7 +76,7 @@ core.register_on_newplayer(function(player)
     fade_in = function(delay, opacity, afterfunc, ...)
         opacity = opacity - (fadestep * delay)
         if opacity < 0 then
-            opacity = 0
+            --opacity = 0
             return afterfunc(...)
         end
         player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:"..opacity)
@@ -89,7 +89,7 @@ core.register_on_newplayer(function(player)
     fade_out = function(delay, opacity, afterfunc, ...)
         opacity = opacity + (fadestep * delay)
         if opacity > 255 then
-            opacity = 255
+            --opacity = 255
             return afterfunc(...)
         end
         player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:"..opacity)
