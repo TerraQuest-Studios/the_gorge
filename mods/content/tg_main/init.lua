@@ -16,7 +16,7 @@ tg_main.dev_mode = core.is_creative_enabled() -- or (tg_main.mg_name == "flat")
 tg_main.skip_intro = false                    --(tg_main.mg_name == "flat")
 
 -- the player's defualt reach
-tg_main.reach = 2.5
+tg_main.reach = 1.5
 
 -- extend the reach
 if core.is_creative_enabled() == true then

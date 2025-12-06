@@ -3,6 +3,9 @@ local mod_path = core.get_modpath(mod_name)
 
 tg_player = {}
 
+tg_player.eye_height = 1.625
+tg_player.eye_height_sneak = 1.3
+
 dofile(mod_path .. "/scripts" .. "/helpers.lua")
 
 tg_player._pl = {}
@@ -53,4 +56,27 @@ core.register_on_joinplayer(function(player, last_login)
 		},
 		saturation = 1.0,
 	})
+end)
+
+-- player sneak
+core.register_globalstep(function(dtime)
+	local players = core.get_connected_players()
+	for index, player in pairs(players) do
+		local sneaking = player:get_player_control().sneak
+		local props = player:get_properties()
+		if sneaking == true then
+			-- props.eye_height = tg_player.eye_height_sneak
+			-- player:set_properties(props)
+			local height = props.eye_height
+			if height >= tg_player.eye_height_sneak then
+				height = props.eye_height - 0.1
+			end
+			props.eye_height = height
+			player:set_properties(props)
+			-- core.log("this dude is sneaking")
+		else
+			props.eye_height = tg_player.eye_height
+			player:set_properties(props)
+		end
+	end
 end)
