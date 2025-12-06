@@ -21,6 +21,8 @@ local messages = {
     ]]
 }
 
+local gametime = dofile(core.get_modpath("tg_main").."/gametime.lua")
+
 
 
 core.register_on_newplayer(function(player)
@@ -79,7 +81,7 @@ core.register_on_newplayer(function(player)
         end
         player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:"..opacity)
         -- continue looping
-        tg_main.after(0, fade_in, opacity, afterfunc, ...)
+        gametime.after(0, fade_in, opacity, afterfunc, ...)
     end
 
     -- fades out text
@@ -92,14 +94,14 @@ core.register_on_newplayer(function(player)
         end
         player:hud_change(fade_overlay_hud, "text", "[combine:16x16^[noalpha^[opacity:"..opacity)
         -- continue looping
-        tg_main.after(0, fade_out, opacity, afterfunc, ...)
+        gametime.after(0, fade_out, opacity, afterfunc, ...)
     end
 
     local message_start -- being declared so it can be used by the `on_message`
     -- after message has fully faded in, runs fade_out after a delay of the calculated length provided by `on_message`
     local function on_message(len)
         -- run an after for fadeout
-        tg_main.after(len, function()
+        gametime.after(len, function()
             -- run function on after finish so that delay isn't transferred to fade_out parameters
             fade_out(0, 0, message_start)
         end)
