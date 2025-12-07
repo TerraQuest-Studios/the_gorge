@@ -162,6 +162,7 @@ local function createPlant(name, des, shape, texture)
 			type = "fixed",
 			fixed = shape or shapes.box
 		},
+    sounds = tg_sound.plant_defaults()
 	})
 end
 
@@ -304,6 +305,7 @@ core.register_node("tg_nodes:fern", {
 		type = "fixed",
 		fixed = shapes.slim_box
 	},
+  sounds = tg_sound.plant_defaults()
 })
 
 core.register_node("tg_nodes:king_trumpet", {
