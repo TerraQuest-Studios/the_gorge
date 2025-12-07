@@ -11,13 +11,9 @@ if tg_main.dev_mode == true then
 end
 
 -- define the sound/sound_group here
-local sounds = {
-	gravel = "tg_gravel_footstep",
-	stone = "",
-	concrete = "tg_concrete_footstep",
-	paper = "tg_paper_footstep",
+tg_nodes.sounds = {
+  paper = "tg_paper_footstep"
 }
-tg_nodes["sounds"] = sounds
 
 core.register_node("tg_nodes:placeholder", {
 	description = S("Placeholder Node"),
@@ -61,10 +57,10 @@ tg_nodes["shapes"] = shapes
 --- easily get going with nodes
 ---@param name string
 ---@param des string
----@param sound_spec table
+---@param sounds table
 ---@param shape shape|nil
 ---@param texture string|nil : leave nil. the base node texture (name of a base node)
-local function createNode(name, des, sound_spec, shape, texture)
+local function createNode(name, des, sounds, shape, texture)
 	local this_texture = "tg_nodes_" .. name .. ".png"
 	if texture then
 		this_texture = "tg_nodes_" .. texture .. ".png"
@@ -83,9 +79,7 @@ local function createNode(name, des, sound_spec, shape, texture)
 				name = this_texture,
 			},
 		},
-		sounds = {
-			footstep = sound_spec,
-		},
+		sounds = tg_sound.node_defaults(sounds),
 		paramtype = param1,
 		paramtype2 = param2,
 		drawtype = "nodebox",
@@ -100,10 +94,10 @@ end
 --- easily get going with nodes
 ---@param name string
 ---@param des string
----@param sound_spec table
+---@param sounds table
 ---@param shape shape
 ---@param texture table : leave nil. the base node texture (name of a base node)
-local function createMisc(name, des, sound_spec, shape, texture)
+local function createMisc(name, des, sounds, shape, texture)
 	local selectable = nil
 	if tg_main.dev_mode == false then
 		selectable = {
@@ -123,9 +117,7 @@ local function createMisc(name, des, sound_spec, shape, texture)
 		description = S(des),
 		groups = defualt_groups,
 		tiles = texture,
-		sounds = {
-			footstep = sound_spec,
-		},
+		sounds = tg_sound.node_defaults(sounds),
 		paramtype2 = "facedir",
 		paramtype = "light",
 		drawtype = "nodebox",
@@ -170,6 +162,7 @@ local function createPlant(name, des, shape, texture)
 			type = "fixed",
 			fixed = shape or shapes.box
 		},
+    sounds = tg_sound.plant_defaults()
 	})
 end
 
@@ -215,7 +208,7 @@ local function createWallLight(name, des, shape, light_level)
 				if string.find(node.name, "off") then
 					-- core.log("light should be on")
 					core.swap_node(pos, { name = "tg_nodes:led_on", param2 = node.param2 })
-					core.sound_play({ name = tg_nodes["sounds"].paper, gain = 0.01, pitch = 0.8 },
+					core.sound_play({ name = tg_nodes.sounds.paper, gain = 0.01, pitch = 0.8 },
 						{ pos = { x = pos.x, y = pos.y, z = pos.z },
 						})
 				end
@@ -312,6 +305,7 @@ core.register_node("tg_nodes:fern", {
 		type = "fixed",
 		fixed = shapes.slim_box
 	},
+  sounds = tg_sound.plant_defaults()
 })
 
 core.register_node("tg_nodes:king_trumpet", {
@@ -488,8 +482,8 @@ core.register_node("tg_nodes:radio", {
 
 ---will create multiple node shapes
 ---@param name any
----@param sound_spec any
-function tg_nodes.defNode(name, sound_spec)
+---@param sounds any
+function tg_nodes.defNode(name, sounds)
 	local nodes_to_register = { name, name .. "_stairs", name .. "_slab", name .. "_panel", name .. "_rails" }
 	for index, value in ipairs(nodes_to_register) do
 		local param1 = "none"
@@ -526,9 +520,7 @@ function tg_nodes.defNode(name, sound_spec)
 					name = "tg_nodes_" .. name .. ".png",
 				},
 			},
-			sounds = {
-				footstep = sound_spec,
-			},
+			sounds = tg_sound.node_defaults(sounds),
 			paramtype = param1,
 			paramtype2 = param2,
 			drawtype = "nodebox",
@@ -538,36 +530,36 @@ function tg_nodes.defNode(name, sound_spec)
 	end
 end
 
-createNode("stone", "stone", { name = sounds.concrete, gain = 0.3 })
-createNode("stone_slab", "stone slab", { name = sounds.concrete, gain = 0.3 }, shapes.slab, "stone")
-createNode("stone_stairs", "stone stairs", { name = sounds.concrete, gain = 0.3 }, shapes.stairs, "stone")
-createNode("cave_ground", "cave ground", { name = sounds.gravel, gain = 0.3 })
-createNode("cave_ground_2", "cave ground, feels moist", { name = sounds.gravel, gain = 0.3 })
-createNode("dirt", "dirt, cold", { name = sounds.gravel, gain = 0.3 })
-createNode("dirt_slab", "dirt, cold", { name = sounds.gravel, gain = 0.3 }, shapes.slab, "dirt")
-createNode("cave_ground_dirt", "cave ground, with dirt", { name = sounds.gravel, gain = 0.3, })
-createNode("concrete", "concrete, no one is taking care of this.", { name = sounds.concrete, gain = 0.3, })
-createNode("concrete_stair", "concrete, no one is taking care of this.", { name = sounds.concrete, gain = 0.3, },
+createNode("stone", "stone", tg_sound.stone_defaults())
+createNode("stone_slab", "stone slab", tg_sound.stone_defaults(), shapes.slab, "stone")
+createNode("stone_stairs", "stone stairs", tg_sound.stone_defaults(), shapes.stairs, "stone")
+createNode("cave_ground", "cave ground", tg_sound.gravel_defaults())
+createNode("cave_ground_2", "cave ground, feels moist", tg_sound.gravel_defaults())
+createNode("dirt", "dirt, cold", tg_sound.dirt_defaults())
+createNode("dirt_slab", "dirt, cold", tg_sound.dirt_defaults(), shapes.slab, "dirt")
+createNode("cave_ground_dirt", "cave ground, with dirt", tg_sound.gravel_defaults())
+createNode("concrete", "concrete, no one is taking care of this.")
+createNode("concrete_stair", "concrete, no one is taking care of this.", nil,
 	shapes.stairs, "concrete")
-createNode("concrete_slab", "concrete, no one is taking care of this.", { name = sounds.concrete, gain = 0.3, },
+createNode("concrete_slab", "concrete, no one is taking care of this.", nil,
 	shapes.slab, "concrete")
-createNode("concrete_floor", "concrete floor, almost like sand paper.", { name = sounds.concrete, gain = 0.3, })
+createNode("concrete_floor", "concrete floor, almost like sand paper.")
 
-createMisc("locker", "Locker, LET ME IN!!", { name = sounds.concrete, gain = 0.3, }, shapes.double,
+createMisc("locker", "Locker, LET ME IN!!", nil, shapes.double,
 	{ { name = "tg_nodes_misc.png^[sheet:16x16:3,0" }, { name = "tg_nodes_misc.png^[sheet:16x8:0,0" } })
-createMisc("paper", "Paper", { name = sounds.paper, gain = 0.3, }, shapes.sheet,
+createMisc("paper", "Paper", tg_sound.paper_defaults(), shapes.sheet,
 	{ { name = "tg_nodes_misc.png^[sheet:16x16:0,3" } })
-createMisc("paper_1", "Paper", { name = sounds.paper, gain = 0.3, }, shapes.sheet,
+createMisc("paper_1", "Paper", tg_sound.paper_defaults(), shapes.sheet,
 	{ { name = "tg_nodes_misc.png^[sheet:16x16:1,3" } })
 -- sticky notes, 4 texture options.. the quickest implementation is multiple nodes
 createMisc("stick_notes", "Sticky Note, one of these had gotta have something important on it.",
-	{ name = sounds.paper, gain = 0.9, }, shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:0,4" } })
+	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:0,4" } })
 createMisc("stick_notes_1", "Sticky Note, one of these had gotta have something important on it.",
-	{ name = sounds.paper, gain = 0.9, }, shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:1,4" } })
+	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:1,4" } })
 createMisc("stick_notes_2", "Sticky Note, one of these had gotta have something important on it.",
-	{ name = sounds.paper, gain = 0.9, }, shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:2,4" } })
+	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:2,4" } })
 createMisc("stick_notes_3", "Sticky Note, one of these had gotta have something important on it.",
-	{ name = sounds.paper, gain = 0.9, }, shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:3,4" } })
+	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:3,4" } })
 
 createPlant("short_grass", "Grass, they tickle", shapes.tiny_box, "plants.png^[sheet:16x16:7,0")
 createPlant("plant", "Plant, they tickle", shapes.slim_box, "plants.png^[sheet:16x16:6,1")
@@ -580,10 +572,10 @@ createWallLight("led_on", "led, blinding.", shapes.panel, 13)
 createWallLight("led_off", "led, blinding.", shapes.panel, 0)
 createWallLight2("led_on_red", "led, blinding.", shapes.panel, 7)
 
-tg_nodes.defNode("steel_enclosure", { name = sounds.concrete, gain = 0.3, })
-tg_nodes.defNode("concrete_tiled", { name = sounds.concrete, gain = 0.3, })
+tg_nodes.defNode("steel_enclosure", tg_sound.metal_defaults())
+tg_nodes.defNode("concrete_tiled")
 
 -- these two nodes need more work
-createNode("crate","crate, looks heavy",{name = sounds.stone})
-createNode("crate2","crate, looks heavy",{name = sounds.stone})
+createNode("crate","crate, looks heavy", tg_sound.woodplank_defaults())
+createNode("crate2","crate, looks heavy", tg_sound.woodplank_defaults())
 ------
