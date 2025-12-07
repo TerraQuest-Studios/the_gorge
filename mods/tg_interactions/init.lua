@@ -636,7 +636,7 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
               tg_cut_scenes.run(player, discalimer_messages)
             else
               core.log("showing disclaimer cut scene to player. (exluded in dev_mode/buildmode)\n" ..
-              table.concat(discalimer_messages))
+                table.concat(discalimer_messages))
             end
           end
         end
@@ -973,6 +973,10 @@ core.register_globalstep(function(dtime)
                 local obj_pos = value:get_pos()
                 interacble_indicator["world_pos"] = obj_pos
                 local popup_texture = value:get_luaentity()._popup_texture
+                if value:get_luaentity()._interactable_pos ~= nil then
+                  local specefic_pos = vector.from_string(value:get_luaentity()._interactable_pos)
+                  interacble_indicator["world_pos"] = vector.add(obj_pos, specefic_pos)
+                end
                 if popup_texture ~= nil then
                   interacble_indicator["text"] = popup_texture
                 else
@@ -997,6 +1001,10 @@ core.register_globalstep(function(dtime)
 
         msg["name"] = hover_popup
         msg["world_pos"] = hud_pos
+        if raycast_result.ref:get_luaentity()._interactable_pos ~= nil then
+          local specefic_pos = vector.from_string(raycast_result.ref:get_luaentity()._interactable_pos)
+          msg["world_pos"] = vector.add(hud_pos, specefic_pos)
+        end
         local new_hud = player:hud_add(msg)
         table.insert(players_hud.huds, new_hud)
         -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
@@ -1089,11 +1097,11 @@ core.register_tool(mod_name .. ":" .. "wrench", {
 
 core.register_on_player_receive_fields(function(player, formname, fields)
   if formname == "tg_interactions_menu" then
-    core.log("fields: " .. dump(fields))
+    -- core.log("fields: " .. dump(fields))
     if fields["object"] == nil then
       return
     end
-    core.log("what field?" .. dump(fields))
+    -- core.log("what field?" .. dump(fields))
     -- local eye_height = player:get_properties().eye_height
     -- local player_look_dir = player:get_look_dir()
     -- local pos = player:get_pos():add(player_look_dir)
