@@ -330,7 +330,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
                 -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
                 self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
               end
-            --else
+              --else
             end
           end
         end
@@ -513,7 +513,8 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
   {
     _popup_msg = "[ switch on power ]",
     on_rightclick = function(self, clicker)
-      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
@@ -593,7 +594,8 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
   {
     _popup_msg = "[ switch ]",
     on_rightclick = function(self, clicker)
-      --[[ local playing_sound =  ]]core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound =  ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
@@ -613,6 +615,10 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
 )
 
 local player_end_disclaimer = false
+local discalimer_messages = {
+  [[Dev note: This is all that we currently have.. ]],
+  [[More is to come.]]
+}
 
 tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
@@ -623,11 +629,14 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
       local max_distance = 6
       local near_by = core.get_objects_inside_radius(cur_pos, max_distance)
       if player_end_disclaimer == false then
-        for index, value in ipairs(near_by) do
-          if value:is_player() then
+        for index, player in ipairs(near_by) do
+          if player:is_player() then
             player_end_disclaimer = true
-            core.log("show player the end")
-            tg_cut_scenes.run(value, { [[this is the end]], [[there is nothing left]] })
+            if tg_main.dev_mode == false then
+              tg_cut_scenes.run(player, discalimer_messages)
+            else
+              core.log("showing disclaimer cut scene to player. (exluded in dev_mode/buildmode)\n"..table.concat(discalimer_messages))
+            end
           end
         end
       end
@@ -682,14 +691,15 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("..this locker is empty")
-      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
-      --else
+        --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
@@ -700,14 +710,15 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("hmm, a radiation suit. i should slip this on.")
-      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
-      --else
+        --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
@@ -717,14 +728,15 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
     _popup_msg = "[ pickup tape ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("this should come in handy.")
-      --[[ local playing_sound = ]] core.sound_play({ name = "tg_paper_footstep" }, {
+      --[[ local playing_sound = ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
       if tg_main.dev_mode == false then
         self.object:remove()
-      --else
+        --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
@@ -753,7 +765,7 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       if pos.x % 1 == 0.5 then
         -- core.log("has .5")
         self.object:set_pos(new_pos)
-      --else
+        --else
         -- core.log("does not")
       end
       -- end)
@@ -955,7 +967,7 @@ core.register_globalstep(function(dtime)
             if value:get_luaentity()._interactable == 1 then
               --luacheck: ignore
               if value:get_luaentity()._popup_hidden == true
-              and player:get_wielded_item():get_name() ~= mod_name .. ":wrench" then
+                  and player:get_wielded_item():get_name() ~= mod_name .. ":wrench" then
               else
                 local obj_pos = value:get_pos()
                 interacble_indicator["world_pos"] = obj_pos
@@ -1032,8 +1044,8 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       local to_place = itemstack:get_meta():get_string("place")
       if to_place ~= "" then
         if placer:get_player_control().aux1 == true then
-            core.add_entity(pointed_thing.under, to_place)
-          else
+          core.add_entity(pointed_thing.under, to_place)
+        else
           core.add_entity(pointed_thing.above, to_place)
         end
       end
