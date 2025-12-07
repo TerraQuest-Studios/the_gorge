@@ -635,7 +635,8 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
             if tg_main.dev_mode == false then
               tg_cut_scenes.run(player, discalimer_messages)
             else
-              core.log("showing disclaimer cut scene to player. (exluded in dev_mode/buildmode)\n"..table.concat(discalimer_messages))
+              core.log("showing disclaimer cut scene to player. (exluded in dev_mode/buildmode)\n" ..
+              table.concat(discalimer_messages))
             end
           end
         end
