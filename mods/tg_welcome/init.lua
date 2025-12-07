@@ -28,6 +28,7 @@ local gametime = dofile(core.get_modpath("tg_main").."/gametime.lua")
 core.register_on_newplayer(function(player)
     player:set_pos(startpos)
 
+    local hud_text_size = 4
     local current_huds = {} --player:hud_get_all()
 
     --luanti is stupid, get huds next server step
@@ -60,7 +61,7 @@ core.register_on_newplayer(function(player)
         alignment = { x = 0, y = 0 },
         scale = { x = 100, y = 100 },
         number = 0xFFFFFF,
-        size = { x = 4, y = 4 },
+        size = { x = hud_text_size, y = hud_text_size },
     })
 
     local fade_overlay_hud = player:hud_add({
@@ -140,6 +141,28 @@ core.register_on_newplayer(function(player)
         fade_in(0, 255, on_message, len)
     end
 
+    local handle_window_size
+    handle_window_size = function()
+        local window_information = core.get_player_window_information(player:get_player_name())
+        if window_information == nil then
+            --shrug, failure
+            return
+        end
+
+        hud_text_size = math.floor(window_information.size.x / 635)
+        if hud_text_size < 1 then hud_text_size = 1 end
+        if hud_text_size > 4 then hud_text_size = 4 end
+
+        player:hud_change(text_message, "size", { x = hud_text_size, y = hud_text_size })
+    end
+
+    local init_messages
+    init_messages = function()
+        handle_window_size()
+        message_start()
+    end
+
+
     -- start message after a second
-    core.after(1, message_start)
+    core.after(1, init_messages)
 end)
