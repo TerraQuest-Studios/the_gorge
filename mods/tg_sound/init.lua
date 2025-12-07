@@ -32,6 +32,13 @@ function tg_sound.gravel_defaults(snd)
     return snd
 end
 
+-- dirt
+function tg_sound.dirt_defaults(snd)
+    snd = snd or {}
+    snd.footstep = LSSG(snd.footstep, "tg_dirt_footstep")
+    return snd
+end
+
 -- paper
 function tg_sound.paper_defaults(snd)
     snd = snd or {}

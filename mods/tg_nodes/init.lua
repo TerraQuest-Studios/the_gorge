@@ -535,8 +535,8 @@ createNode("stone_slab", "stone slab", tg_sound.stone_defaults(), shapes.slab, "
 createNode("stone_stairs", "stone stairs", tg_sound.stone_defaults(), shapes.stairs, "stone")
 createNode("cave_ground", "cave ground", tg_sound.gravel_defaults())
 createNode("cave_ground_2", "cave ground, feels moist", tg_sound.gravel_defaults())
-createNode("dirt", "dirt, cold", tg_sound.gravel_defaults())
-createNode("dirt_slab", "dirt, cold", tg_sound.gravel_defaults(), shapes.slab, "dirt")
+createNode("dirt", "dirt, cold", tg_sound.dirt_defaults())
+createNode("dirt_slab", "dirt, cold", tg_sound.dirt_defaults(), shapes.slab, "dirt")
 createNode("cave_ground_dirt", "cave ground, with dirt", tg_sound.gravel_defaults())
 createNode("concrete", "concrete, no one is taking care of this.")
 createNode("concrete_stair", "concrete, no one is taking care of this.", nil,
