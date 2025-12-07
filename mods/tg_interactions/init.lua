@@ -547,8 +547,8 @@ local function find(pos, chain, distance)
             core.log("relay")
             find(obj_pos, chain, distance)
             -- search again
-          elseif string.find(value:get_luaentity().name, "receiver") then
-            core.log("receiver!!!!")
+          elseif string.find(value:get_luaentity().name, "socket") then
+            core.log("socket!!!!")
             local find_reciver = core.get_objects_inside_radius(obj_pos, distance * 2)
             for r_i, r_v in pairs(find_reciver) do
               local r_pos = r_v:get_pos()
@@ -656,9 +656,9 @@ tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[s
   }
 )
 
-tg_interactions.register_interactable("receiver", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
+tg_interactions.register_interactable("socket", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
   {
-    _popup_msg = "[ receiver ]",
+    _popup_msg = "[ socket ]",
     _toggleable = 0, -- default state 0
     _state = 0,      -- default state 0
     _popup_texture = "tg_nodes_misc.png^[sheet:16x16:2,5",
@@ -1032,7 +1032,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
     -- },
     objects = {
       [mod_name .. ":" .. "relay"] = true,
-      [mod_name .. ":" .. "receiver"] = true,
+      [mod_name .. ":" .. "socket"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
     },
