@@ -2,4 +2,5 @@
 *~
 .*
 !.github
+!.gitattributes
 TODO.md
