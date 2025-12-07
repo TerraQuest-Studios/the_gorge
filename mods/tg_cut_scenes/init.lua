@@ -4,7 +4,7 @@ local gametime = dofile(core.get_modpath("tg_main") .. "/gametime.lua")
 
 tg_cut_scenes = {}
 
-function tg_cut_scenes.hud(player,msg)
+function tg_cut_scenes.run(player,messages)
   local hud_text_size = 4
   local current_huds = {}   --player:hud_get_all()
 
@@ -34,7 +34,7 @@ function tg_cut_scenes.hud(player,msg)
   local text_message = player:hud_add({
     hud_elem_type = "text",
     position = { x = 0.43, y = 0.5 },     -- 0.42 seems to center the text better.
-    text = msg[messageindex],
+    text = messages[messageindex],
     alignment = { x = 0, y = 0 },
     scale = { x = 100, y = 100 },
     number = 0xFFFFFF,
@@ -91,7 +91,7 @@ function tg_cut_scenes.hud(player,msg)
   -- change text, run fade_in
   -- if no message can be found, end the welcome intro
   message_start = function()
-    local message = msg[messageindex]
+    local message = messages[messageindex]
     -- end of the line
     if not message then
       -- remove all graphics

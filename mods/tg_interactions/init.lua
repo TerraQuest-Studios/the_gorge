@@ -622,13 +622,12 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
       local cur_pos = self.object:get_pos()
       local max_distance = 6
       local near_by = core.get_objects_inside_radius(cur_pos, max_distance)
-      local has_core = false
       if player_end_disclaimer == false then
         for index, value in ipairs(near_by) do
           if value:is_player() then
             player_end_disclaimer = true
             core.log("show player the end")
-            tg_cut_scenes.hud(value, { [[this is the end]], [[there is nothing left]] })
+            tg_cut_scenes.run(value, { [[this is the end]], [[there is nothing left]] })
           end
         end
       end
