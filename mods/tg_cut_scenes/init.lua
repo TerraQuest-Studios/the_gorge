@@ -102,7 +102,9 @@ function tg_cut_scenes.run(player, messages)
       -- restore huds
       for id, hud in ipairs(current_huds) do
         if hud.type ~= "text" and hud.type ~= "image" then
-          player:hud_add(hud)
+          if not core.is_creative_enabled() and hud.type ~= "hotbar" then
+            player:hud_add(hud)
+          end
         end
       end
 

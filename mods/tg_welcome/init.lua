@@ -22,8 +22,22 @@ local messages = {
 
 core.register_on_newplayer(function(player)
   player:set_pos(startpos)
-  tg_cut_scenes.hud(player, messages)
+  tg_cut_scenes.run(player, messages)
   --reset the player incase they did dumb things
   player:set_pos(startpos)
   player:set_look_vertical(0)
+end)
+
+core.register_on_joinplayer(function(player, last_login)
+  if last_login==nil then
+    return
+  end
+
+  core.after(0, function()
+    for id, hud in ipairs(player:hud_get_all()) do
+      if hud.type == "hotbar" and not core.is_creative_enabled() then
+        player:hud_remove(id)
+      end
+    end
+  end)
 end)
