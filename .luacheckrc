@@ -34,5 +34,5 @@ read_globals = {
     "hyperloop",
 
     --mod produced
-    "tg_main", "tg_mapgen", "aom_wrench", "tg_stairs", "tg_power", "tg_nodes",
+    "tg_main", "tg_mapgen", "aom_wrench", "tg_stairs", "tg_power", "tg_nodes", "tg_cut_scenes",
 }
