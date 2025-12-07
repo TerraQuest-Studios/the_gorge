@@ -1,12 +1,12 @@
-local base_slide_duration = 5                -- in seconds (default is 5), what calculations for each slide should be based around
+local base_slide_duration = 5 -- in seconds (default is 5), what calculations for each slide should be based around
 
 local gametime = dofile(core.get_modpath("tg_main") .. "/gametime.lua")
 
 tg_cut_scenes = {}
 
-function tg_cut_scenes.run(player,messages)
+function tg_cut_scenes.run(player, messages)
   local hud_text_size = 4
-  local current_huds = {}   --player:hud_get_all()
+  local current_huds = {} --player:hud_get_all()
 
   --luanti is stupid, get huds next server step
   core.after(0, function()
@@ -19,8 +19,8 @@ function tg_cut_scenes.run(player,messages)
     end
   end)
 
-  local messageindex = 1   -- message index
-  local fadestep = 70      -- units per second, becomes 100 after 1st message
+  local messageindex = 1 -- message index
+  local fadestep = 70    -- units per second, becomes 100 after 1st message
 
   -- graphics
   local base_background = player:hud_add({
@@ -33,7 +33,7 @@ function tg_cut_scenes.run(player,messages)
 
   local text_message = player:hud_add({
     hud_elem_type = "text",
-    position = { x = 0.43, y = 0.5 },     -- 0.42 seems to center the text better.
+    position = { x = 0.43, y = 0.5 }, -- 0.42 seems to center the text better.
     text = messages[messageindex],
     alignment = { x = 0, y = 0 },
     scale = { x = 100, y = 100 },
@@ -50,7 +50,7 @@ function tg_cut_scenes.run(player,messages)
   })
 
   -- fades in text
-  local fade_in   -- declare prior so that we can use ourselves
+  local fade_in -- declare prior so that we can use ourselves
   fade_in = function(delay, opacity, afterfunc, ...)
     opacity = opacity - (fadestep * delay)
     if opacity < 0 then
@@ -63,7 +63,7 @@ function tg_cut_scenes.run(player,messages)
   end
 
   -- fades out text
-  local fade_out   -- ditto to `fade_in`
+  local fade_out -- ditto to `fade_in`
   fade_out = function(delay, opacity, afterfunc, ...)
     opacity = opacity + (fadestep * delay)
     if opacity > 255 then
@@ -75,7 +75,7 @@ function tg_cut_scenes.run(player,messages)
     gametime.after(0, fade_out, opacity, afterfunc, ...)
   end
 
-  local message_start   -- being declared so it can be used by the `on_message`
+  local message_start -- being declared so it can be used by the `on_message`
   -- after message has fully faded in, runs fade_out after a delay of the calculated length provided by `on_message`
   local function on_message(len)
     -- run an after for fadeout
@@ -83,7 +83,7 @@ function tg_cut_scenes.run(player,messages)
       -- run function on after finish so that delay isn't transferred to fade_out parameters
       fade_out(0, 0, message_start)
     end)
-    messageindex = messageindex + 1     -- iterate through
+    messageindex = messageindex + 1 -- iterate through
     -- turn into 100 after first message has been produced
     if messageindex ~= 1 then fadestep = 100 end
   end
@@ -109,9 +109,9 @@ function tg_cut_scenes.run(player,messages)
       return player:set_look_horizontal(0)
     end
     -- continue with the welcome intro
-    local len = base_slide_duration * (#message / 121)   -- slide duration multiplied by amount of characters
+    local len = base_slide_duration * (#message / 121) -- slide duration multiplied by amount of characters
     -- divided by 121 for a percentage
-    player:hud_change(text_message, "text", message)     -- modify text
+    player:hud_change(text_message, "text", message)   -- modify text
     fade_in(0, 255, on_message, len)
   end
 
@@ -140,4 +140,3 @@ function tg_cut_scenes.run(player,messages)
   -- start message after a second
   core.after(1, init_msg)
 end
-
