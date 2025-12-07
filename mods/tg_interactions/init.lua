@@ -693,7 +693,7 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
           })
           self.object:get_luaentity()._player_within = "false"
           -- core.log("found player, toggle on")
-          player_within = false
+          -- player_within = false
           find(pos, chain, 1.2)
         end
       end
