@@ -372,7 +372,49 @@ core.register_node("tg_nodes:cables", {
 	},
 })
 
+core.register_node("tg_nodes:cable", {
+	description = S("cable, I don't don't trust these."),
+	groups = defualt_groups,
+	paramtype = "light",
+	drawtype = "mesh",
+	mesh = "cable.glb",
+	visual_scale = 10.0,
+	tiles = { "cables.png" },
+	paramtype2 = "facedir",
+	-- use_texture_alpha = "clip",
+	-- sunlight_propagates = true,
+	walkable = false,
+	node_box = {
+		type = "fixed",
+		fixed = shapes.panel
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = shapes.panel
+	},
+})
 
+core.register_node("tg_nodes:cable_angle", {
+	description = S("cable_angle, I don't don't trust these."),
+	groups = defualt_groups,
+	paramtype = "light",
+	drawtype = "mesh",
+	mesh = "cable_angle.glb",
+	visual_scale = 10.0,
+	tiles = { "cables.png" },
+	paramtype2 = "facedir",
+	-- use_texture_alpha = "clip",
+	-- sunlight_propagates = true,
+	walkable = false,
+	node_box = {
+		type = "fixed",
+		fixed = shapes.panel
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = shapes.panel
+	},
+})
 core.register_node("tg_nodes:tubes", {
 	description = S("tubes, for transfering liquids."),
 	groups = defualt_groups,
@@ -393,6 +435,7 @@ core.register_node("tg_nodes:tubes", {
 		type = "fixed",
 		fixed = shapes.slab
 	},
+  sounds = tg_sound.metal_defaults()
 })
 core.register_node("tg_nodes:tubes_left", {
 	description = S("tubes_left, for transfering liquids."),
@@ -414,6 +457,7 @@ core.register_node("tg_nodes:tubes_left", {
 		type = "fixed",
 		fixed = shapes.slab
 	},
+  sounds = tg_sound.metal_defaults()
 })
 core.register_node("tg_nodes:tubes_right", {
 	description = S("tubes_right, for transfering liquids."),
@@ -435,6 +479,7 @@ core.register_node("tg_nodes:tubes_right", {
 		type = "fixed",
 		fixed = shapes.slab
 	},
+  sounds = tg_sound.metal_defaults()
 })
 core.register_node("tg_nodes:tubes_down", {
 	description = S("tubes_down, for transfering liquids."),
@@ -456,6 +501,7 @@ core.register_node("tg_nodes:tubes_down", {
 		type = "fixed",
 		fixed = shapes.half_slab
 	},
+  sounds = tg_sound.metal_defaults()
 })
 
 core.register_node("tg_nodes:radio", {
