@@ -11,7 +11,7 @@ dofile(mod_path .. "/scripts" .. "/utils.lua")
 tg_main.mg_name = core.get_mapgen_setting("mg_name") or "singlenode"
 -- Enter dev mode if mapgen "flat" or creative setting is `true`.
 -- This stops normal gameplay functions from running.
-tg_main.dev_mode = core.is_creative_enabled() -- or (tg_main.mg_name == "flat")
+tg_main.dev_mode = core.is_creative_enabled() --creative mode is toggled by game build mode settings
 -- Skip intro if on mapgen "flat".
 tg_main.skip_intro = false                    --(tg_main.mg_name == "flat")
 

@@ -1,0 +1,2 @@
+# only turn on if your working on dev for the game
+tg_build_mode (build mode) bool false
