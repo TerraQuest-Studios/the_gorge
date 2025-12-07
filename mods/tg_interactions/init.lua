@@ -612,6 +612,29 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
   }
 )
 
+local player_end_disclaimer = false
+
+tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.centerd_box,
+  {
+    -- _popup_msg = "[ switch ]",
+    on_step = function(self, dtime, moveresult)
+      local cur_pos = self.object:get_pos()
+      local max_distance = 6
+      local near_by = core.get_objects_inside_radius(cur_pos, max_distance)
+      if player_end_disclaimer == false then
+        for index, value in ipairs(near_by) do
+          if value:is_player() then
+            player_end_disclaimer = true
+            core.log("show player the end")
+            tg_cut_scenes.run(value, { [[this is the end]], [[there is nothing left]] })
+          end
+        end
+      end
+    end,
+  }
+)
+
 tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
   {
     _popup_msg = "[ relay ]",
