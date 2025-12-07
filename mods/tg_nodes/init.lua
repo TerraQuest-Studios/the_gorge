@@ -480,8 +480,8 @@ core.register_node("tg_nodes:radio", {
 
 ---will create multiple node shapes
 ---@param name any
----@param sound_spec any
-function tg_nodes.defNode(name, sound_spec)
+---@param sounds any
+function tg_nodes.defNode(name, sounds)
 	local nodes_to_register = { name, name .. "_stairs", name .. "_slab", name .. "_panel", name .. "_rails" }
 	for index, value in ipairs(nodes_to_register) do
 		local param1 = "none"
@@ -518,9 +518,7 @@ function tg_nodes.defNode(name, sound_spec)
 					name = "tg_nodes_" .. name .. ".png",
 				},
 			},
-			sounds = {
-				footstep = sound_spec,
-			},
+			sounds = tg_sound.node_defaults(sounds),
 			paramtype = param1,
 			paramtype2 = param2,
 			drawtype = "nodebox",
@@ -572,7 +570,7 @@ createWallLight("led_on", "led, blinding.", shapes.panel, 13)
 createWallLight("led_off", "led, blinding.", shapes.panel, 0)
 createWallLight2("led_on_red", "led, blinding.", shapes.panel, 7)
 
-tg_nodes.defNode("steel_enclosure")
+tg_nodes.defNode("steel_enclosure", tg_sound.metal_defaults())
 tg_nodes.defNode("concrete_tiled")
 
 -- these two nodes need more work

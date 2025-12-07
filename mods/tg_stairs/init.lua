@@ -43,6 +43,8 @@ function tg_stairs.register(name, def)
             fixed = sdef[2],
         }
 
+        ndef.sounds = ndef.sounds or tg_sound.node_defaults()
+
         minetest.register_node(":" .. split[1] .. item_name, ndef)
     end
 end

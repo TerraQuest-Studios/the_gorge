@@ -52,3 +52,10 @@ function tg_sound.woodplank_defaults(snd)
     snd.footstep = LSSG(snd.footstep, "tg_plank_footstep")
     return snd
 end
+
+-- metal
+function tg_sound.metal_defaults(snd)
+    snd = snd or {}
+    snd.footstep = LSSG(snd.footstep, "tg_metal_footstep", 0.55)
+    return snd
+end

@@ -48,7 +48,8 @@ for name, nodebox in pairs(furnitures) do
                 type = "fixed",
                 fixed = nodebox
             },
-            groups = node_groups
+            groups = node_groups,
+            sounds = tg_sound.metal_defaults()
         })
     end
 end
