@@ -544,32 +544,32 @@ local function find(pos, chain, distance)
         else
           chain[vector.to_string(obj_pos)] = true
           if string.find(value:get_luaentity().name, "relay") then
-            core.log("relay")
+            -- core.log("relay")
             find(obj_pos, chain, distance)
             -- search again
           elseif string.find(value:get_luaentity().name, "socket") then
-            core.log("socket!!!!")
+            -- core.log("socket!!!!")
             local find_reciver = core.get_objects_inside_radius(obj_pos, distance * 2)
             for r_i, r_v in pairs(find_reciver) do
               local r_pos = r_v:get_pos()
               if r_pos ~= obj_pos then
                 if not r_v:is_player() then
                   if r_v:get_luaentity()._toggleable ~= nil then
-                    core.log("toggleable found")
-                    core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
+                    -- core.log("toggleable found")
+                    -- core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
                     local toggle = r_v:get_luaentity()._toggleable
                     if toggle == 0 then
                       r_v:get_luaentity()._toggleable = 1
                     else
                       r_v:get_luaentity()._toggleable = 0
                     end
-                    core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
+                    -- core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
                   end
                 end
               end
             end
           else
-            core.log("wrong: " .. value:get_luaentity().name)
+            -- core.log("wrong: " .. value:get_luaentity().name)
           end
 
           -- local toggleable = value:get_luaentity()._toggleable
@@ -608,7 +608,9 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
       --   self.object:get_luaentity()._popup_msg = "[ switch off power ]"
       -- end
       chain[vector.to_string(pos)] = true
-      core.log("switch toggled")
+      if tg_main.dev_mode == true then
+        core.log("switch toggled")
+      end
       find(pos, chain, 1.2)
     end,
   }
@@ -639,6 +641,60 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
                 table.concat(discalimer_messages))
             end
           end
+        end
+      end
+    end,
+  }
+)
+
+tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.thicker_box,
+  {
+    -- _popup_msg = "[ switch ]",
+    pointable = false,
+    _popup_msg = "[ player sensor ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:4,5",
+    _popup_hidden = true,
+    _toggle = 0,
+    _player_within = "false",
+    on_step = function(self, dtime, moveresult)
+      local pos = self.object:get_pos()
+      local chain = {}
+      local max_distance = 3.5
+      local near_by = core.get_objects_inside_radius(pos, max_distance)
+      local player_within = false --buffer to work when at least 1 player
+      for index, player in ipairs(near_by) do
+        if player:is_player() then
+          -- core.log("player found")
+          player_within = true
+          if self.object:get_luaentity()._player_within == "false" then
+            core.sound_play({ name = "tg_paper_footstep" }, {
+              gain = 1.0,   -- default
+              fade = 100.0, -- default
+              pitch = 1.8,  -- 1.0, -- default
+            })
+            self.object:get_luaentity()._player_within = "true"
+            -- core.log("found player, toggle on")
+            find(pos, chain, 1.2)
+            -- self.object:get_luaentity()._player_within = "false"
+            -- core.log("found player, toggle off")
+            -- player_within = false
+            -- find(pos, chain, 1.2)
+          end
+        end
+      end
+      if player_within == false then
+        -- core.log("no player found")
+        if self.object:get_luaentity()._player_within == "true" then
+          core.sound_play({ name = "tg_paper_footstep" }, {
+            gain = 1.0,   -- default
+            fade = 100.0, -- default
+            pitch = 1.2,  -- 1.0, -- default
+          })
+          self.object:get_luaentity()._player_within = "false"
+          -- core.log("found player, toggle on")
+          player_within = false
+          find(pos, chain, 1.2)
         end
       end
     end,
@@ -1033,6 +1089,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
     objects = {
       [mod_name .. ":" .. "relay"] = true,
       [mod_name .. ":" .. "socket"] = true,
+      [mod_name .. ":" .. "sensor"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
     },
