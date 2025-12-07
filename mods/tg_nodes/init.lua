@@ -576,6 +576,6 @@ tg_nodes.defNode("steel_enclosure")
 tg_nodes.defNode("concrete_tiled")
 
 -- these two nodes need more work
-createNode("crate","crate, looks heavy", tg_sound.stone_defaults())
-createNode("crate2","crate, looks heavy", tg_sound.stone_defaults())
+createNode("crate","crate, looks heavy", tg_sound.woodplank_defaults())
+createNode("crate2","crate, looks heavy", tg_sound.woodplank_defaults())
 ------

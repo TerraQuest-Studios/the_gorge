@@ -45,3 +45,10 @@ function tg_sound.paper_defaults(snd)
     snd.footstep = LSSG(snd.footstep, "tg_paper_footstep", 0.9)
     return snd
 end
+
+-- wooden plank / hollow wood
+function tg_sound.woodplank_defaults(snd)
+    snd = snd or {}
+    snd.footstep = LSSG(snd.footstep, "tg_plank_footstep")
+    return snd
+end
