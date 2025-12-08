@@ -200,7 +200,7 @@ end
 function tg_interactions.register_draggable(name, model_type, model, texture, shape, weight)
   local popup_text = { "[ drag ]", "[ let go ]" }
   local def = {
-    _being_dragged = false,
+    _dragging = false,
     _dragger = "",
 
     _acc = 0,
@@ -257,7 +257,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
           self.object:get_luaentity()._prev_sound = playing_sound
         end
       end
-      if self._being_dragged == false then
+      if self._dragging == false then
         self._popup_msg = popup_text[1]
         -- self.object:set_velocity(vector.new(0, gravity, 0)) -- come to a complete stop when player lets go
 
@@ -279,7 +279,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         -- if pushed == false then
         -- end
       else
-        -- if _being_dragged get all objects within radius, if player
+        -- if _dragging get all objects within radius, if player
         -- and player name is equal to dragger.. get closer
         -- if no players are around then no drag.
         -- debug("i am getting dragged")
@@ -331,20 +331,21 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       -- prevent other player from interacting
       if pname ~= dragger and dragger ~= "" then return end
 
-      local obj_pos = self.object:get_pos()
-      local player_pos = clicker:get_pos()
+      -- TPH: commented out because I don't see the point of doing this?
+      --local obj_pos = self.object:get_pos()
+      --local player_pos = clicker:get_pos()
       --clicker:move_to(vector.new(obj_pos.x, player_pos.y, obj_pos.z), { continuous = true })
 
-      local cur_value = self._being_dragged
-      self._being_dragged = not cur_value
+      local dragging = self._dragging
+      self._dragging = not dragging -- never appears to be set to false, but don't wanna go against whatever SURV is doing here lol
       self._dragger = pname
       local obj_weight = self._weight
       clicker:set_physics_override({ speed = 1.1 / obj_weight, jump = 0.5, speed_fast = 2.1 / obj_weight })
-      if cur_value == true then
+      -- like never actually happens but sure
+      if dragging then
         self._popup_msg = popup_text[1]
         self:_drop()
-        clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
-        players_dragging[pname] = false
+      -- now dragging
       else
         self._popup_msg = popup_text[2]
         players_dragging[pname] = true
@@ -354,14 +355,17 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       -- core.log("collections" .. dump(players_collections))
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
+      if not core.is_player(puncher) then return end
       local player_pos = puncher:get_pos()
       local cur_pos = self.object:get_pos()
-      if puncher:get_player_control().sneak == true then
+      if puncher:get_player_control().sneak then
         if tg_main.dev_mode == true then
           self.object:remove()
           puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
         end
+      -- punching away
       else
+        if self._dragger then self:_drop() end -- drop when punched
         -- self.object:set_velocity(vector.add(cur_pos, vector.new(player_pos.x, cur_pos.y+0.5, player_pos.z)))
         local dirX = player_pos.x - cur_pos.x
         local dirY = player_pos.y - cur_pos.y
@@ -376,7 +380,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     -- for when player stops dragging us
     _drop = function(self)
       self.physical = true
-      self._being_dragged = false
+      self._dragging = false
       -- whom is dragging us
       local dragger = self._dragger
       restorePlayerMovement(dragger)
