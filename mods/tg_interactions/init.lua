@@ -528,7 +528,12 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
   }
 )
 
-local function find(pos, chain, distance)
+---comment
+---@param pos any
+---@param chain any
+---@param distance any
+---@param signal number|nil
+local function sendSignal(pos, chain, distance, signal)
   local near_by = core.get_objects_inside_radius(pos, distance)
   for index, value in pairs(near_by) do
     local obj_pos = value:get_pos()
@@ -544,7 +549,7 @@ local function find(pos, chain, distance)
           chain[vector.to_string(obj_pos)] = true
           if string.find(value:get_luaentity().name, "relay") then
             -- core.log("relay")
-            find(obj_pos, chain, distance)
+            signal(obj_pos, chain, distance)
             -- search again
           elseif string.find(value:get_luaentity().name, "socket") then
             -- core.log("socket!!!!")
@@ -557,10 +562,14 @@ local function find(pos, chain, distance)
                     -- core.log("toggleable found")
                     -- core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
                     local toggle = r_v:get_luaentity()._toggleable
-                    if toggle == 0 then
-                      r_v:get_luaentity()._toggleable = 1
+                    if signal ~= nil then
+                      r_v:get_luaentity()._state = signal
                     else
-                      r_v:get_luaentity()._toggleable = 0
+                      if toggle == 0 then
+                        r_v:get_luaentity()._toggleable = 1
+                      else
+                        r_v:get_luaentity()._toggleable = 0
+                      end
                     end
                     -- core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
                   end
@@ -610,7 +619,7 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
       if tg_main.dev_mode == true then
         core.log("switch toggled")
       end
-      find(pos, chain, 1.2)
+      sendSignal(pos, chain, 1.2)
     end,
   }
 )
@@ -678,7 +687,7 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
             })
             self.object:get_luaentity()._player_within = "true"
             -- core.log("found player, toggle on")
-            find(pos, chain, 1.2)
+            sendSignal(pos, chain, 1.2)
             -- self.object:get_luaentity()._player_within = "false"
             -- core.log("found player, toggle off")
             -- player_within = false
@@ -697,8 +706,53 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
           self.object:get_luaentity()._player_within = "false"
           -- core.log("found player, toggle on")
           -- player_within = false
-          find(pos, chain, 1.2)
+          sendSignal(pos, chain, 1.2)
         end
+      end
+    end,
+  }
+)
+
+
+tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.thicker_box,
+  {
+    pointable = false,
+    _popup_msg = "[ player sensor ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:1,7",
+    _popup_hidden = true,
+    _toggle = 0,
+    _state = 0,
+    _the_static_data = {
+      "_state"
+    },
+    get_staticdata = function(self)
+      return get_staticdata(self)
+    end,
+    on_activate = function(self, staticdata, dtime_s)
+      on_activate(self, staticdata, dtime_s)
+    end,
+
+    on_step = function(self, dtime, moveresult)
+      local pos = self.object:get_pos()
+      local chain = {}
+      -- core.sound_play({ name = "tg_sensor" }, {
+      --   gain = 0.3,   -- default
+      --   fade = 100.0, -- default
+      --   pitch = 1.0,  -- 1.0, -- default
+      -- })
+      if tg_power.getPower() == false then
+        -- set the state
+        if self.object:get_luaentity()._state == 0 then
+          self.object:get_luaentity()._state = 1
+          sendSignal(pos, chain, 1.2, 0)
+        end
+        -- or kill the find signal
+      else
+        if self.object:get_luaentity()._state == 1 then
+          self.object:get_luaentity()._state = 0
+        end
+        -- do nothing
       end
     end,
   }
@@ -1138,6 +1192,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "socket"] = true,
       [mod_name .. ":" .. "sensor"] = true,
       [mod_name .. ":" .. "sensor_disclaimer"] = true,
+      [mod_name .. ":" .. "sensor_power"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
     },
