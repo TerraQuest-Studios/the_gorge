@@ -13,26 +13,27 @@ tg_interactions.popup_radius = 3.5
 local gravity = -0.9
 
 local function on_activate(self, staticdata, dtime_s)
-    local data = core.deserialize(staticdata)
-    if data then
-        for key, val in pairs(data) do
-            self[key] = val
-        end
+  local data = core.deserialize(staticdata)
+  if data then
+    for key, val in pairs(data) do
+      self[key] = val
     end
+  end
 end
 
 local function get_staticdata(self)
-    local data = {}
-    if self._the_static_data ~= nil then
-        for i, key in pairs(self._the_static_data) do
-            if key then
-                if core.is_player(self[key]) or (type(self[key]) == "table" and self[key].object) then
-                    error("NO, YOU CANNOT SERIALIZE AN OBJECT!!! from: " .. key) end
-                data[key] = self[key]
-            end
+  local data = {}
+  if self._the_static_data ~= nil then
+    for i, key in pairs(self._the_static_data) do
+      if key then
+        if core.is_player(self[key]) or (type(self[key]) == "table" and self[key].object) then
+          error("NO, YOU CANNOT SERIALIZE AN OBJECT!!! from: " .. key)
         end
+        data[key] = self[key]
+      end
     end
-    return core.serialize(data)
+  end
+  return core.serialize(data)
 end
 
 
@@ -670,10 +671,10 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
           -- core.log("player found")
           player_within = true
           if self.object:get_luaentity()._player_within == "false" then
-            core.sound_play({ name = "tg_paper_footstep" }, {
-              gain = 1.0,   -- default
+            core.sound_play({ name = "tg_sensor" }, {
+              gain = 0.3,   -- default
               fade = 100.0, -- default
-              pitch = 1.8,  -- 1.0, -- default
+              pitch = 1.0,  -- 1.0, -- default
             })
             self.object:get_luaentity()._player_within = "true"
             -- core.log("found player, toggle on")
@@ -688,11 +689,11 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
       if player_within == false then
         -- core.log("no player found")
         if self.object:get_luaentity()._player_within == "true" then
-          core.sound_play({ name = "tg_paper_footstep" }, {
-            gain = 1.0,   -- default
-            fade = 100.0, -- default
-            pitch = 1.2,  -- 1.0, -- default
-          })
+          -- core.sound_play({ name = "tg_sensor" }, {
+          --   gain = 3.0,   -- default
+          --   fade = 100.0, -- default
+          --   pitch = 0.8,  -- 1.0, -- default
+          -- })
           self.object:get_luaentity()._player_within = "false"
           -- core.log("found player, toggle on")
           -- player_within = false
@@ -818,46 +819,53 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       "_state"
     },
     get_staticdata = function(self)
-        return get_staticdata(self)
+      return get_staticdata(self)
     end,
 
     on_activate = function(self, staticdata, dtime_s)
       on_activate(self, staticdata, dtime_s)
-      core.log("static: "..dump(staticdata))
+      -- core.log("static: "..dump(staticdata))
       -- to make sure the door gets centered
-      -- return
-      -- core.after(2, function()
-      local pos = self.object:get_pos()
-      local x = math.floor(pos.x)
-      if pos.x < 0 then
-        -- for negatives, floor(-1.2) = -2, so use math.ceil to keep integer part consistent
-        x = math.ceil(pos.x)
-      end
-      pos.x = x + 0.5
-      local new_pos = vector.new(pos.x, pos.y, pos.z)
-      -- core.log("pos: " .. dump(new_pos))
-      if pos.x % 1 == 0.5 then
-        -- core.log("has .5")
-        self.object:set_pos(new_pos)
-        --else
-        -- core.log("does not")
-      end
-      -- end)
+
+      -- local pos = self.object:get_pos()
+      -- local x = math.floor(pos.x)
+      -- if pos.x < 0 then
+      --   -- for negatives, floor(-1.2) = -2, so use math.ceil to keep integer part consistent
+      --   x = math.ceil(pos.x)
+      -- end
+      -- pos.x = x + 0.5
+      -- local new_pos = vector.new(pos.x, pos.y, pos.z)
+      -- -- core.log("pos: " .. dump(new_pos))
+      -- if pos.x % 1 == 0.5 then
+      --   -- core.log("has .5")
+      --   self.object:set_pos(new_pos)
+      --   --else
+      --   -- core.log("does not")
+      -- end
+      -- -- end)
     end,
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       --velocity = self.object:get_velocity()
       local pos = self.object:get_pos()
-      local yaw = math.floor(math.deg(self.object:get_yaw())/10) * 10
+      -- local yaw = math.floor(math.deg(self.object:get_yaw())/10) * 10
+      local yaw = math.floor(math.deg(self.object:get_yaw()))
       -- core.log("yaw: "..dump(yaw))
+      local move_amount = 1.9
       if self.object:get_luaentity()._toggleable == 0 then
         if self.object:get_luaentity()._state == 1 then
           self.object:get_luaentity()._state = 0
           local dir = vector.new(1.9, 0, 0)
           -- 90 and 270 need to move opoistte of eachother
-          if yaw == 90 or yaw == 270 then
-            dir = vector.new(0,0,1.9)
+          if yaw == 0 then
+            dir = vector.new(move_amount, 0, 0)
+          elseif yaw == 90 then
+            dir = vector.new(0, 0, move_amount)
+          elseif yaw == 180 then
+            dir = vector.new((move_amount * -1), 0, 0)
+          elseif yaw == 270 then
+            dir = vector.new(0, 0, (move_amount * -1))
           end
           self.object:move_to(vector.add(pos, dir))
         end
@@ -865,8 +873,14 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
         if self.object:get_luaentity()._state == 0 then
           self.object:get_luaentity()._state = 1
           local dir = vector.new(-1.9, 0, 0)
-          if yaw == 90 or yaw == 270 then
-            dir = vector.new(0,0,-1.9)
+          if yaw == 0 then
+            dir = vector.new((move_amount * -1), 0, 0)
+          elseif yaw == 90 then
+            dir = vector.new(0, 0, (move_amount * -1))
+          elseif yaw == 180 then
+            dir = vector.new((move_amount), 0, 0)
+          elseif yaw == 270 then
+            dir = vector.new(0, 0, (move_amount))
           end
           self.object:move_to(vector.add(pos, dir))
         end
@@ -875,10 +889,16 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
 
     on_rightclick = function(self, clicker)
       if core.is_creative_enabled() then
-        core.log("ok lets rotate this door")
-        local yaw = self.object:get_yaw()
-        core.log("yaw: "..dump(math.deg(yaw)))
-        self.object:set_yaw(math.rad(math.deg(yaw+math.rad(90))%360))
+        if clicker:get_player_control().sneak == true then
+          core.log("ok lets rotate this door")
+          local yaw = self.object:get_yaw()
+          yaw = math.rad(math.floor((math.deg(yaw) + 90) % 360))
+          core.log("new yaw: " .. math.deg(yaw))
+          -- self.object:set_yaw(math.rad(math.deg(yaw+math.rad(90))%360))
+          self.object:set_yaw(yaw)
+        else
+          core.log("[buildmode]: sneak click to change the rotation")
+        end
       end
     end,
   })
