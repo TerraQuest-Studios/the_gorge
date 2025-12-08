@@ -198,31 +198,10 @@ end
 ---@param shape shape
 ---@param weight number
 function tg_interactions.register_draggable(name, model_type, model, texture, shape, weight)
-  local function drop(self)
-    self.object:get_luaentity().physical = true
-    self.object:get_luaentity()._being_dragged = false
-    local dragged_by = self.object:get_luaentity()._dragged_by
-    restorePlayerMovement(dragged_by)
-
-    removeFromPlayerCollection(dragged_by, self.object:get_luaentity().name)
-
-    -- core.log("wait is this not running??")
-    -- local player = getPlayer(dragged_by)
-    -- if player ~= nil then
-    --   local object_name = self.object:get_luaentity().name
-    --   -- player:get_properties()._dragging = object_name
-    --   -- core.log("lua: "..dump(player:get_properties()))
-    --   core.log("player dragging: "..dump(player._dragging))
-    --   core.log("object name: "..object_name)
-    --   core.log("object: "..dump(self.object:get_luaentity().id))
-    -- end
-    self.object:get_luaentity()._dragged_by = ""
-    players_dragging[dragged_by] = false
-  end
   local popup_text = { "[ drag ]", "[ let go ]" }
   local def = {
     _being_dragged = false,
-    _dragged_by = "",
+    _dragger = "",
 
     _acc = 0,
     _weight = weight,
@@ -311,7 +290,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
           if value:is_player() then
             -- debug("we have found a player")
             local player_name = value:get_player_name()
-            if player_name == self._dragged_by then
+            if player_name == self._dragger then
               found_player = true
               self.physical = false
               local player_pos = value:get_pos()
@@ -337,31 +316,20 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         end
         if #entites <= 1 or found_player == false then
           -- debug("dragger is gone")
-          drop(self)
+          self:_drop()
         end
       end
-      -- debug("dragger: " .. self._dragged_by)
+      -- debug("dragger: " .. self._dragger)
     end,
     on_rightclick = function(self, clicker)
-      local player_name = clicker:get_player_name()
-      local dragged_by = self._dragged_by
-
-      -- already holding, drop.
-      if players_dragging[player_name] == true then
-        drop(self)
-        return
-      end
+      if not core.is_player(clicker) then return end
+      local pname = clicker:get_player_name() -- player name
+      local dragger = self._dragger
+      -- already holding, drop
+      if players_dragging[pname] then return self:_drop() end
 
       -- prevent other player from interacting
-      if player_name ~= dragged_by and dragged_by ~= "" then
-        return
-      end
-
-      -- not sure what this is doing??
-      if clicker._dragging == true then
-        -- do nothing
-        return
-      end
+      if pname ~= dragger and dragger ~= "" then return end
 
       local obj_pos = self.object:get_pos()
       local player_pos = clicker:get_pos()
@@ -369,19 +337,19 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
 
       local cur_value = self._being_dragged
       self._being_dragged = not cur_value
-      self._dragged_by = clicker:get_player_name()
+      self._dragger = pname
       local obj_weight = self._weight
       clicker:set_physics_override({ speed = 1.1 / obj_weight, jump = 0.5, speed_fast = 2.1 / obj_weight })
       if cur_value == true then
         self._popup_msg = popup_text[1]
-        drop(self)
+        self:_drop()
         clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
-        players_dragging[player_name] = false
+        players_dragging[pname] = false
       else
         self._popup_msg = popup_text[2]
-        players_dragging[player_name] = true
+        players_dragging[pname] = true
 
-        addToPlayerCollection(player_name, self.name)
+        addToPlayerCollection(pname, self.name)
       end
       -- core.log("collections" .. dump(players_collections))
     end,
@@ -405,6 +373,18 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         self.object:set_velocity(vel)
       end
     end,
+    -- for when player stops dragging us
+    _drop = function(self)
+      self.physical = true
+      self._being_dragged = false
+      -- whom is dragging us
+      local dragger = self._dragger
+      restorePlayerMovement(dragger)
+      removeFromPlayerCollection(dragger, self.name)
+
+      self._dragger = ""
+      players_dragging[dragger] = nil
+    end
   }
   if model_type == "mesh" then
     def.initial_properties = {
