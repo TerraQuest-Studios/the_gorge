@@ -526,6 +526,28 @@ core.register_node("tg_nodes:radio", {
 	},
 })
 
+core.register_node("tg_nodes:dial_pad", {
+	description = S("dial_pad, nice tunes."),
+	groups = defualt_groups,
+	paramtype = "light",
+	drawtype = "mesh",
+	mesh = "dial_pad.glb",
+	visual_scale = 10.0,
+	tiles = { "dial_pad.png" },
+	paramtype2 = "facedir",
+	-- use_texture_alpha = "clip",
+	-- sunlight_propagates = true,
+	-- walkable = false,
+	node_box = {
+		type = "fixed",
+		fixed = shapes.panel
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = shapes.panel
+	},
+})
+
 ---will create multiple node shapes
 ---@param name any
 ---@param sounds any

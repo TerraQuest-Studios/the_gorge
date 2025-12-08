@@ -625,7 +625,10 @@ local discalimer_messages = {
 tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
   {
-    -- _popup_msg = "[ switch ]",
+    _popup_msg = "[ dev disclaimer ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:0,7",
+    _popup_hidden = true,
+    pointable = false,
     on_step = function(self, dtime, moveresult)
       local cur_pos = self.object:get_pos()
       local max_distance = 6
@@ -1046,7 +1049,8 @@ core.register_globalstep(function(dtime)
           end
         end
       end
-      --- in radius ---
+      --- in radius end ---
+
       if raycast_result ~= nil and raycast_result.type == "object" then
         -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
         if raycast_result.ref:get_luaentity() == nil then
@@ -1090,6 +1094,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "relay"] = true,
       [mod_name .. ":" .. "socket"] = true,
       [mod_name .. ":" .. "sensor"] = true,
+      [mod_name .. ":" .. "sensor_disclaimer"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
     },
