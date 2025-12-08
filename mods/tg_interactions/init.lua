@@ -12,6 +12,30 @@ tg_interactions.popup_radius = 3.5
 
 local gravity = -0.9
 
+local function on_activate(self, staticdata, dtime_s)
+    local data = core.deserialize(staticdata)
+    if data then
+        for key, val in pairs(data) do
+            self[key] = val
+        end
+    end
+end
+
+local function get_staticdata(self)
+    local data = {}
+    if self._the_static_data ~= nil then
+        for i, key in pairs(self._the_static_data) do
+            if key then
+                if core.is_player(self[key]) or (type(self[key]) == "table" and self[key].object) then
+                    error("NO, YOU CANNOT SERIALIZE AN OBJECT!!! from: " .. key) end
+                data[key] = self[key]
+            end
+        end
+    end
+    return core.serialize(data)
+end
+
+
 --[[ local function debug(msg)
   core.log("[entity]: " .. msg)
 end
@@ -592,7 +616,8 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
 
 local player_end_disclaimer = false
 local discalimer_messages = {
-  [[Dev note: This is all that we currently have.. ]],
+  [[Dev note: ]],
+  [[This is all that we currently have.. ]],
   [[More is to come.]]
 }
 
@@ -783,7 +808,18 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     _state = 0,      -- default state 0
     -- _popup_msg = "[ open door ]",
     -- pointable = false,
+
+    _the_static_data = {
+      "_toggleable",
+      "_state"
+    },
+    get_staticdata = function(self)
+        return get_staticdata(self)
+    end,
+
     on_activate = function(self, staticdata, dtime_s)
+      on_activate(self, staticdata, dtime_s)
+      core.log("static: "..dump(staticdata))
       -- to make sure the door gets centered
       -- return
       -- core.after(2, function()
@@ -809,29 +845,38 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
       --velocity = self.object:get_velocity()
       local pos = self.object:get_pos()
+      local yaw = math.floor(math.deg(self.object:get_yaw())/10) * 10
+      -- core.log("yaw: "..dump(yaw))
       if self.object:get_luaentity()._toggleable == 0 then
         if self.object:get_luaentity()._state == 1 then
           self.object:get_luaentity()._state = 0
           local dir = vector.new(1.9, 0, 0)
+          -- 90 and 270 need to move opoistte of eachother
+          if yaw == 90 or yaw == 270 then
+            dir = vector.new(0,0,1.9)
+          end
           self.object:move_to(vector.add(pos, dir))
         end
       else
         if self.object:get_luaentity()._state == 0 then
           self.object:get_luaentity()._state = 1
           local dir = vector.new(-1.9, 0, 0)
+          if yaw == 90 or yaw == 270 then
+            dir = vector.new(0,0,-1.9)
+          end
           self.object:move_to(vector.add(pos, dir))
         end
       end
     end,
 
-    -- on_rightclick = function(self, clicker)
-    --   core.chat_send_all("this should be opening")
-    --   local playing_sound = core.sound_play({ name = "tg_paper_footstep" }, {
-    --     gain = 1.0,              -- default
-    --     fade = 100.0,              -- default
-    --     pitch = 1.8,             -- 1.0, -- default
-    --   })
-    -- end,
+    on_rightclick = function(self, clicker)
+      if core.is_creative_enabled() then
+        core.log("ok lets rotate this door")
+        local yaw = self.object:get_yaw()
+        core.log("yaw: "..dump(math.deg(yaw)))
+        self.object:set_yaw(math.rad(math.deg(yaw+math.rad(90))%360))
+      end
+    end,
   })
 
 tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.box,

@@ -285,7 +285,8 @@ core.register_node("tg_nodes:fog", {
 		fixed = shapes.box
 	},
 	sunlight_propagates = false,
-	walkable = false,
+	walkable = true,
+	pointable = false,
 })
 
 core.register_node("tg_nodes:fern", {
