@@ -224,6 +224,8 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       -- self.object:set_velocity(vector.subtract(velocity,gravity))
       -- debug("I do be stepping")
 
+      -- not being dragged anymore
+      if not self._dragging then return end
 
       -- play sound while being dragged
       local tick = self._sound_tick
@@ -248,69 +250,45 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
           })
         end
       end
-      self._sound_tick = tick
-      if self._dragging == false then
-        self._popup_msg = popup_text[1]
-        -- self.object:set_velocity(vector.new(0, gravity, 0)) -- come to a complete stop when player lets go
+      self._sound_tick = tick -- update sound tick
+      -- if _dragging get all objects within radius, if player
+      -- and player name is equal to dragger.. get closer
+      -- if no players are around then no drag.
+      -- debug("i am getting dragged")
+      local max_distance = self._lossdistance
+      local entities = core.get_objects_inside_radius(cur_pos, max_distance)
+      if #entities < 2 then return self:_drop() end -- nothing around us (1 will be us)
+      local found_player = false
+      for _, obj in ipairs(entities) do
+        local pname = core.is_player(obj) and obj:get_player_name()
+        -- found a player! let's see if they're who's dragging us
+        if pname then
+          if pname == self._dragger then
+            found_player = true
+            self.physical = false
+            local player_pos = obj:get_pos()
+            local player_distance = tg_main.distance(player_pos, cur_pos)
+            if player_distance > 1.2 then
+              --local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
+              local dirX = player_pos.x - cur_pos.x
+              local dirY = player_pos.y - cur_pos.y
+              -- Calculate angle in radians
+              local angle = math.atan2(dirY, dirX)
+              self.object:set_yaw(angle)
 
-        -- --push way
-        -- local entites = core.get_objects_inside_radius(cur_pos, 0.9)
-        -- local pushed = false
-        -- for index, value in ipairs(entites) do
-        --   local entity_pos = value:get_pos()
-        --   if cur_pos ~= entity_pos then
-        --     local dirX = entity_pos.x - cur_pos.x
-        --     local dirY = entity_pos.y - cur_pos.y
-        --     -- Calculate angle in radians
-        --     local angle = math.atan2(dirY, dirX)
-        --     self.object:set_yaw(angle)
-        --     self.object:set_velocity(vector.subtract(cur_pos, vector.new(entity_pos.x, cur_pos.y, entity_pos.z)))
-        --     pushed = true
-        --   end
-        -- end
-        -- if pushed == false then
-        -- end
-      else
-        -- if _dragging get all objects within radius, if player
-        -- and player name is equal to dragger.. get closer
-        -- if no players are around then no drag.
-        -- debug("i am getting dragged")
-        local max_distance = self._lossdistance
-        local entites = core.get_objects_inside_radius(cur_pos, max_distance)
-        local found_player = false
-        for index, value in ipairs(entites) do
-          if value:is_player() then
-            -- debug("we have found a player")
-            local player_name = value:get_player_name()
-            if player_name == self._dragger then
-              found_player = true
-              self.physical = false
-              local player_pos = value:get_pos()
-              local player_distance = tg_main.distance(player_pos, cur_pos)
-              if player_distance > 1.2 then
-                --local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
-                local dirX = player_pos.x - cur_pos.x
-                local dirY = player_pos.y - cur_pos.y
-                -- Calculate angle in radians
-                local angle = math.atan2(dirY, dirX)
-                self.object:set_yaw(angle)
-
-                --local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
-                --local obj_speed = self._speed
-                -- local speed = (self._speed * player_distance) * dtime
-                --local speed = math.min(obj_speed * dtime, 1)
-                -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
-                self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
-              end
-              --else
+              --local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
+              --local obj_speed = self._speed
+              -- local speed = (self._speed * player_distance) * dtime
+              --local speed = math.min(obj_speed * dtime, 1)
+              -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
+              self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
             end
+            --else
           end
         end
-        if #entites <= 1 or found_player == false then
-          -- debug("dragger is gone")
-          self:_drop()
-        end
       end
+      -- not being dragged by anything in range
+      if not found_player then return self:_drop() end
       -- debug("dragger: " .. self._dragger)
     end,
     on_rightclick = function(self, clicker)
@@ -343,7 +321,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         players_dragging[pname] = true
 
         addToPlayerCollection(pname, self.name)
-        -- affects sound pitch
+        -- affects sound pitch (recalculate in case of change to weight)
         self._weightfluence = 3/self._weight -- weight influence
         self._sound_duration = 0.81/self._weightfluence
       end
@@ -370,12 +348,24 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         local speed = 3 / (1 + weight)
         local vel = vector.multiply(vector.add(dir, vector.new(0, cur_pos.y + 0.1, 0)), speed)
         self.object:set_velocity(vel)
+        -- do dragging sound
+        local dsound = self._prev_sound -- drag sound
+        if dsound ~= nil then
+          -- core.sound_stop(cur_sound)
+          core.sound_fade(dsound, 0.3, 0)
+        end
+        self._prev_sound = core.sound_play("tg_interactions_drag", {
+          pos = cur_pos,
+          gain = 1,
+          pitch = 1 * self._weightfluence
+        })
       end
     end,
     -- for when player stops dragging us
     _drop = function(self)
       self.physical = true
       self._dragging = false
+      self._popup_msg = popup_text[1] -- reset message
       -- whom is dragging us
       local dragger = self._dragger
       restorePlayerMovement(dragger)
@@ -413,6 +403,9 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       stepheight = 0.6, -- this is not working
     }
   end
+  -- affects sound pitch
+  def._weightfluence = 3/def._weight -- weight influence
+  def._sound_duration = 0.81/def._weightfluence
   core.register_entity(mod_name .. ":draggable_" .. name, def)
 end
 
