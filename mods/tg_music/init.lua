@@ -10,6 +10,10 @@ local songs = {
     {
       name = "paradise_sightseer",
       length = 92.9
+    },
+    {
+      name = "eastern_coal",
+      length = 123.1
     }
 }
 
