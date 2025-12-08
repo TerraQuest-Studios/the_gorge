@@ -198,7 +198,7 @@ end
 ---@param shape shape
 ---@param weight number
 function tg_interactions.register_draggable(name, model_type, model, texture, shape, weight)
-  local popup_text = { "[ drag ]", "[ let go ]" }
+  local popup_text = { "[ RMB: drag ]\n[ LMB: push ]", "[ RMB/LMB: let go ]" }
   local def = {
     _dragging = false,
     _dragger = "",
