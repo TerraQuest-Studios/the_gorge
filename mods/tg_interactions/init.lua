@@ -231,6 +231,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     _prev_sound = nil,
     _sound_tick = 0,
     _interactable = 1,
+    _lossdistance = 2, -- distance between us and player needed to drop us
     on_step = function(self, dtime, moveresult)
       local cur_pos = self.object:get_pos()
       local velocity = self.object:get_velocity()
@@ -277,8 +278,8 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
           self.object:get_luaentity()._prev_sound = playing_sound
         end
       end
-      if self.object:get_luaentity()._being_dragged == false then
-        self.object:get_luaentity()._popup_msg = popup_text[1]
+      if self._being_dragged == false then
+        self._popup_msg = popup_text[1]
         -- self.object:set_velocity(vector.new(0, gravity, 0)) -- come to a complete stop when player lets go
 
         -- --push way
@@ -303,16 +304,16 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         -- and player name is equal to dragger.. get closer
         -- if no players are around then no drag.
         -- debug("i am getting dragged")
-        local max_distance = 2
+        local max_distance = self._lossdistance
         local entites = core.get_objects_inside_radius(cur_pos, max_distance)
         local found_player = false
         for index, value in ipairs(entites) do
           if value:is_player() then
             -- debug("we have found a player")
             local player_name = value:get_player_name()
-            if player_name == self.object:get_luaentity()._dragged_by then
+            if player_name == self._dragged_by then
               found_player = true
-              self.object:get_luaentity().physical = false
+              self.physical = false
               local player_pos = value:get_pos()
               local player_distance = tg_main.distance(player_pos, cur_pos)
               if player_distance > 1.2 then
@@ -324,8 +325,8 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
                 self.object:set_yaw(angle)
 
                 --local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
-                --local obj_speed = self.object:get_luaentity()._speed
-                -- local speed = (self.object:get_luaentity()._speed * player_distance) * dtime
+                --local obj_speed = self._speed
+                -- local speed = (self._speed * player_distance) * dtime
                 --local speed = math.min(obj_speed * dtime, 1)
                 -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
                 self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
@@ -339,11 +340,11 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
           drop(self)
         end
       end
-      -- debug("dragger: " .. self.object:get_luaentity()._dragged_by)
+      -- debug("dragger: " .. self._dragged_by)
     end,
     on_rightclick = function(self, clicker)
       local player_name = clicker:get_player_name()
-      local dragged_by = self.object:get_luaentity()._dragged_by
+      local dragged_by = self._dragged_by
 
       -- already holding, drop.
       if players_dragging[player_name] == true then
@@ -364,23 +365,23 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
 
       local obj_pos = self.object:get_pos()
       local player_pos = clicker:get_pos()
-      clicker:move_to(vector.new(obj_pos.x, player_pos.y, obj_pos.z), { continuous = true })
+      --clicker:move_to(vector.new(obj_pos.x, player_pos.y, obj_pos.z), { continuous = true })
 
       local cur_value = self._being_dragged
-      self.object:get_luaentity()._being_dragged = not cur_value
-      self.object:get_luaentity()._dragged_by = clicker:get_player_name()
-      local obj_weight = self.object:get_luaentity()._weight
+      self._being_dragged = not cur_value
+      self._dragged_by = clicker:get_player_name()
+      local obj_weight = self._weight
       clicker:set_physics_override({ speed = 1.1 / obj_weight, jump = 0.5, speed_fast = 2.1 / obj_weight })
       if cur_value == true then
-        self.object:get_luaentity()._popup_msg = popup_text[1]
+        self._popup_msg = popup_text[1]
         drop(self)
         clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
         players_dragging[player_name] = false
       else
-        self.object:get_luaentity()._popup_msg = popup_text[2]
+        self._popup_msg = popup_text[2]
         players_dragging[player_name] = true
 
-        addToPlayerCollection(player_name, self.object:get_luaentity().name)
+        addToPlayerCollection(player_name, self.name)
       end
       -- core.log("collections" .. dump(players_collections))
     end,
