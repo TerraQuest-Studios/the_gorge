@@ -204,11 +204,12 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     _dragger = "",
 
     _acc = 0,
-    _weight = weight,
+    _weight = weight or 3,
     _speed = 3, -- speed should change depending on how far the player is
     _popup_msg = popup_text[1],
     _prev_sound = nil,
     _sound_tick = 0,
+    _sound_duration = 0.81,
     _interactable = 1,
     _lossdistance = 2, -- distance between us and player needed to drop us
     on_step = function(self, dtime, moveresult)
@@ -225,38 +226,29 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
 
 
       -- play sound while being dragged
-      local tick = self.object:get_luaentity()._sound_tick
-      tick = tick + 1
-      self.object:get_luaentity()._sound_tick = tick
-      if tick >= 35 then
-        self.object:get_luaentity()._sound_tick = 0
-
+      local tick = self._sound_tick
+      tick = tick + dtime
+      if tick >= self._sound_duration then
+        tick = 0
         local vel = self.object:get_velocity()
         if vel.x ~= 0 and vel.z ~= 0 then
           -- self.object:move_to(vector.new(player_pos.x,cur_pos.y,player_pos.z), true)
           -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
           -- self.object:add_velocity(vector.subtract(vector.new(mid_point.x, cur_pos.y, mid_point.z), cur_pos))
 
-          local cur_sound = self.object:get_luaentity()._prev_sound
-          if cur_sound ~= nil then
+          local dsound = self._prev_sound -- drag sound
+          if dsound ~= nil then
             -- core.sound_stop(cur_sound)
-            core.sound_fade(cur_sound, 120, 0)
+            core.sound_fade(dsound, 120, 0)
           end
-          local pitch = 1
-          if weight >= 3 then
-            pitch = 0.8
-          elseif weight <= 2 then
-            pitch = 1.4
-          end
-          local playing_sound = core.sound_play({ name = "tg_interactions_drag" }, {
-            pos = { x = cur_pos.x, y = cur_pos.y, z = cur_pos.z },
-            gain = 1.0,    -- default
-            fade = 0.0,    -- default
-            pitch = pitch, -- 1.0, -- default
+          self._prev_sound = core.sound_play("tg_interactions_drag", {
+              pos = cur_pos,
+              gain = 1,
+              pitch = 1 * self._weightfluence
           })
-          self.object:get_luaentity()._prev_sound = playing_sound
         end
       end
+      self._sound_tick = tick
       if self._dragging == false then
         self._popup_msg = popup_text[1]
         -- self.object:set_velocity(vector.new(0, gravity, 0)) -- come to a complete stop when player lets go
@@ -351,6 +343,9 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         players_dragging[pname] = true
 
         addToPlayerCollection(pname, self.name)
+        -- affects sound pitch
+        self._weightfluence = 3/self._weight -- weight influence
+        self._sound_duration = 0.81/self._weightfluence
       end
       -- core.log("collections" .. dump(players_collections))
     end,
