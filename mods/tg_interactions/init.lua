@@ -549,8 +549,23 @@ local function sendSignal(pos, chain, distance, signal)
           chain[vector.to_string(obj_pos)] = true
           if string.find(value:get_luaentity().name, "relay") then
             -- core.log("relay")
-            signal(obj_pos, chain, distance)
+            sendSignal(obj_pos, chain, distance, signal)
             -- search again
+          elseif string.find(value:get_luaentity().name, "sensor_power") then
+            if value:get_luaentity()._state == 0 then
+              -- core.log("power needed")
+              return
+            else
+              -- core.log("we have power, continue")
+              sendSignal(obj_pos, chain, distance, signal)
+            end
+          elseif string.find(value:get_luaentity().name, "nrelay") then
+            core.log("n relay found")
+            if signal ~= nil then
+              sendSignal(obj_pos, chain, distance, (signal * -1))
+            else
+              sendSignal(obj_pos, chain, distance, signal)
+            end
           elseif string.find(value:get_luaentity().name, "socket") then
             -- core.log("socket!!!!")
             local find_reciver = core.get_objects_inside_radius(obj_pos, distance * 2)
@@ -559,18 +574,22 @@ local function sendSignal(pos, chain, distance, signal)
               if r_pos ~= obj_pos then
                 if not r_v:is_player() then
                   if r_v:get_luaentity()._toggleable ~= nil then
+                    if signal ~= nil then
+                      -- r_v:get_luaentity()._state = signal
+                      -- core.log("should be sending: " .. signal)
+                      r_v:get_luaentity()._toggle_state(r_v, signal)
+                      return
+                    else
+                      r_v:get_luaentity()._toggle_state(r_v)
+                    end
                     -- core.log("toggleable found")
                     -- core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
-                    local toggle = r_v:get_luaentity()._toggleable
-                    if signal ~= nil then
-                      r_v:get_luaentity()._state = signal
-                    else
-                      if toggle == 0 then
-                        r_v:get_luaentity()._toggleable = 1
-                      else
-                        r_v:get_luaentity()._toggleable = 0
-                      end
-                    end
+                    -- local state = r_v:get_luaentity()._state
+                    -- if state == 0 then
+                    --   r_v:get_luaentity()._state = 1
+                    -- else
+                    --   r_v:get_luaentity()._state = 0
+                    -- end
                     -- core.log("toggle: " .. dump(r_v:get_luaentity()._toggleable))
                   end
                 end
@@ -598,9 +617,9 @@ local function sendSignal(pos, chain, distance, signal)
   end
 end
 
-tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.centerd_box,
+tg_interactions.register_interactable("button", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.centerd_box,
   {
-    _popup_msg = "[ switch ]",
+    _popup_msg = "[ button ]",
     on_rightclick = function(self, clicker)
       --[[ local playing_sound =  ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
@@ -617,9 +636,62 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
       -- end
       chain[vector.to_string(pos)] = true
       if tg_main.dev_mode == true then
-        core.log("switch toggled")
+        core.log("button pressed")
       end
       sendSignal(pos, chain, 1.2)
+    end,
+  }
+)
+
+tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.centerd_box,
+  {
+    _popup_msg = "[ toggle switch ]",
+    _state = 0,
+    _the_static_data = {
+      "_state"
+    },
+    get_staticdata = function(self)
+      return get_staticdata(self)
+    end,
+    _updatePopup = function(self)
+      local state = self.object:get_luaentity()._state
+      if state == 1 then
+        self.object:get_luaentity()._popup_msg = "[ switch on ]"
+      else
+        self.object:get_luaentity()._popup_msg = "[ switch off ]"
+      end
+    end,
+    on_activate = function(self, staticdata, dtime_s)
+      on_activate(self, staticdata, dtime_s)
+      self.object:get_luaentity()._updatePopup(self)
+    end,
+    on_rightclick = function(self, clicker)
+      --[[ local playing_sound =  ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
+      })
+      local chain = {}
+      local pos = self.object:get_pos()
+      -- if tg_power.power == true then
+      --   self.object:get_luaentity()._popup_msg = "[ switch on power ]"
+      -- else
+      --   self.object:get_luaentity()._popup_msg = "[ switch off power ]"
+      -- end
+      chain[vector.to_string(pos)] = true
+      if tg_main.dev_mode == true then
+        core.log("switch pressed")
+      end
+      local state = self.object:get_luaentity()._state
+      if state == 0 then
+        state = 1
+      else
+        state = 0
+      end
+      self.object:get_luaentity()._state = state
+      self.object:get_luaentity()._updatePopup(self)
+      sendSignal(pos, chain, 1.2, state)
     end,
   }
 )
@@ -662,7 +734,6 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
 tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.thicker_box,
   {
-    -- _popup_msg = "[ switch ]",
     pointable = false,
     _popup_msg = "[ player sensor ]",
     _popup_texture = "tg_nodes_misc.png^[sheet:16x16:4,5",
@@ -675,6 +746,9 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
       local max_distance = 3.5
       local near_by = core.get_objects_inside_radius(pos, max_distance)
       local player_within = false --buffer to work when at least 1 player
+      if tg_power.getPower() == false then
+        return
+      end
       for index, player in ipairs(near_by) do
         if player:is_player() then
           -- core.log("player found")
@@ -687,7 +761,7 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
             })
             self.object:get_luaentity()._player_within = "true"
             -- core.log("found player, toggle on")
-            sendSignal(pos, chain, 1.2)
+            sendSignal(pos, chain, 1.2, 1)
             -- self.object:get_luaentity()._player_within = "false"
             -- core.log("found player, toggle off")
             -- player_within = false
@@ -706,7 +780,7 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
           self.object:get_luaentity()._player_within = "false"
           -- core.log("found player, toggle on")
           -- player_within = false
-          sendSignal(pos, chain, 1.2)
+          sendSignal(pos, chain, 1.2, 0)
         end
       end
     end,
@@ -718,12 +792,13 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
   shapes.thicker_box,
   {
     pointable = false,
-    _popup_msg = "[ player sensor ]",
+    _popup_msg = "[ power sensor ]",
     _popup_texture = "tg_nodes_misc.png^[sheet:16x16:1,7",
     _popup_hidden = true,
     _toggle = 0,
     _state = 0,
     _the_static_data = {
+      "_toggle",
       "_state"
     },
     get_staticdata = function(self)
@@ -736,21 +811,28 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
     on_step = function(self, dtime, moveresult)
       local pos = self.object:get_pos()
       local chain = {}
-      -- core.sound_play({ name = "tg_sensor" }, {
-      --   gain = 0.3,   -- default
-      --   fade = 100.0, -- default
-      --   pitch = 1.0,  -- 1.0, -- default
-      -- })
       if tg_power.getPower() == false then
+        -- core.log("power is [OFF]")
         -- set the state
-        if self.object:get_luaentity()._state == 0 then
-          self.object:get_luaentity()._state = 1
-          sendSignal(pos, chain, 1.2, 0)
+        if self.object:get_luaentity()._toggle == 0 then
+          self.object:get_luaentity()._toggle = 1
+          if self.object:get_luaentity()._state == 1 then
+            self.object:get_luaentity()._toggle = 1
+            self.object:get_luaentity()._state = 0
+            sendSignal(pos, chain, 1.2, 1)
+          end
+          -- or kill the find signal
         end
-        -- or kill the find signal
-      else
-        if self.object:get_luaentity()._state == 1 then
-          self.object:get_luaentity()._state = 0
+      end
+      if tg_power.getPower() == true then
+        -- core.log("power is [ON]")
+        if self.object:get_luaentity()._toggle == 1 then
+          self.object:get_luaentity()._toggle = 0
+          if self.object:get_luaentity()._state == 0 then
+            self.object:get_luaentity()._toggle = 1
+            self.object:get_luaentity()._state = 1
+            sendSignal(pos, chain, 1.2, 0)
+          end
         end
         -- do nothing
       end
@@ -764,6 +846,17 @@ tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[s
     -- _toggleable = 0, -- default state 0
     -- _state = 0,      -- default state 0
     _popup_texture = "tg_nodes_misc.png^[sheet:16x16:3,5",
+    _popup_hidden = true,
+    pointable = false,
+  }
+)
+
+tg_interactions.register_interactable("nrelay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
+  {
+    _popup_msg = "[ n-relay ]",
+    -- _toggleable = 0, -- default state 0
+    -- _state = 0,      -- default state 0
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:3,7",
     _popup_hidden = true,
     pointable = false,
   }
@@ -898,47 +991,51 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       -- end
       -- -- end)
     end,
+    _toggle_state = function(self, state)
+      --velocity = self:get_velocity()
+      local pos = self:get_pos()
+      -- local yaw = math.floor(math.deg(self:get_yaw())/10) * 10
+      local yaw = math.floor(math.deg(self:get_yaw()))
+      -- core.log("yaw: "..dump(yaw))
+      local move_amount = 1.9
+      local cur_state = self:get_luaentity()._state
+      -- if cur_state == state then
+      --   -- core.log("no reason to toggle")
+      --   return
+      -- end
+      -- core.log("sent state: " .. cur_state)
+      if cur_state == 1 then
+        self:get_luaentity()._state = 0
+        local dir = vector.new(1.9, 0, 0)
+        -- 90 and 270 need to move opoistte of eachother
+        if yaw == 0 then
+          dir = vector.new(move_amount, 0, 0)
+        elseif yaw == 90 then
+          dir = vector.new(0, 0, move_amount)
+        elseif yaw == 180 then
+          dir = vector.new((move_amount * -1), 0, 0)
+        elseif yaw == 270 then
+          dir = vector.new(0, 0, (move_amount * -1))
+        end
+        self:move_to(vector.add(pos, dir))
+      else
+        self:get_luaentity()._state = 1
+        local dir = vector.new(-1.9, 0, 0)
+        if yaw == 0 then
+          dir = vector.new((move_amount * -1), 0, 0)
+        elseif yaw == 90 then
+          dir = vector.new(0, 0, (move_amount * -1))
+        elseif yaw == 180 then
+          dir = vector.new((move_amount), 0, 0)
+        elseif yaw == 270 then
+          dir = vector.new(0, 0, (move_amount))
+        end
+        self:move_to(vector.add(pos, dir))
+      end
+    end,
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
-      --velocity = self.object:get_velocity()
-      local pos = self.object:get_pos()
-      -- local yaw = math.floor(math.deg(self.object:get_yaw())/10) * 10
-      local yaw = math.floor(math.deg(self.object:get_yaw()))
-      -- core.log("yaw: "..dump(yaw))
-      local move_amount = 1.9
-      if self.object:get_luaentity()._toggleable == 0 then
-        if self.object:get_luaentity()._state == 1 then
-          self.object:get_luaentity()._state = 0
-          local dir = vector.new(1.9, 0, 0)
-          -- 90 and 270 need to move opoistte of eachother
-          if yaw == 0 then
-            dir = vector.new(move_amount, 0, 0)
-          elseif yaw == 90 then
-            dir = vector.new(0, 0, move_amount)
-          elseif yaw == 180 then
-            dir = vector.new((move_amount * -1), 0, 0)
-          elseif yaw == 270 then
-            dir = vector.new(0, 0, (move_amount * -1))
-          end
-          self.object:move_to(vector.add(pos, dir))
-        end
-      else
-        if self.object:get_luaentity()._state == 0 then
-          self.object:get_luaentity()._state = 1
-          local dir = vector.new(-1.9, 0, 0)
-          if yaw == 0 then
-            dir = vector.new((move_amount * -1), 0, 0)
-          elseif yaw == 90 then
-            dir = vector.new(0, 0, (move_amount * -1))
-          elseif yaw == 180 then
-            dir = vector.new((move_amount), 0, 0)
-          elseif yaw == 270 then
-            dir = vector.new(0, 0, (move_amount))
-          end
-          self.object:move_to(vector.add(pos, dir))
-        end
-      end
     end,
 
     on_rightclick = function(self, clicker)
@@ -1189,6 +1286,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
     -- },
     objects = {
       [mod_name .. ":" .. "relay"] = true,
+      [mod_name .. ":" .. "nrelay"] = true,
       [mod_name .. ":" .. "socket"] = true,
       [mod_name .. ":" .. "sensor"] = true,
       [mod_name .. ":" .. "sensor_disclaimer"] = true,
