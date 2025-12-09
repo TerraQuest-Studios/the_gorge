@@ -97,7 +97,7 @@ end
 ---@param sounds table
 ---@param shape shape
 ---@param texture table : leave nil. the base node texture (name of a base node)
-local function createMisc(name, des, sounds, shape, texture)
+local function createMisc(name, des, sounds, shape, texture, groups)
 	local selectable = nil
 	if tg_main.dev_mode == false then
 		selectable = {
@@ -113,9 +113,15 @@ local function createMisc(name, des, sounds, shape, texture)
 	if shape == shapes.panel or shape == shapes.sheet then
 		is_walkable = false
 	end
+  -- groups!!!
+  groups = groups or {}
+  -- add default groups
+  for grp, grpvalue in pairs(defualt_groups) do
+    groups[grp] = groups[grp] or grpvalue
+  end
 	core.register_node("tg_nodes:" .. name, {
 		description = S(des),
-		groups = defualt_groups,
+		groups = groups,
 		tiles = texture,
 		sounds = tg_sound.node_defaults(sounds),
 		paramtype2 = "facedir",
@@ -615,7 +621,8 @@ createNode("concrete_slab", "concrete, no one is taking care of this.", nil,
 createNode("concrete_floor", "concrete floor, almost like sand paper.")
 
 createMisc("locker", "Locker, LET ME IN!!", nil, shapes.double,
-	{ { name = "tg_nodes_misc.png^[sheet:16x16:3,0" }, { name = "tg_nodes_misc.png^[sheet:16x8:0,0" } })
+	{ { name = "tg_nodes_misc.png^[sheet:16x16:3,0" }, { name = "tg_nodes_misc.png^[sheet:16x8:0,0" } },
+  {locker = 1})
 createMisc("paper", "Paper", tg_sound.paper_defaults(), shapes.sheet,
 	{ { name = "tg_nodes_misc.png^[sheet:16x16:0,3" } })
 createMisc("paper_1", "Paper", tg_sound.paper_defaults(), shapes.sheet,
