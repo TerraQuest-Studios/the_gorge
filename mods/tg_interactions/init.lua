@@ -578,7 +578,7 @@ local function sendSignal(pos, chain, distance, signal)
                       -- r_v:get_luaentity()._state = signal
                       -- core.log("should be sending: " .. signal)
                       r_v:get_luaentity()._toggle_state(r_v, signal)
-                      return
+                      -- return
                     else
                       r_v:get_luaentity()._toggle_state(r_v)
                     end
@@ -813,11 +813,6 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
     on_step = function(self, dtime, moveresult)
       local pos = self.object:get_pos()
       local chain = {}
-      if tg_power.getPower() == false then
-        -- send off signal
-      else
-        -- repeat signal
-      end
       local opposite = self.object:get_luaentity()._opposite
       if tg_power.getPower() == opposite then
         -- core.log("power is [OFF]")
@@ -888,22 +883,22 @@ tg_interactions.register_interactable("nrelay", "none", "", "tg_nodes_misc.png^[
 tg_interactions.register_interactable("socket", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
   {
     _popup_msg = "[ socket ]",
-    _toggleable = 0, -- default state 0
-    _state = 0,      -- default state 0
+    -- _toggleable = 0, -- default state 0
+    -- _state = 0,      -- default state 0
     _popup_texture = "tg_nodes_misc.png^[sheet:16x16:2,5",
     _popup_hidden = true,
     pointable = false,
-    on_step = function(self, dtime, moveresult)
-      if self.object:get_luaentity()._toggleable == 1 then
-        if self.object:get_luaentity()._state == 1 then
-          self.object:get_luaentity()._state = 0
-        end
-      else
-        if self.object:get_luaentity()._state == 0 then
-          self.object:get_luaentity()._state = 1
-        end
-      end
-    end,
+    -- on_step = function(self, dtime, moveresult)
+    --   if self.object:get_luaentity()._toggleable == 1 then
+    --     if self.object:get_luaentity()._state == 1 then
+    --       self.object:get_luaentity()._state = 0
+    --     end
+    --   else
+    --     if self.object:get_luaentity()._state == 0 then
+    --       self.object:get_luaentity()._state = 1
+    --     end
+    --   end
+    -- end,
   }
 )
 
