@@ -775,7 +775,11 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
+      core.after(1, function()
+        tg_cut_scenes.run(clicker, { [[slipping into suit]] })
+      end)
       if tg_main.dev_mode == false then
+        core.log("some zipper sounds should also be added to this. maybe even some skin slapping, because why not.")
         self.object:remove()
         --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
