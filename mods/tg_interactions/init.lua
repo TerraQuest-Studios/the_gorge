@@ -198,39 +198,20 @@ end
 ---@param shape shape
 ---@param weight number
 function tg_interactions.register_draggable(name, model_type, model, texture, shape, weight)
-  local function drop(self)
-    self.object:get_luaentity().physical = true
-    self.object:get_luaentity()._being_dragged = false
-    local dragged_by = self.object:get_luaentity()._dragged_by
-    restorePlayerMovement(dragged_by)
-
-    removeFromPlayerCollection(dragged_by, self.object:get_luaentity().name)
-
-    -- core.log("wait is this not running??")
-    -- local player = getPlayer(dragged_by)
-    -- if player ~= nil then
-    --   local object_name = self.object:get_luaentity().name
-    --   -- player:get_properties()._dragging = object_name
-    --   -- core.log("lua: "..dump(player:get_properties()))
-    --   core.log("player dragging: "..dump(player._dragging))
-    --   core.log("object name: "..object_name)
-    --   core.log("object: "..dump(self.object:get_luaentity().id))
-    -- end
-    self.object:get_luaentity()._dragged_by = ""
-    players_dragging[dragged_by] = false
-  end
-  local popup_text = { "[ drag ]", "[ let go ]" }
+  local popup_text = { "[ RMB: drag ]\n[ LMB: push ]", "[ RMB/LMB: let go ]" }
   local def = {
-    _being_dragged = false,
-    _dragged_by = "",
+    _dragging = false,
+    _dragger = "",
 
     _acc = 0,
-    _weight = weight,
+    _weight = weight or 3,
     _speed = 3, -- speed should change depending on how far the player is
     _popup_msg = popup_text[1],
     _prev_sound = nil,
     _sound_tick = 0,
+    _sound_duration = 0.81,
     _interactable = 1,
+    _lossdistance = 2, -- distance between us and player needed to drop us
     on_step = function(self, dtime, moveresult)
       local cur_pos = self.object:get_pos()
       local velocity = self.object:get_velocity()
@@ -243,156 +224,122 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       -- self.object:set_velocity(vector.subtract(velocity,gravity))
       -- debug("I do be stepping")
 
+      -- not being dragged anymore
+      if not self._dragging then return end
 
       -- play sound while being dragged
-      local tick = self.object:get_luaentity()._sound_tick
-      tick = tick + 1
-      self.object:get_luaentity()._sound_tick = tick
-      if tick >= 35 then
-        self.object:get_luaentity()._sound_tick = 0
-
+      local tick = self._sound_tick
+      tick = tick + dtime
+      if tick >= self._sound_duration then
+        tick = 0
         local vel = self.object:get_velocity()
         if vel.x ~= 0 and vel.z ~= 0 then
           -- self.object:move_to(vector.new(player_pos.x,cur_pos.y,player_pos.z), true)
           -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
           -- self.object:add_velocity(vector.subtract(vector.new(mid_point.x, cur_pos.y, mid_point.z), cur_pos))
 
-          local cur_sound = self.object:get_luaentity()._prev_sound
-          if cur_sound ~= nil then
+          local dsound = self._prev_sound -- drag sound
+          if dsound ~= nil then
             -- core.sound_stop(cur_sound)
-            core.sound_fade(cur_sound, 120, 0)
+            core.sound_fade(dsound, 120, 0)
           end
-          local pitch = 1
-          if weight >= 3 then
-            pitch = 0.8
-          elseif weight <= 2 then
-            pitch = 1.4
-          end
-          local playing_sound = core.sound_play({ name = "tg_interactions_drag" }, {
-            pos = { x = cur_pos.x, y = cur_pos.y, z = cur_pos.z },
-            gain = 1.0,    -- default
-            fade = 0.0,    -- default
-            pitch = pitch, -- 1.0, -- default
+          self._prev_sound = core.sound_play("tg_interactions_drag", {
+              pos = cur_pos,
+              gain = 1,
+              pitch = 1 * self._weightfluence
           })
-          self.object:get_luaentity()._prev_sound = playing_sound
         end
       end
-      if self.object:get_luaentity()._being_dragged == false then
-        self.object:get_luaentity()._popup_msg = popup_text[1]
-        -- self.object:set_velocity(vector.new(0, gravity, 0)) -- come to a complete stop when player lets go
+      self._sound_tick = tick -- update sound tick
+      -- if _dragging get all objects within radius, if player
+      -- and player name is equal to dragger.. get closer
+      -- if no players are around then no drag.
+      -- debug("i am getting dragged")
+      local max_distance = self._lossdistance
+      local entities = core.get_objects_inside_radius(cur_pos, max_distance)
+      if #entities < 2 then return self:_drop() end -- nothing around us (1 will be us)
+      local found_player = false
+      for _, obj in ipairs(entities) do
+        local pname = core.is_player(obj) and obj:get_player_name()
+        -- found a player! let's see if they're who's dragging us
+        if pname then
+          if pname == self._dragger then
+            found_player = true
+            self.physical = false
+            local player_pos = obj:get_pos()
+            local player_distance = tg_main.distance(player_pos, cur_pos)
+            if player_distance > 1.2 then
+              --local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
+              local dirX = player_pos.x - cur_pos.x
+              local dirY = player_pos.y - cur_pos.y
+              -- Calculate angle in radians
+              local angle = math.atan2(dirY, dirX)
+              self.object:set_yaw(angle)
 
-        -- --push way
-        -- local entites = core.get_objects_inside_radius(cur_pos, 0.9)
-        -- local pushed = false
-        -- for index, value in ipairs(entites) do
-        --   local entity_pos = value:get_pos()
-        --   if cur_pos ~= entity_pos then
-        --     local dirX = entity_pos.x - cur_pos.x
-        --     local dirY = entity_pos.y - cur_pos.y
-        --     -- Calculate angle in radians
-        --     local angle = math.atan2(dirY, dirX)
-        --     self.object:set_yaw(angle)
-        --     self.object:set_velocity(vector.subtract(cur_pos, vector.new(entity_pos.x, cur_pos.y, entity_pos.z)))
-        --     pushed = true
-        --   end
-        -- end
-        -- if pushed == false then
-        -- end
-      else
-        -- if _being_dragged get all objects within radius, if player
-        -- and player name is equal to dragger.. get closer
-        -- if no players are around then no drag.
-        -- debug("i am getting dragged")
-        local max_distance = 2
-        local entites = core.get_objects_inside_radius(cur_pos, max_distance)
-        local found_player = false
-        for index, value in ipairs(entites) do
-          if value:is_player() then
-            -- debug("we have found a player")
-            local player_name = value:get_player_name()
-            if player_name == self.object:get_luaentity()._dragged_by then
-              found_player = true
-              self.object:get_luaentity().physical = false
-              local player_pos = value:get_pos()
-              local player_distance = tg_main.distance(player_pos, cur_pos)
-              if player_distance > 1.2 then
-                --local new_pos = vector.add(player_pos, vector.new(0, 1, 0))
-                local dirX = player_pos.x - cur_pos.x
-                local dirY = player_pos.y - cur_pos.y
-                -- Calculate angle in radians
-                local angle = math.atan2(dirY, dirX)
-                self.object:set_yaw(angle)
-
-                --local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
-                --local obj_speed = self.object:get_luaentity()._speed
-                -- local speed = (self.object:get_luaentity()._speed * player_distance) * dtime
-                --local speed = math.min(obj_speed * dtime, 1)
-                -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
-                self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
-              end
-              --else
+              --local mid_point = tg_main.calculateMidpoint(player_pos, cur_pos)
+              --local obj_speed = self._speed
+              -- local speed = (self._speed * player_distance) * dtime
+              --local speed = math.min(obj_speed * dtime, 1)
+              -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
+              self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
             end
+            --else
           end
         end
-        if #entites <= 1 or found_player == false then
-          -- debug("dragger is gone")
-          drop(self)
-        end
       end
-      -- debug("dragger: " .. self.object:get_luaentity()._dragged_by)
+      -- not being dragged by anything in range
+      if not found_player then return self:_drop() end
+      -- debug("dragger: " .. self._dragger)
     end,
     on_rightclick = function(self, clicker)
-      local player_name = clicker:get_player_name()
-      local dragged_by = self.object:get_luaentity()._dragged_by
-
-      -- already holding, drop.
-      if players_dragging[player_name] == true then
-        drop(self)
-        return
-      end
+      if not core.is_player(clicker) then return end
+      local pname = clicker:get_player_name() -- player name
+      local dragger = self._dragger
+      -- already holding, drop
+      if players_dragging[pname] then return self:_drop() end
 
       -- prevent other player from interacting
-      if player_name ~= dragged_by and dragged_by ~= "" then
-        return
-      end
+      if pname ~= dragger and dragger ~= "" then return end
 
-      -- not sure what this is doing??
-      if clicker._dragging == true then
-        -- do nothing
-        return
-      end
+      -- TPH: commented out because I don't see the point of doing this?
+      --local obj_pos = self.object:get_pos()
+      --local player_pos = clicker:get_pos()
+      --clicker:move_to(vector.new(obj_pos.x, player_pos.y, obj_pos.z), { continuous = true })
 
-      local obj_pos = self.object:get_pos()
-      local player_pos = clicker:get_pos()
-      clicker:move_to(vector.new(obj_pos.x, player_pos.y, obj_pos.z), { continuous = true })
-
-      local cur_value = self._being_dragged
-      self.object:get_luaentity()._being_dragged = not cur_value
-      self.object:get_luaentity()._dragged_by = clicker:get_player_name()
-      local obj_weight = self.object:get_luaentity()._weight
+      local dragging = self._dragging
+      -- never appears to be set to false, but don't wanna go against whatever SURV is doing here lol
+      self._dragging = not dragging
+      self._dragger = pname
+      local obj_weight = self._weight
       clicker:set_physics_override({ speed = 1.1 / obj_weight, jump = 0.5, speed_fast = 2.1 / obj_weight })
-      if cur_value == true then
-        self.object:get_luaentity()._popup_msg = popup_text[1]
-        drop(self)
-        clicker:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
-        players_dragging[player_name] = false
+      -- like never actually happens but sure
+      if dragging then
+        self._popup_msg = popup_text[1]
+        self:_drop()
+      -- now dragging
       else
-        self.object:get_luaentity()._popup_msg = popup_text[2]
-        players_dragging[player_name] = true
+        self._popup_msg = popup_text[2]
+        players_dragging[pname] = true
 
-        addToPlayerCollection(player_name, self.object:get_luaentity().name)
+        addToPlayerCollection(pname, self.name)
+        -- affects sound pitch (recalculate in case of change to weight)
+        self._weightfluence = 3/self._weight -- weight influence
+        self._sound_duration = 0.81/self._weightfluence
       end
       -- core.log("collections" .. dump(players_collections))
     end,
     on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
+      if not core.is_player(puncher) then return end
       local player_pos = puncher:get_pos()
       local cur_pos = self.object:get_pos()
-      if puncher:get_player_control().sneak == true then
+      if puncher:get_player_control().sneak then
         if tg_main.dev_mode == true then
           self.object:remove()
           puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
         end
+      -- punching away
       else
+        if self._dragger then self:_drop() end -- drop when punched
         -- self.object:set_velocity(vector.add(cur_pos, vector.new(player_pos.x, cur_pos.y+0.5, player_pos.z)))
         local dirX = player_pos.x - cur_pos.x
         local dirY = player_pos.y - cur_pos.y
@@ -402,8 +349,32 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         local speed = 3 / (1 + weight)
         local vel = vector.multiply(vector.add(dir, vector.new(0, cur_pos.y + 0.1, 0)), speed)
         self.object:set_velocity(vel)
+        -- do dragging sound
+        local dsound = self._prev_sound -- drag sound
+        if dsound ~= nil then
+          -- core.sound_stop(cur_sound)
+          core.sound_fade(dsound, 0.3, 0)
+        end
+        self._prev_sound = core.sound_play("tg_interactions_drag", {
+          pos = cur_pos,
+          gain = 1,
+          pitch = 1 * self._weightfluence
+        })
       end
     end,
+    -- for when player stops dragging us
+    _drop = function(self)
+      self.physical = true
+      self._dragging = false
+      self._popup_msg = popup_text[1] -- reset message
+      -- whom is dragging us
+      local dragger = self._dragger
+      restorePlayerMovement(dragger)
+      removeFromPlayerCollection(dragger, self.name)
+
+      self._dragger = ""
+      players_dragging[dragger] = nil
+    end
   }
   if model_type == "mesh" then
     def.initial_properties = {
@@ -433,6 +404,9 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       stepheight = 0.6, -- this is not working
     }
   end
+  -- affects sound pitch
+  def._weightfluence = 3/def._weight -- weight influence
+  def._sound_duration = 0.81/def._weightfluence
   core.register_entity(mod_name .. ":draggable_" .. name, def)
 end
 
