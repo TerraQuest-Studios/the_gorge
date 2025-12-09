@@ -970,8 +970,8 @@ core.register_globalstep(function(dtime)
     -- local popup_msg = player:hud_add(msg)
 
     -- need to know to remove or change the current hud at all times
-    local player_name = player:get_player_name()
-    local players_hud = getPlayerHuds(player_name)
+    local pname = player:get_player_name()
+    local players_hud = getPlayerHuds(pname)
     -- core.log("does the player have huds? "..dump(players_hud.huds))
 
     for _, id in pairs(players_hud.huds) do
@@ -1028,12 +1028,19 @@ core.register_globalstep(function(dtime)
       if not ent then return end -- no entity could be found
       local hover_popup = ent._popup_msg
       local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
+      -- if newline found
+      if hover_popup:find("\n") then
+        -- add 0.08 for each newline found
+        for _,_ in hover_popup:gmatch("\n") do
+          hud_pos.y = hud_pos.y + 0.08
+        end
+      end
 
-      msg["name"] = hover_popup
-      msg["world_pos"] = hud_pos
+      msg.name = hover_popup
+      msg.world_pos = hud_pos
       if ent._interactable_pos ~= nil then
         local specefic_pos = vector.from_string(ent._interactable_pos)
-        msg["world_pos"] = vector.add(hud_pos, specefic_pos)
+        msg.world_pos = vector.add(hud_pos, specefic_pos)
       end
       local new_hud = player:hud_add(msg)
       table.insert(players_hud.huds, new_hud)
