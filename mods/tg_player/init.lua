@@ -5,6 +5,7 @@ tg_player = {}
 
 tg_player.eye_height = 1.625
 tg_player.eye_height_sneak = 1.3
+tg_player.eye_height_prone = 0.5
 
 dofile(mod_path .. "/scripts" .. "/helpers.lua")
 
@@ -62,14 +63,29 @@ end)
 core.register_globalstep(function(dtime)
 	local players = core.get_connected_players()
 	for index, player in pairs(players) do
-		local sneaking = player:get_player_control().sneak
+		local player_control = player:get_player_control()
+		local sneaking = player_control.sneak
 		local props = player:get_properties()
 		if sneaking == true then
 			-- props.eye_height = tg_player.eye_height_sneak
 			-- player:set_properties(props)
+			local player_look = math.floor(math.deg(player:get_look_vertical()))
+			-- core.log("player rot: "..dump(player_look))
 			local height = props.eye_height
-			if height >= tg_player.eye_height_sneak then
-				height = props.eye_height - 0.1
+			-- go prone
+			if player_look >= 65 then
+				-- core.log("this floor looks nice and comfy")
+				if player_control.down then
+					if height ~= tg_player.eye_height_prone then
+						player:set_look_vertical(math.rad(10))
+					end
+					height = tg_player.eye_height_prone
+				end
+			else
+				-- crouch
+				if height >= tg_player.eye_height_sneak then
+					height = props.eye_height - 0.1
+				end
 			end
 			props.eye_height = height
 			player:set_properties(props)
