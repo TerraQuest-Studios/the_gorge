@@ -307,7 +307,8 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       --clicker:move_to(vector.new(obj_pos.x, player_pos.y, obj_pos.z), { continuous = true })
 
       local dragging = self._dragging
-      self._dragging = not dragging -- never appears to be set to false, but don't wanna go against whatever SURV is doing here lol
+      -- never appears to be set to false, but don't wanna go against whatever SURV is doing here lol
+      self._dragging = not dragging
       self._dragger = pname
       local obj_weight = self._weight
       clicker:set_physics_override({ speed = 1.1 / obj_weight, jump = 0.5, speed_fast = 2.1 / obj_weight })
