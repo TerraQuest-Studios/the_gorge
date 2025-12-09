@@ -797,9 +797,11 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
     _popup_hidden = true,
     _toggle = 0,
     _state = 0,
+    _opposite = false,
     _the_static_data = {
       "_toggle",
-      "_state"
+      "_state",
+      "_opposite",
     },
     get_staticdata = function(self)
       return get_staticdata(self)
@@ -812,33 +814,54 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
       local pos = self.object:get_pos()
       local chain = {}
       if tg_power.getPower() == false then
+        -- send off signal
+      else
+        -- repeat signal
+      end
+      local opposite = self.object:get_luaentity()._opposite
+      if tg_power.getPower() == opposite then
         -- core.log("power is [OFF]")
         -- set the state
         if self.object:get_luaentity()._toggle == 0 then
-          self.object:get_luaentity()._toggle = 1
           if self.object:get_luaentity()._state == 1 then
             self.object:get_luaentity()._toggle = 1
             self.object:get_luaentity()._state = 0
-            sendSignal(pos, chain, 1.2, 1)
+            local signal = 0
+            if opposite == false then
+              signal = 1
+            end
+            sendSignal(pos, chain, 1.2, signal)
           end
           -- or kill the find signal
         end
-      end
-      if tg_power.getPower() == true then
+      else
         -- core.log("power is [ON]")
         if self.object:get_luaentity()._toggle == 1 then
           self.object:get_luaentity()._toggle = 0
           if self.object:get_luaentity()._state == 0 then
             self.object:get_luaentity()._toggle = 1
             self.object:get_luaentity()._state = 1
-            sendSignal(pos, chain, 1.2, 0)
           end
         end
         -- do nothing
       end
     end,
-  }
-)
+    on_rightclick = function(self, clicker)
+      if core.is_creative_enabled() then
+        if clicker:get_player_control().sneak == true then
+          local opposite = not self.object:get_luaentity()._opposite
+          self.object:get_luaentity()._opposite = opposite
+          if opposite == true then
+            core.log("will detect when power is ON")
+          else
+            core.log("will detect when power is OFF")
+          end
+        else
+          core.log("[buildmode]: sneak click to switch activation state")
+        end
+      end
+    end,
+  })
 
 tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
   {
@@ -999,10 +1022,10 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       -- core.log("yaw: "..dump(yaw))
       local move_amount = 1.9
       local cur_state = self:get_luaentity()._state
-      -- if cur_state == state then
-      --   -- core.log("no reason to toggle")
-      --   return
-      -- end
+      if cur_state == state then
+        -- core.log("no reason to toggle")
+        return
+      end
       -- core.log("sent state: " .. cur_state)
       if cur_state == 1 then
         self:get_luaentity()._state = 0
