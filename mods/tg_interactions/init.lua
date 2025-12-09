@@ -7,8 +7,8 @@ tg_interactions = {}
 -- NOTE: for something to get the "interactable" popup
 -- it have "_interactable = 1"
 
--- local reach = 3.5 -- things within will show interacable/ popup on hover
-tg_interactions.popup_radius = 3.5
+-- things within will show interacable/ popup on hover
+tg_interactions.popup_radius = 4.5 -- default of 4.5
 
 local gravity = -0.9
 
@@ -959,12 +959,9 @@ core.register_globalstep(function(dtime)
   local players = core.get_connected_players()
   if #players < 0 then return end -- don't do anything below until there's a player
   for _, player in ipairs(players) do
+    local pos = player:get_pos()
     local eye_height = player:get_properties().eye_height
-    local player_look_dir = player:get_look_dir()
-    local pos = player:get_pos():add(player_look_dir)
-    local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
-    local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
-    local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
+    pos.y = pos.y + eye_height -- add eye height
 
     -- core.log("so what is this: " .. dump(raycast_result))
     --local hud_pos = nil
@@ -981,7 +978,7 @@ core.register_globalstep(function(dtime)
     end
     players_hud.huds = {}
     --- in radius --
-    local within_radius = core.get_objects_inside_radius(player_pos, tg_interactions.popup_radius)
+    local within_radius = core.get_objects_inside_radius(pos, tg_interactions.popup_radius)
     local interacble_indicator = {
       -- type = "waypoint",
       -- name = "o",
@@ -995,6 +992,7 @@ core.register_globalstep(function(dtime)
       -- text = "where are you? i do not see you..",
       world_pos = { x = 0, y = 1, z = 0 },
     }
+    local found_interactable -- whether or not there's an interactable entity in range
     for _, obj in ipairs(within_radius) do
       local ent = not core.is_player(obj) and obj:get_luaentity()
       if ent then
@@ -1016,68 +1014,84 @@ core.register_globalstep(function(dtime)
             end
             local indicator = player:hud_add(interacble_indicator)
             table.insert(players_hud.huds, indicator)
+            found_interactable = true -- there is, there is!!!
             -- core.log("where am i? " .. dump())
           end
         end
       end
     end
     --- in radius end ---
+    -- no point in continuing calculations, none nearby
+    if not found_interactable then return end
 
-    if raycast_result and raycast_result.type == "object" then
-      -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
-      local ent = raycast_result.ref:get_luaentity()
-      if not ent then return end -- no entity could be found
-      -- popup time
-      local hover_popup = ent._popup_msg
-      local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
-
-      local msgdata = msgs[pname] or {}
-      msgs[pname] = msgdata -- set
-      -- reset gradually typed message
-      -- if different entity or popup message is different
-      if msgdata.ent ~= ent or msgdata.typeto ~= hover_popup then
-        msgdata.ent = ent -- used for identification purposes
-        msgdata.text = ""
-        msgdata.text_index = 1 -- index of character grabbed
-        msgdata.complete = nil -- to tell code to stop trying to type more of the popup message
-        msgdata.typeto = hover_popup -- what we're intending to type
-        msgdata.add_y = nil -- whether or not we should have the text pop up higher
+    -- looking direction
+    local player_look_dir = player:get_look_dir()
+    local lookpos = pos:add(player_look_dir) -- forwards our view
+    -- what position we're looking at plus our wielded range
+    local lookatpos = player_look_dir:multiply(tg_main.reach - 1):add(lookpos)
+    local raycast_result = core.raycast(pos, lookatpos, true, false)
+    -- no raycast, no point!
+    if not raycast_result then return end
+    local ent -- declare
+    -- iterate through raycast and find an interactable
+    for thing in raycast_result do
+      -- an entity!
+      if thing and thing.type == "object" then
+        ent = thing.ref:get_luaentity()
+        -- found a proper entity with a popup message, break loop!
+        if ent and ent._popup_msg then break end
       end
-
-      -- not finished typing out popup message
-      if not msgdata.complete then
-        local textdex = msgdata.text_index -- what character we're going to grab
-        local char = hover_popup:sub(textdex, textdex) -- grabbing from position of message, e.g. :sub(1,1)
-        -- if newline found
-        if char == "\n" then
-          -- add 0.08 to y
-          msgdata.add_y = (msgdata.add_y or 0) + 0.08
-        end
-        -- growing the text
-        msgdata.text = msgdata.text..char
-        -- add 1 to get the next character next step
-        textdex = textdex + 1
-        msgdata.complete = textdex > #hover_popup -- becomes true if we've finished typing it out
-        msgdata.text_index = textdex -- update accordingly
-      end
-      -- if there is Y to be added, then add it!
-      if msgdata.add_y then hud_pos.y = hud_pos.y + msgdata.add_y end
-      -- waypoint message will be what the current developed text is
-      msg.name = msgdata.text
-      msg.world_pos = hud_pos
-      if ent._interactable_pos ~= nil then
-        local specefic_pos = vector.from_string(ent._interactable_pos)
-        msg.world_pos = vector.add(hud_pos, specefic_pos)
-      end
-      local new_hud = player:hud_add(msg)
-      table.insert(players_hud.huds, new_hud)
-      -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
-
-      -- core.log("who dis: " .. hover_popup)
-      -- core.log("what is the pos? "..dump(hud_pos))
-    else
-      -- player:hud_remove(popup_msg)
     end
+    if not ent then return end -- couldn't find one
+
+    -- popup time
+    local hover_popup = ent._popup_msg
+    local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
+
+    local msgdata = msgs[pname] or {} -- get or create a msgdata for player
+    msgs[pname] = msgdata -- set
+    -- reset gradually typed message
+    -- if different entity or popup message is different
+    if msgdata.ent ~= ent or msgdata.typeto ~= hover_popup then
+      msgdata.ent = ent -- used for identification purposes
+      msgdata.text = ""
+      msgdata.text_index = 1 -- index of character grabbed
+      msgdata.complete = nil -- to tell code to stop trying to type more of the popup message
+      msgdata.typeto = hover_popup -- what we're intending to type
+      msgdata.add_y = nil -- whether or not we should have the text pop up higher
+    end
+
+    -- not finished typing out popup message
+    if not msgdata.complete then
+      local textdex = msgdata.text_index -- what character we're going to grab
+      local char = hover_popup:sub(textdex, textdex) -- grabbing from position of message, e.g. :sub(1,1)
+      -- if newline found
+      if char == "\n" then
+        -- add 0.08 to y
+        msgdata.add_y = (msgdata.add_y or 0) + 0.08
+      end
+      -- growing the text
+      msgdata.text = msgdata.text..char
+      -- add 1 to get the next character next step
+      textdex = textdex + 1
+      msgdata.complete = textdex > #hover_popup -- becomes true if we've finished typing it out
+      msgdata.text_index = textdex -- update accordingly
+    end
+    -- if there is Y to be added, then add it!
+    if msgdata.add_y then hud_pos.y = hud_pos.y + msgdata.add_y end
+    -- waypoint message will be what the current developed text is
+    msg.name = msgdata.text
+    msg.world_pos = hud_pos
+    if ent._interactable_pos ~= nil then
+      local specefic_pos = vector.from_string(ent._interactable_pos)
+      msg.world_pos = vector.add(hud_pos, specefic_pos)
+    end
+    local new_hud = player:hud_add(msg)
+    table.insert(players_hud.huds, new_hud)
+    -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
+
+    -- core.log("who dis: " .. hover_popup)
+    -- core.log("what is the pos? "..dump(hud_pos))
   end
 end)
 
