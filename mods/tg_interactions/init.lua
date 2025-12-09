@@ -910,48 +910,124 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
       core.chat_send_all("NOTE READS: \"took me a few attemps to get this note up here..\"")
     end,
   })
-tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+-- LOCKERS
+
+-- does not pertain to any specific locker, simply random chance
+local locker_loot = {
+  -- radiation suit
+  radiation_suit = {
+    amt = 1, -- amount that can be generated
+    -- self will be locker entity
+    -- entity pos, node pos
+    generate = function(self, epos, npos)
+      if math.random()<0.05 then return end -- 5% chance
+      core.log("generated suit")
+      return true
+    end,
+    -- got clicked, AAAA!
+    clicked = function(self, clicker)
+      core.chat_send_all("hmm, a radiation suit. i should slip this on.")
+      core.after(1, function()
+        tg_cut_scenes.run(clicker, { [[slipping into suit]] })
+      end)
+      if not tg_main.dev_mode then
+        core.log("some zipper sounds should also be added to this. maybe even some skin slapping, because why not.")
+        self.object:remove()
+      end
+    end,
+  }
+}
+
+-- locker entity
+tg_interactions.register_interactable("locker", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
   {
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
+      if not core.is_player(clicker) then return end -- NOT A PLAYER
+      --[[ local playing_sound = ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
+      })
+      self.object:remove()
+      if not tg_main.dev_mode then
+        -- I was an object remove but I got moved up for testing purposes
+        --else
+        -- core.log("after first interaction this will be removed in normal gameplay.")
+      end
+      -- see if we've got an id, run our variant if so!
+      local lootdata = locker_loot[self.id]
+      if lootdata and lootdata.clicked then
+        return lootdata.clicked(self, clicker)
+      end
+      -- wasn't anything unique, back to the regular
       core.chat_send_all("..this locker is empty")
-      --[[ local playing_sound = ]]
-      core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,   -- default
-        fade = 100.0, -- default
-        pitch = 1.8,  -- 1.0, -- default
-      })
-      if tg_main.dev_mode == false then
-        self.object:remove()
-        --else
-        -- core.log("after first interaction this will be removed in normal gameplay.")
-      end
     end,
-  })
-tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
-  .centerd_box,
-  {
-    _popup_msg = "[ search locker ]",
-    on_rightclick = function(self, clicker)
-      core.chat_send_all("hmm, a radiation suit. i should slip this on.")
-      --[[ local playing_sound = ]]
-      core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,   -- default
-        fade = 100.0, -- default
-        pitch = 1.8,  -- 1.0, -- default
-      })
-      core.after(1, function()
-        tg_cut_scenes.run(clicker, { [[slipping into suit]] })
-      end)
-      if tg_main.dev_mode == false then
-        core.log("some zipper sounds should also be added to this. maybe even some skin slapping, because why not.")
-        self.object:remove()
-        --else
-        -- core.log("after first interaction this will be removed in normal gameplay.")
+    get_staticdata = function(self, staticdata, dtime_s)
+      return self.id
+    end
+})
+
+-- store each locker entity
+-- WIP, prob won't use
+--[[
+local lockers
+lockers = {
+  add = function(epos, self)
+    lockers.list = lockers.list or {}
+  end,
+  -- list of lockers
+  list = {},
+}
+--]]
+-- spawn locker entities on mapblock load
+core.register_lbm({
+  name = "tg_interactions:locker_spawn",
+  nodenames = {"group:locker"},
+  -- find each applicable locker node
+  action = function(pos, node, dtime_s)
+    if math.random()>0.33 then return end -- 1 in 3 chance
+    -- spawn entity in front of locker
+    local addv = vector.new(
+      node.param2 == 3 and 0.6 or node.param2 == 1 and -0.6 or 0,
+      0,
+      node.param2 == 2 and 0.6 or node.param2 == 0 and -0.6 or 0)
+    -- add to position
+    local epos = vector.new(pos) -- entity position
+    epos = epos:add(addv)
+    -- node check, vector will round up
+    local conflict = core.get_node(epos)
+    if conflict.name ~= "air" then return end -- there's a conflict!!! won't be able to be interacted with
+    -- add entity!
+    epos.y = epos.y + 1 -- go up one lol
+    local obj = core.add_entity(epos, "tg_interactions:locker")
+    local locker = obj and obj:get_luaentity()
+    if not locker then return end -- somehow failed!
+    core.log("placed locker entity at "..core.pos_to_string(epos))
+    -- check through loot table!
+    for id,data in pairs(locker_loot) do
+      -- if amount and greater than 0
+      if data.amt and data.amt > 0 then
+        -- check if can generate
+        -- entity, entity position, locker node position
+        if data.generate(locker, epos, pos) then
+          -- successfully generated!
+          locker.id = id
+          data.amt = data.amt - 1
+          return
+        end
       end
-    end,
-  })
+    end
+  end,
+  -- uncomment this to have it generate each time you enter the chunk
+  -- will NOT account for entities ALREADY present
+  -- ACTUALLY YOU WILL NEED THIS ON TO EVEN GENERATE THEM! :soB:
+  --run_at_every_load = true
+})
+--]]
+
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.slab,
   {
     _popup_msg = "[ pickup tape ]",
