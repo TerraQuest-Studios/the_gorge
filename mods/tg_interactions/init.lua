@@ -942,6 +942,7 @@ local function getPlayerHuds(player_name)
 end
 
 -- player hover over interactables
+local msgs = {} -- stores message text and entity
 core.register_globalstep(function(dtime)
   local msg = {
     type = "waypoint",
@@ -1026,17 +1027,43 @@ core.register_globalstep(function(dtime)
       -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
       local ent = raycast_result.ref:get_luaentity()
       if not ent then return end -- no entity could be found
+      -- popup time
       local hover_popup = ent._popup_msg
       local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
-      -- if newline found
-      if hover_popup:find("\n") then
-        -- add 0.08 for each newline found
-        for _,_ in hover_popup:gmatch("\n") do
-          hud_pos.y = hud_pos.y + 0.08
-        end
+
+      local msgdata = msgs[pname] or {}
+      msgs[pname] = msgdata -- set
+      -- reset gradually typed message
+      -- if different entity or popup message is different
+      if msgdata.ent ~= ent or msgdata.typeto ~= hover_popup then
+        msgdata.ent = ent -- used for identification purposes
+        msgdata.text = ""
+        msgdata.text_index = 1 -- index of character grabbed
+        msgdata.complete = nil -- to tell code to stop trying to type more of the popup message
+        msgdata.typeto = hover_popup -- what we're intending to type
+        msgdata.add_y = nil -- whether or not we should have the text pop up higher
       end
 
-      msg.name = hover_popup
+      -- not finished typing out popup message
+      if not msgdata.complete then
+        local textdex = msgdata.text_index -- what character we're going to grab
+        local char = hover_popup:sub(textdex, textdex) -- grabbing from position of message, e.g. :sub(1,1)
+        -- if newline found
+        if char == "\n" then
+          -- add 0.08 to y
+          msgdata.add_y = (msgdata.add_y or 0) + 0.08
+        end
+        -- growing the text
+        msgdata.text = msgdata.text..char
+        -- add 1 to get the next character next step
+        textdex = textdex + 1
+        msgdata.complete = textdex > #hover_popup -- becomes true if we've finished typing it out
+        msgdata.text_index = textdex -- update accordingly
+      end
+      -- if there is Y to be added, then add it!
+      if msgdata.add_y then hud_pos.y = hud_pos.y + msgdata.add_y end
+      -- waypoint message will be what the current developed text is
+      msg.name = msgdata.text
       msg.world_pos = hud_pos
       if ent._interactable_pos ~= nil then
         local specefic_pos = vector.from_string(ent._interactable_pos)
