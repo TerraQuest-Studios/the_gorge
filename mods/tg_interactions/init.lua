@@ -956,98 +956,93 @@ core.register_globalstep(function(dtime)
   }
 
   local players = core.get_connected_players()
-  if #players > 0 then
-    for _, player in ipairs(players) do
-      local eye_height = player:get_properties().eye_height
-      local player_look_dir = player:get_look_dir()
-      local pos = player:get_pos():add(player_look_dir)
-      local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
-      local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
-      local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
+  if #players < 0 then return end -- don't do anything below until there's a player
+  for _, player in ipairs(players) do
+    local eye_height = player:get_properties().eye_height
+    local player_look_dir = player:get_look_dir()
+    local pos = player:get_pos():add(player_look_dir)
+    local player_pos = { x = pos.x, y = pos.y + eye_height, z = pos.z }
+    local new_pos = player:get_look_dir():multiply(tg_main.reach - 1):add(player_pos)
+    local raycast_result = core.raycast(player_pos, new_pos, true, false):next()
 
-      -- core.log("so what is this: " .. dump(raycast_result))
-      --local hud_pos = nil
-      -- local popup_msg = player:hud_add(msg)
+    -- core.log("so what is this: " .. dump(raycast_result))
+    --local hud_pos = nil
+    -- local popup_msg = player:hud_add(msg)
 
-      -- need to know to remove or change the current hud at all times
-      local player_name = player:get_player_name()
-      local players_hud = getPlayerHuds(player_name)
-      -- core.log("does the player have huds? "..dump(players_hud.huds))
+    -- need to know to remove or change the current hud at all times
+    local player_name = player:get_player_name()
+    local players_hud = getPlayerHuds(player_name)
+    -- core.log("does the player have huds? "..dump(players_hud.huds))
 
-      for index, value in pairs(players_hud.huds) do
-        -- core.log("wtf is this:"..value)
-        player:hud_remove(value)
-      end
-      players_hud.huds = {}
-      --- in radius --
-      local within_radius = core.get_objects_inside_radius(player_pos, tg_interactions.popup_radius)
-      local interacble_indicator = {
-        -- type = "waypoint",
-        -- name = "o",
-        type = "image_waypoint",
-        text = "tg_nodes_misc.png^[sheet:16x16:0,5",
-        -- precision = 0,
-        scale = { x = 2, y = 2 },
-        number = 0xFFFFFF,
-        z_index = -300,
-        alignment = 0,
-        -- text = "where are you? i do not see you..",
-        world_pos = { x = 0, y = 1, z = 0 },
-      }
-      for index, value in ipairs(within_radius) do
-        -- TODO(): check if "interactable"
-        if not value:is_player() then
-          if value:get_luaentity() ~= nil then
-            if value:get_luaentity()._interactable == 1 then
-              --luacheck: ignore
-              if value:get_luaentity()._popup_hidden == true
-                  and player:get_wielded_item():get_name() ~= mod_name .. ":wrench" then
-              else
-                local obj_pos = value:get_pos()
-                interacble_indicator["world_pos"] = obj_pos
-                local popup_texture = value:get_luaentity()._popup_texture
-                if value:get_luaentity()._interactable_pos ~= nil then
-                  local specefic_pos = vector.from_string(value:get_luaentity()._interactable_pos)
-                  interacble_indicator["world_pos"] = vector.add(obj_pos, specefic_pos)
-                end
-                if popup_texture ~= nil then
-                  interacble_indicator["text"] = popup_texture
-                else
-                  interacble_indicator["text"] = "tg_nodes_misc.png^[sheet:16x16:0,5"
-                end
-                local indicator = player:hud_add(interacble_indicator)
-                table.insert(players_hud.huds, indicator)
-                -- core.log("where am i? " .. dump())
-              end
+    for _, id in pairs(players_hud.huds) do
+      -- core.log("wtf is this:"..value)
+      player:hud_remove(id)
+    end
+    players_hud.huds = {}
+    --- in radius --
+    local within_radius = core.get_objects_inside_radius(player_pos, tg_interactions.popup_radius)
+    local interacble_indicator = {
+      -- type = "waypoint",
+      -- name = "o",
+      type = "image_waypoint",
+      text = "tg_nodes_misc.png^[sheet:16x16:0,5",
+      -- precision = 0,
+      scale = { x = 2, y = 2 },
+      number = 0xFFFFFF,
+      z_index = -300,
+      alignment = 0,
+      -- text = "where are you? i do not see you..",
+      world_pos = { x = 0, y = 1, z = 0 },
+    }
+    for _, obj in ipairs(within_radius) do
+      local ent = not core.is_player(obj) and obj:get_luaentity()
+      if ent then
+        -- if interactable
+        if ent._interactable == 1 then
+          --luacheck: ignore
+          if ent._popup_hidden == true
+              and player:get_wielded_item():get_name() ~= mod_name .. ":wrench" then
+          else
+            local obj_pos = obj:get_pos()
+            interacble_indicator["world_pos"] = obj_pos
+            -- use custom popup texture if exists, otherwise use default image
+            local popup_texture = ent._popup_texture
+            interacble_indicator["text"] = popup_texture or
+              "tg_nodes_misc.png^[sheet:16x16:0,5"
+            if ent._interactable_pos ~= nil then
+              local specific_pos = vector.from_string(ent._interactable_pos)
+              interacble_indicator["world_pos"] = vector.add(obj_pos, specific_pos)
             end
+            local indicator = player:hud_add(interacble_indicator)
+            table.insert(players_hud.huds, indicator)
+            -- core.log("where am i? " .. dump())
           end
         end
       end
-      --- in radius end ---
+    end
+    --- in radius end ---
 
-      if raycast_result ~= nil and raycast_result.type == "object" then
-        -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
-        if raycast_result.ref:get_luaentity() == nil then
-          return
-        end
-        local hover_popup = raycast_result.ref:get_luaentity()._popup_msg
-        hud_pos = vector.add(raycast_result.ref:get_pos(), vector.new(0, 0.1, 0))
+    if raycast_result and raycast_result.type == "object" then
+      -- core.log("who dis: "..dump(raycast_result.ref:get_luaentity()))
+      local ent = raycast_result.ref:get_luaentity()
+      if not ent then return end -- no entity could be found
+      local hover_popup = ent._popup_msg
+      local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
 
-        msg["name"] = hover_popup
-        msg["world_pos"] = hud_pos
-        if raycast_result.ref:get_luaentity()._interactable_pos ~= nil then
-          local specefic_pos = vector.from_string(raycast_result.ref:get_luaentity()._interactable_pos)
-          msg["world_pos"] = vector.add(hud_pos, specefic_pos)
-        end
-        local new_hud = player:hud_add(msg)
-        table.insert(players_hud.huds, new_hud)
-        -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
-
-        -- core.log("who dis: " .. hover_popup)
-        -- core.log("what is the pos? "..dump(hud_pos))
-      else
-        -- player:hud_remove(popup_msg)
+      msg["name"] = hover_popup
+      msg["world_pos"] = hud_pos
+      if ent._interactable_pos ~= nil then
+        local specefic_pos = vector.from_string(ent._interactable_pos)
+        msg["world_pos"] = vector.add(hud_pos, specefic_pos)
       end
+      local new_hud = player:hud_add(msg)
+      table.insert(players_hud.huds, new_hud)
+      -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
+
+      -- core.log("who dis: " .. hover_popup)
+      -- core.log("what is the pos? "..dump(hud_pos))
+    else
+      -- player:hud_remove(popup_msg)
     end
   end
 end)
