@@ -12,7 +12,7 @@ end
 
 -- define the sound/sound_group here
 tg_nodes.sounds = {
-  paper = "tg_paper_footstep"
+	paper = "tg_paper_footstep"
 }
 
 core.register_node("tg_nodes:placeholder", {
@@ -39,10 +39,10 @@ local shapes = {
 		{ -0.5, 0,    0,    0.5, 0.5, 0.5 },
 	},
 	centerd_box = { -0.2, -0.2, -0.2, 0.2, 0.2, 0.2 }, -- small box touching the ground (plant / anything small)
-	tiny_box = { -0.2, -0.5, -0.2, 0.2, -0.1, 0.2 }, -- small box touching the ground (plant / anything small)
-	slim_box = { -0.2, -0.5, -0.2, 0.2, 0.3, 0.2 }, -- same as tiny_box, just taller
-	double = { -0.5, -0.5, -0.5, 0.5, 1.5, 0.5 },   -- a like a locker or pillar
-	beam = { -0.2, -0.5, -0.2, 0.2, 0.5, 0.2 },     -- same as tiny_box, just taller
+	tiny_box = { -0.2, -0.5, -0.2, 0.2, -0.1, 0.2 },  -- small box touching the ground (plant / anything small)
+	slim_box = { -0.2, -0.5, -0.2, 0.2, 0.3, 0.2 },   -- same as tiny_box, just taller
+	double = { -0.5, -0.5, -0.5, 0.5, 1.5, 0.5 },     -- a like a locker or pillar
+	beam = { -0.2, -0.5, -0.2, 0.2, 0.5, 0.2 },       -- same as tiny_box, just taller
 	sheet = { -0.5, -0.5, -0.5, 0.5, -0.49, 0.5 },
 	panel = { -0.5, -0.5, -0.5, 0.5, -0.4, 0.5 },
 	rails = {
@@ -50,6 +50,7 @@ local shapes = {
 		{ 0.2,  -0.5, -0.5, 0.4,  -0.4, 0.5 },
 	},
 	half_slab = { -0.5, -0.5, -0.5, 0.5, 0.0, 0.0 },
+	decal = { -1.5, -0.5, -1.5, 0.5, -0.499, 0.5 },
 }
 
 tg_nodes["shapes"] = shapes
@@ -162,7 +163,7 @@ local function createPlant(name, des, shape, texture)
 			type = "fixed",
 			fixed = shape or shapes.box
 		},
-    sounds = tg_sound.plant_defaults()
+		sounds = tg_sound.plant_defaults()
 	})
 end
 
@@ -194,7 +195,7 @@ local function createWallLight(name, des, shape, light_level)
 		end,
 		on_timer = function(pos, elapsed, node, timeout)
 			node = node or core.get_node(pos)
-      local power = tg_power.getPower()
+			local power = tg_power.getPower()
 			if power == false then
 				-- core.log("light should be off")
 				if not string.find(node.name, "off") then
@@ -306,7 +307,7 @@ core.register_node("tg_nodes:fern", {
 		type = "fixed",
 		fixed = shapes.slim_box
 	},
-  sounds = tg_sound.plant_defaults()
+	sounds = tg_sound.plant_defaults()
 })
 
 core.register_node("tg_nodes:king_trumpet", {
@@ -436,7 +437,7 @@ core.register_node("tg_nodes:tubes", {
 		type = "fixed",
 		fixed = shapes.slab
 	},
-  sounds = tg_sound.metal_defaults()
+	sounds = tg_sound.metal_defaults()
 })
 core.register_node("tg_nodes:tubes_left", {
 	description = S("tubes_left, for transfering liquids."),
@@ -458,7 +459,7 @@ core.register_node("tg_nodes:tubes_left", {
 		type = "fixed",
 		fixed = shapes.slab
 	},
-  sounds = tg_sound.metal_defaults()
+	sounds = tg_sound.metal_defaults()
 })
 core.register_node("tg_nodes:tubes_right", {
 	description = S("tubes_right, for transfering liquids."),
@@ -480,7 +481,7 @@ core.register_node("tg_nodes:tubes_right", {
 		type = "fixed",
 		fixed = shapes.slab
 	},
-  sounds = tg_sound.metal_defaults()
+	sounds = tg_sound.metal_defaults()
 })
 core.register_node("tg_nodes:tubes_down", {
 	description = S("tubes_down, for transfering liquids."),
@@ -502,7 +503,7 @@ core.register_node("tg_nodes:tubes_down", {
 		type = "fixed",
 		fixed = shapes.half_slab
 	},
-  sounds = tg_sound.metal_defaults()
+	sounds = tg_sound.metal_defaults()
 })
 
 core.register_node("tg_nodes:radio", {
@@ -549,6 +550,105 @@ core.register_node("tg_nodes:dial_pad", {
 	},
 })
 
+core.register_node("tg_nodes:blood_slatter", {
+	description = S("blood_slatter, wow that is a lot of blood."),
+	groups = defualt_groups,
+	drawtype = "nodebox",
+	-- mesh = "dial_pad.glb",
+	visual_scale = 1,
+	-- tiles = {
+	-- 	name = "tg_nodes_misc.png^[sheet:8x8:3,0",
+	-- 	align_style = "world",
+	-- 	scale = 2,
+	-- },
+	tiles = {
+		{
+			name = "tg_nodes_misc.png^[sheet:8x8:5,0",
+			align_style = "world",
+			scale = 2,
+		},
+	},
+	paramtype = "light",
+	paramtype2 = "facedir",
+	use_texture_alpha = "clip",
+	-- sunlight_propagates = true,
+	-- walkable = false,
+	node_box = {
+		type = "fixed",
+		fixed = shapes.decal
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = shapes.decal
+	},
+})
+
+core.register_node("tg_nodes:blood_slatter_creature", {
+	description = S("blood_slatter_creature, looks dry."),
+	groups = defualt_groups,
+	drawtype = "nodebox",
+	-- mesh = "dial_pad.glb",
+	visual_scale = 1,
+	-- tiles = {
+	-- 	name = "tg_nodes_misc.png^[sheet:8x8:3,0",
+	-- 	align_style = "world",
+	-- 	scale = 2,
+	-- },
+	tiles = {
+		{
+			name = "tg_nodes_misc.png^[sheet:8x8:4,0",
+			align_style = "world",
+			scale = 2,
+		},
+	},
+	paramtype = "light",
+	paramtype2 = "facedir",
+	use_texture_alpha = "clip",
+	-- sunlight_propagates = true,
+	-- walkable = false,
+	node_box = {
+		type = "fixed",
+		fixed = shapes.decal
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = shapes.decal
+	},
+})
+
+core.register_node("tg_nodes:sludge_slatter", {
+	description = S("sludge_slatter, maybe i shouldn't touch that."),
+	groups = defualt_groups,
+	drawtype = "nodebox",
+	-- mesh = "dial_pad.glb",
+	visual_scale = 1,
+	-- tiles = {
+	-- 	name = "tg_nodes_misc.png^[sheet:8x8:3,0",
+	-- 	align_style = "world",
+	-- 	scale = 2,
+	-- },
+	tiles = {
+		{
+			name = "tg_nodes_misc.png^[sheet:8x8:3,0",
+			align_style = "world",
+			scale = 2,
+		},
+	},
+	paramtype = "light",
+	paramtype2 = "facedir",
+	use_texture_alpha = "clip",
+	-- sunlight_propagates = true,
+	-- walkable = false,
+	node_box = {
+		type = "fixed",
+		fixed = shapes.decal
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = shapes.decal
+	},
+})
+
 ---will create multiple node shapes
 ---@param name any
 ---@param sounds any
@@ -560,7 +660,7 @@ function tg_nodes.defNode(name, sounds)
 		local shape = shapes.box
 		local sel_box = nil
 		if string.find(value, "stairs") or string.find(value, "slab") or string.find(value, "panel")
-		or string.find(value, "rails") then
+				or string.find(value, "rails") then
 			param1 = "light"
 			param2 = "facedir"
 			if string.find(value, "stairs") then
@@ -645,6 +745,6 @@ tg_nodes.defNode("steel_enclosure", tg_sound.metal_defaults())
 tg_nodes.defNode("concrete_tiled")
 
 -- these two nodes need more work
-createNode("crate","crate, looks heavy", tg_sound.woodplank_defaults())
-createNode("crate2","crate, looks heavy", tg_sound.woodplank_defaults())
+createNode("crate", "crate, looks heavy", tg_sound.woodplank_defaults())
+createNode("crate2", "crate, looks heavy", tg_sound.woodplank_defaults())
 ------
