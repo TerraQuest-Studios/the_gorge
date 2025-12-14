@@ -269,9 +269,9 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
             core.sound_fade(dsound, 120, 0)
           end
           self._prev_sound = core.sound_play("tg_interactions_drag", {
-              pos = cur_pos,
-              gain = 1,
-              pitch = 1 * self._weightfluence
+            pos = cur_pos,
+            gain = 1,
+            pitch = 1 * self._weightfluence
           })
         end
       end
@@ -341,15 +341,15 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
       if dragging then
         self._popup_msg = popup_text[1]
         self:_drop()
-      -- now dragging
+        -- now dragging
       else
         self._popup_msg = popup_text[2]
         players_dragging[pname] = true
 
         addToPlayerCollection(pname, self.name)
         -- affects sound pitch (recalculate in case of change to weight)
-        self._weightfluence = 3/self._weight -- weight influence
-        self._sound_duration = 0.81/self._weightfluence
+        self._weightfluence = 3 / self._weight -- weight influence
+        self._sound_duration = 0.81 / self._weightfluence
       end
       -- core.log("collections" .. dump(players_collections))
     end,
@@ -362,7 +362,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
           self.object:remove()
           puncher:set_physics_override({ speed = 1, jump = 1, speed_fast = 1 })
         end
-      -- punching away
+        -- punching away
       else
         if self._dragger then self:_drop() end -- drop when punched
         -- self.object:set_velocity(vector.add(cur_pos, vector.new(player_pos.x, cur_pos.y+0.5, player_pos.z)))
@@ -430,8 +430,8 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
     }
   end
   -- affects sound pitch
-  def._weightfluence = 3/def._weight -- weight influence
-  def._sound_duration = 0.81/def._weightfluence
+  def._weightfluence = 3 / def._weight -- weight influence
+  def._sound_duration = 0.81 / def._weightfluence
   core.register_entity(mod_name .. ":draggable_" .. name, def)
 end
 
@@ -546,26 +546,33 @@ local function sendSignal(pos, chain, distance, signal)
           -- do nothing
           -- core.log("already searched")
         else
+          if core.is_creative_enabled() then
+              tg_main.debug_particle(value:get_pos())
+          end
+
           chain[vector.to_string(obj_pos)] = true
-          if string.find(value:get_luaentity().name, "relay") then
+          if string.find(value:get_luaentity().name, "nrelay") then
+            -- core.log("n relay found")
+            if signal == 1 then
+              signal = 0
+              if core.is_creative_enabled() then
+                tg_main.debug_particle(value:get_pos(),"#fc4614")
+              end
+            end
+            sendSignal(obj_pos, chain, distance, signal)
+          elseif string.find(value:get_luaentity().name, "relay") then
             -- core.log("relay")
             sendSignal(obj_pos, chain, distance, signal)
             -- search again
           elseif string.find(value:get_luaentity().name, "sensor_power") then
-            if value:get_luaentity()._state == 0 then
-              -- core.log("power needed")
-              return
-            else
+            -- core.log("the state is: " .. value:get_luaentity()._state)
+            -- if value:get_luaentity()._state == 0 then
+            --   -- core.log("power needed")
+            --   return
+            -- else
               -- core.log("we have power, continue")
               sendSignal(obj_pos, chain, distance, signal)
-            end
-          elseif string.find(value:get_luaentity().name, "nrelay") then
-            core.log("n relay found")
-            if signal ~= nil then
-              sendSignal(obj_pos, chain, distance, (signal * -1))
-            else
-              sendSignal(obj_pos, chain, distance, signal)
-            end
+            -- end
           elseif string.find(value:get_luaentity().name, "socket") then
             -- core.log("socket!!!!")
             local find_reciver = core.get_objects_inside_radius(obj_pos, distance * 2)
@@ -809,37 +816,96 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
     on_activate = function(self, staticdata, dtime_s)
       on_activate(self, staticdata, dtime_s)
     end,
+    _toggle_state = function(self)
+      local state = self.object:get_luaentity()._state
+      state = state % 2
+      self.object:get_luaentity()._state = state
+      core.log("new state: " .. state)
+    end,
 
     on_step = function(self, dtime, moveresult)
       local pos = self.object:get_pos()
       local chain = {}
       local opposite = self.object:get_luaentity()._opposite
-      if tg_power.getPower() == opposite then
-        -- core.log("power is [OFF]")
-        -- set the state
-        if self.object:get_luaentity()._toggle == 0 then
-          if self.object:get_luaentity()._state == 1 then
-            self.object:get_luaentity()._toggle = 1
-            self.object:get_luaentity()._state = 0
-            local signal = 0
-            if opposite == false then
-              signal = 1
-            end
+      -- core.log("state: " .. self.object:get_luaentity()._state)
+      local signal = 0
+      if opposite == false then
+        signal = 1
+      end
+
+      --TODO: implement function swap (would that break the current state toggle?)
+      if opposite == true then
+        if tg_power.getPower() == false then
+          -- do not send power, but toggle 1 signal first
+          if self.object:get_luaentity()._state == 0 then
+            -- self.object:get_luaentity()._state = 1
             sendSignal(pos, chain, 1.2, signal)
+            self.object:get_luaentity()._toggle = 1
           end
-          -- or kill the find signal
+        else
+          --check toggle
+          if self.object:get_luaentity()._state == 1 then
+            -- self.object:get_luaentity()._state = 1
+            self.object:get_luaentity()._toggle = 1
+          end
         end
       else
-        -- core.log("power is [ON]")
-        if self.object:get_luaentity()._toggle == 1 then
-          self.object:get_luaentity()._toggle = 0
+        if tg_power.getPower() == true then
+          -- do not send power, but toggle 1 signal first
           if self.object:get_luaentity()._state == 0 then
+            -- self.object:get_luaentity()._state = 1
+            sendSignal(pos, chain, 1.2, signal)
             self.object:get_luaentity()._toggle = 1
-            self.object:get_luaentity()._state = 1
+          end
+        else
+          --check toggle
+          if self.object:get_luaentity()._state == 1 then
+            -- self.object:get_luaentity()._state = 1
+            self.object:get_luaentity()._toggle = 1
           end
         end
-        -- do nothing
       end
+
+
+
+
+      if self.object:get_luaentity()._toggle == 1 then
+        -- core.log("ok we should toggle back")
+        if self.object:get_luaentity()._state == 0 then
+          self.object:get_luaentity()._state = 1
+        else
+          self.object:get_luaentity()._state = 0
+        end
+        -- self.object:get_luaentity()._toggle_state(self)
+        -- self.object:get_luaentity()._state = 1
+        self.object:get_luaentity()._toggle = 0
+      end
+      -- if tg_power.getPower() == opposite then
+      --   -- core.log("power is [OFF]")
+      --   -- set the state
+      --   if self.object:get_luaentity()._toggle == 0 then
+      --     if self.object:get_luaentity()._state == 1 then
+      --       self.object:get_luaentity()._toggle = 1
+      --       self.object:get_luaentity()._state = 0
+      --       local signal = 0
+      --       if opposite == false then
+      --         signal = 1
+      --       end
+      --       sendSignal(pos, chain, 1.2, signal)
+      --     end
+      --     -- or kill the find signal
+      --   end
+      -- else
+      --   -- core.log("power is [ON]")
+      --   if self.object:get_luaentity()._toggle == 1 then
+      --     self.object:get_luaentity()._toggle = 0
+      --     if self.object:get_luaentity()._state == 0 then
+      --       self.object:get_luaentity()._toggle = 1
+      --       self.object:get_luaentity()._state = 1
+      --     end
+      --   end
+      --   -- do nothing
+      -- end
     end,
     on_rightclick = function(self, clicker)
       if core.is_creative_enabled() then
