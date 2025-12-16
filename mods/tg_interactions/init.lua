@@ -503,9 +503,9 @@ function tg_interactions.register_interactable(name, model_type, model, texture,
 end
 
 tg_interactions.register_draggable("chair", "node", "tg_furniture:oak_chair", "tg_ndoes_steel_enclosure.png",
-  tg_nodes["shapes"].slim_box, 2)
-tg_interactions.register_draggable("pipes", "mesh", "tubes.glb", "tubes.png", tg_nodes["shapes"].slab, 4)
-tg_interactions.register_draggable("power_core", "mesh", "power_core.glb", "power_core.png", tg_nodes["shapes"].slab, 4)
+  shapes.slim_box, 2)
+tg_interactions.register_draggable("pipes", "mesh", "tubes.glb", "tubes.png", shapes.medium_object, 4)
+tg_interactions.register_draggable("power_core", "mesh", "power_core.glb", "power_core.png", shapes.medium_object, 4)
 
 tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
@@ -547,7 +547,7 @@ local function sendSignal(pos, chain, distance, signal)
           -- core.log("already searched")
         else
           if core.is_creative_enabled() then
-              tg_main.debug_particle(value:get_pos())
+            tg_main.debug_particle(value:get_pos())
           end
 
           chain[vector.to_string(obj_pos)] = true
@@ -556,7 +556,7 @@ local function sendSignal(pos, chain, distance, signal)
             if signal == 1 then
               signal = 0
               if core.is_creative_enabled() then
-                tg_main.debug_particle(value:get_pos(),"#fc4614")
+                tg_main.debug_particle(value:get_pos(), "#fc4614")
               end
             end
             sendSignal(obj_pos, chain, distance, signal)
@@ -570,12 +570,12 @@ local function sendSignal(pos, chain, distance, signal)
             --   -- core.log("power needed")
             --   return
             -- else
-              -- core.log("we have power, continue")
-              sendSignal(obj_pos, chain, distance, signal)
+            -- core.log("we have power, continue")
+            sendSignal(obj_pos, chain, distance, signal)
             -- end
           elseif string.find(value:get_luaentity().name, "socket") then
             -- core.log("socket!!!!")
-            local find_reciver = core.get_objects_inside_radius(obj_pos, distance * 2)
+            local find_reciver = core.get_objects_inside_radius(obj_pos, distance * 2.0)
             for r_i, r_v in pairs(find_reciver) do
               local r_pos = r_v:get_pos()
               if r_pos ~= obj_pos then
@@ -739,7 +739,7 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
 )
 
 tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
-  shapes.thicker_box,
+  shapes.wiring,
   {
     pointable = false,
     _popup_msg = "[ player sensor ]",
@@ -796,7 +796,7 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
 
 
 tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
-  shapes.thicker_box,
+  shapes.wiring,
   {
     pointable = false,
     _popup_msg = "[ power sensor ]",
@@ -924,7 +924,7 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
     end,
   })
 
-tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
+tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.wiring,
   {
     _popup_msg = "[ relay ]",
     -- _toggleable = 0, -- default state 0
@@ -935,7 +935,7 @@ tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[s
   }
 )
 
-tg_interactions.register_interactable("nrelay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
+tg_interactions.register_interactable("nrelay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.wiring,
   {
     _popup_msg = "[ n-relay ]",
     -- _toggleable = 0, -- default state 0
@@ -946,7 +946,7 @@ tg_interactions.register_interactable("nrelay", "none", "", "tg_nodes_misc.png^[
   }
 )
 
-tg_interactions.register_interactable("socket", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.thicker_box,
+tg_interactions.register_interactable("socket", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.wiring,
   {
     _popup_msg = "[ socket ]",
     -- _toggleable = 0, -- default state 0
@@ -1018,7 +1018,7 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
       end
     end,
   })
-tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.slab,
+tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
   {
     _popup_msg = "[ pickup tape ]",
     on_rightclick = function(self, clicker)
@@ -1120,6 +1120,154 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
+      core.after(1,function()
+        if self.object:get_attach() == nil then
+          self.object:remove()
+        end
+      end)
+    end,
+
+    on_rightclick = function(self, clicker)
+      if core.is_creative_enabled() then
+        if clicker:get_player_control().sneak == true then
+          -- get parent
+          if self.object:get_attach() == nil then
+            return
+          end
+          core.log("attached: " .. dump(self.object:get_attach():get_pos()))
+          local attached = self.object:get_attach()
+          core.log("ok lets rotate this door")
+          -- local yaw = self.object:get_yaw()
+          local yaw = attached:get_yaw()
+          yaw = math.rad(math.floor((math.deg(yaw) + 90) % 360))
+          core.log("new yaw: " .. math.deg(yaw))
+          -- self.object:set_yaw(yaw)
+          attached:set_yaw(yaw)
+          if math.deg(yaw) % 180 == 90 then
+            self.object:set_properties({
+              collisionbox = shapes.door_flipped,
+              selectionbox = tg_nodes
+                  ["shapes"].door_flipped
+            })
+          else
+            self.object:set_properties({ collisionbox = shapes.door, selectionbox = shapes.door })
+          end
+        else
+          core.log("[buildmode]: sneak click to change the rotation")
+        end
+      end
+    end,
+  })
+
+tg_interactions.register_interactable("door_hinge", "mesh", "radio.glb", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .hinge,
+  {
+    _interactable = 0,
+    _toggleable = 0, -- default state 0
+    _state = 0,      -- default state 0
+    -- _popup_msg = "[ open door ]",
+    -- pointable = false,
+    _the_static_data = {
+      "_toggleable",
+      "_state"
+    },
+    get_staticdata = function(self)
+      return get_staticdata(self)
+    end,
+
+    on_activate = function(self, staticdata, dtime_s)
+      on_activate(self, staticdata, dtime_s)
+      -- core.after(1, function()
+        local pos = self.object:get_pos()
+        local near_by = core.get_objects_inside_radius(pos, 2)
+        local door = nil
+        core.log("found nearby: " .. #near_by)
+        for index, value in pairs(near_by) do
+          if value ~= self.object then
+            local obj_pos = value:get_pos()
+            if door == nil then
+              if not value:is_player() then -- not player
+                if string.find(value:get_luaentity().name, "door") then
+                  core.log("found a door")
+                  door = value
+                end
+              end
+            end
+          end
+        end
+        if door == nil then
+          core.log("no idea what you are doing... no door here")
+          door = core.add_entity(self.object:get_pos(), mod_name .. ":door")
+        end
+        door:set_properties({ visual_size = vector.new(1, 1, 1) })
+        door:set_attach(self.object, "", vector.new(0.5, 0, 0))
+      -- end)
+      -- core.log("static: "..dump(staticdata))
+      -- to make sure the door gets centered
+
+      -- local pos = self.object:get_pos()
+      -- local x = math.floor(pos.x)
+      -- if pos.x < 0 then
+      --   -- for negatives, floor(-1.2) = -2, so use math.ceil to keep integer part consistent
+      --   x = math.ceil(pos.x)
+      -- end
+      -- pos.x = x + 0.5
+      -- local new_pos = vector.new(pos.x, pos.y, pos.z)
+      -- -- core.log("pos: " .. dump(new_pos))
+      -- if pos.x % 1 == 0.5 then
+      --   -- core.log("has .5")
+      --   self.object:set_pos(new_pos)
+      --   --else
+      --   -- core.log("does not")
+      -- end
+      -- -- end)
+    end,
+    _toggle_state = function(self, state)
+      --velocity = self:get_velocity()
+      local pos = self:get_pos()
+      -- local yaw = math.floor(math.deg(self:get_yaw())/10) * 10
+      local yaw = math.floor(math.deg(self:get_yaw()))
+      -- core.log("yaw: "..dump(yaw))
+      local move_amount = 1.9
+      local cur_state = self:get_luaentity()._state
+      if cur_state == state then
+        -- core.log("no reason to toggle")
+        return
+      end
+      -- core.log("sent state: " .. cur_state)
+      if cur_state == 1 then
+        self:get_luaentity()._state = 0
+        local dir = vector.new(1.9, 0, 0)
+        -- 90 and 270 need to move opoistte of eachother
+        if yaw == 0 then
+          dir = vector.new(move_amount, 0, 0)
+        elseif yaw == 90 then
+          dir = vector.new(0, 0, move_amount)
+        elseif yaw == 180 then
+          dir = vector.new((move_amount * -1), 0, 0)
+        elseif yaw == 270 then
+          dir = vector.new(0, 0, (move_amount * -1))
+        end
+        self:move_to(vector.add(pos, dir))
+      else
+        self:get_luaentity()._state = 1
+        local dir = vector.new(-1.9, 0, 0)
+        if yaw == 0 then
+          dir = vector.new((move_amount * -1), 0, 0)
+        elseif yaw == 90 then
+          dir = vector.new(0, 0, (move_amount * -1))
+        elseif yaw == 180 then
+          dir = vector.new((move_amount), 0, 0)
+        elseif yaw == 270 then
+          dir = vector.new(0, 0, (move_amount))
+        end
+        self:move_to(vector.add(pos, dir))
+      end
+    end,
+    on_step = function(self, dtime, moveresult)
+      -- core.log("attached: "..dump(self.object:get_attach()))
+      -- local velocity = self.object:get_velocity()
+      -- self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
     end,
 
     on_rightclick = function(self, clicker)
