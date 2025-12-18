@@ -10,6 +10,14 @@ local songs = {
     {
       name = "paradise_sightseer",
       length = 92.9
+    },
+    {
+      name = "tectonic_frost",
+      length = 144
+    },
+    {
+      name = "witness_of_shivering_ceremony",
+      length = 106.85
     }
 }
 
