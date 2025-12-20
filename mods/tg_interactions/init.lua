@@ -755,8 +755,8 @@ tg_interactions.register_interactable("cave_passage_dialog", "none", "", "tg_nod
         for index, player in ipairs(near_by) do
           if player:is_player() then
             cave_passage = true
-            core.chat_send_player(player:get_player_name(), "Hmm, That looks like an elevator.")
-            core.chat_send_player(player:get_player_name(),
+            tg_dialog.dialog(player, "Hmm, That looks like an elevator.")
+            tg_dialog.dialog(player,
               "That could be my way out of here! just need to find a way around.")
           end
         end
@@ -770,9 +770,9 @@ tg_interactions.register_interactable("gorge_corpse_dialog", "none", "", "tg_nod
   {
     _popup_msg = "[ corpse ]",
     on_rightclick = function(self, clicker)
-      core.chat_send_all("Looks like this guy had a pretty bad fall.")
-      core.chat_send_all("...let's not do as he did.")
-      core.chat_send_all("There has got to be another way out of here.")
+      tg_dialog.dialog(clicker,"Looks like this guy had a pretty bad fall.")
+      tg_dialog.dialog(clicker,"...let's not do as he did.")
+      tg_dialog.dialog(clicker,"There has got to be another way out of here.")
       if tg_main.dev_mode == false then
         self.object:remove()
         --else
@@ -1043,7 +1043,7 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
   {
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
-      core.chat_send_all("hmm, a radiation suit. i should slip this on.")
+      tg_dialog.dialog(clicker,"hmm, a radiation suit. i should slip this on.")
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -1539,6 +1539,9 @@ core.register_globalstep(function(dtime)
 
     -- popup time
     local hover_popup = ent._popup_msg
+    if hover_popup == nil then
+      hover_popup = "-"
+    end
     local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
 
     local msgdata = msgs[pname] or {} -- get or create a msgdata for player
