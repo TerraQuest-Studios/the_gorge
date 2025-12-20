@@ -738,6 +738,49 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
   }
 )
 
+--TODO: dialog needs to be part of some global thing, and needs to be persistant
+local cave_passage = false
+tg_interactions.register_interactable("cave_passage_dialog", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.centerd_box,
+  {
+    _popup_msg = "[ cave passage dialog ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:0,7",
+    _popup_hidden = true,
+    pointable = false,
+    on_step = function(self, dtime, moveresult)
+      local cur_pos = self.object:get_pos()
+      local max_distance = 4
+      local near_by = core.get_objects_inside_radius(cur_pos, max_distance)
+      if cave_passage == false then
+        for index, player in ipairs(near_by) do
+          if player:is_player() then
+            cave_passage = true
+            core.chat_send_player(player:get_player_name(), "Hmm, That looks like an elevator.")
+            core.chat_send_player(player:get_player_name(),
+              "That could be my way out of here! just need to find a way around.")
+          end
+        end
+      end
+    end,
+  }
+)
+
+tg_interactions.register_interactable("gorge_corpse_dialog", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .centerd_box,
+  {
+    _popup_msg = "[ corpse ]",
+    on_rightclick = function(self, clicker)
+      core.chat_send_all("Looks like this guy had a pretty bad fall.")
+      core.chat_send_all("...let's not do as he did.")
+      core.chat_send_all("There has got to be another way out of here.")
+      if tg_main.dev_mode == false then
+        self.object:remove()
+        --else
+        -- core.log("after first interaction this will be removed in normal gameplay.")
+      end
+    end,
+  })
+
 tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.wiring,
   {
@@ -1018,6 +1061,7 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
       end
     end,
   })
+
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
   {
     _popup_msg = "[ pickup tape ]",
@@ -1120,7 +1164,7 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     on_step = function(self, dtime, moveresult)
       local velocity = self.object:get_velocity()
       self.object:set_velocity(vector.add(velocity, vector.new(0, gravity, 0)))
-      core.after(1,function()
+      core.after(1, function()
         if self.object:get_attach() == nil then
           self.object:remove()
         end
@@ -1178,29 +1222,26 @@ tg_interactions.register_interactable("door_hinge", "mesh", "radio.glb", "tg_nod
     on_activate = function(self, staticdata, dtime_s)
       on_activate(self, staticdata, dtime_s)
       -- core.after(1, function()
-        local pos = self.object:get_pos()
-        local near_by = core.get_objects_inside_radius(pos, 2)
-        local door = nil
-        core.log("found nearby: " .. #near_by)
-        for index, value in pairs(near_by) do
-          if value ~= self.object then
-            local obj_pos = value:get_pos()
-            if door == nil then
-              if not value:is_player() then -- not player
-                if string.find(value:get_luaentity().name, "door") then
-                  core.log("found a door")
-                  door = value
-                end
+      local pos = self.object:get_pos()
+      local near_by = core.get_objects_inside_radius(pos, 2)
+      local door = nil
+      for index, value in pairs(near_by) do
+        if value ~= self.object then
+          local obj_pos = value:get_pos()
+          if door == nil then
+            if not value:is_player() then -- not player
+              if string.find(value:get_luaentity().name, "door") then
+                door = value
               end
             end
           end
         end
-        if door == nil then
-          core.log("no idea what you are doing... no door here")
-          door = core.add_entity(self.object:get_pos(), mod_name .. ":door")
-        end
-        door:set_properties({ visual_size = vector.new(1, 1, 1) })
-        door:set_attach(self.object, "", vector.new(0.5, 0, 0))
+      end
+      if door == nil then
+        door = core.add_entity(self.object:get_pos(), mod_name .. ":door")
+      end
+      door:set_properties({ visual_size = vector.new(1, 1, 1) })
+      door:set_attach(self.object, "", vector.new(0.5, 0, 0))
       -- end)
       -- core.log("static: "..dump(staticdata))
       -- to make sure the door gets centered
@@ -1565,6 +1606,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "socket"] = true,
       [mod_name .. ":" .. "sensor"] = true,
       [mod_name .. ":" .. "sensor_disclaimer"] = true,
+      [mod_name .. ":" .. "cave_passage_dialog"] = true,
       [mod_name .. ":" .. "sensor_power"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
