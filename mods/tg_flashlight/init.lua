@@ -1,0 +1,175 @@
+local mod_name = core.get_current_modname()
+
+tg_flashlight = {}
+
+core.register_entity(mod_name .. ":flashlight", {
+  initial_properties = {
+    visual = "mesh",
+    mesh = "flash.glb",
+    visual_size = { x = 100, y = 100, z = 100 },
+    -- visual = "wielditem",
+    -- wield_item = "tg_furniture:oak_chair",
+    -- visual_size = { x = 0.65, y = 0.65, z = 0.65 }, -- i guess this is the size for drawtype node
+    use_texture_alpha = true,
+    textures = { "flash.png^[colorize:#fc3c3c:125" },
+    glow = 0,
+    shaded = true,
+    -- backface_culling = false,
+    physical = false,
+    -- collide_with_objects = true,
+    -- collisionbox = tg_main,
+    -- selectionbox = shape,
+  },
+  on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
+    if puncher:get_player_control().sneak == true then
+      if tg_main.dev_mode == true then
+        self.object:remove()
+      end
+    end
+  end,
+})
+
+
+core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
+  description = "lit_spot, will remove it's self.",
+  groups = { dig_immediate = 3 },
+  tiles = { { name = "tg_nodes_fog.png^[opacity:0" }, },
+  use_texture_alpha = "blend",
+  paramtype = "light",
+  pointable = false,
+  drawtype = "glasslike",
+  light_source = 5,
+  walkable = false,
+  sunlight_propagates = true,
+  on_construct = function(pos)
+    core.get_node_timer(pos):start(0.1)
+  end,
+  on_timer = function(pos, elapsed, node, timeout)
+    node = node or core.get_node(pos)
+    core.remove_node(pos)
+  end,
+})
+
+local flash_active = false
+local function toggleFlash(pos)
+  core.sound_play({ name = "tg_paper_footstep" }, {
+    gain = 1.0,     -- default
+    fade = 100.0,   -- default
+    pitch = 1.8,    -- 1.0, -- default
+    pos = {x = pos.x, y = pos.y, z = pos.z},
+  })
+  flash_active = not flash_active
+end
+core.register_node(mod_name .. ":" .. "flashlight", {
+  description = "flashlight, i can see in the dark with this.",
+  -- inventory_image = "flashlight.png",
+  groups = { dig_immediate = 3 },
+  drawtype = "mesh",
+  mesh = "flashlight.glb",
+  tiles = { { name = "flashlight.png" } },
+  -- use_texture_alpha = "blend",
+  visual_size = { x = 10, y = 10, z = 10 },
+  visual_scale = 18.0,
+  wield_scale = { x = 18, y = 18, z = 18 },
+  node_placement_prediction = "",
+  on_secondary_use = function(itemstack, user, pointed_thing)
+    toggleFlash(user:get_pos())
+  end,
+  -- on_use = function(itemstack, user, pointed_thing)
+  --   -- return -- lets just prevent breaking stuff with this
+  --   toggleFlash(user:get_pos())
+  -- end,
+
+  on_place = function(itemstack, placer, pointed_thing)
+    toggleFlash(placer:get_pos())
+    return
+  end,
+  -- short_description = "",
+})
+
+local recent = {}
+local now = {}
+
+core.register_globalstep(function(dtime)
+  if not flash_active then return end
+  local players = core.get_connected_players()
+  if #players < 0 then return end -- don't do anything below until there's a player
+  for _, player in ipairs(players) do
+    if player:get_wielded_item() == nil then return end
+    local item_name = player:get_wielded_item():get_name()
+    -- core.log("holding: "..dump(item_name))
+    if item_name ~= mod_name .. ":flashlight" then
+      return
+      -- core.log("mf is holding a damn flashlight")
+    end
+    local pos = player:get_pos()
+    local eye_height = player:get_properties().eye_height
+    pos.y = pos.y + eye_height -- add eye height
+    -- looking direction
+    local player_look_dir = player:get_look_dir()
+    local lookpos = pos:add(player_look_dir) -- forwards our view
+    -- core.log("what is this? "..dump(player:get_look_dir()))
+    local node_at_player = core.get_node(lookpos)
+    if node_at_player and node_at_player.name == "air" then
+      -- core.log("we have air")
+      core.set_node(lookpos, { name = mod_name .. ":flashlight_lit_spot" })
+
+      -- core.log("node: ",dump(node))
+    end
+    local to_cast = {
+      player_look_dir:add(vector.new(0.1, 0, 0)),
+      player_look_dir:add(vector.new(0.05, 0, 0)),
+      player_look_dir,
+      player_look_dir:add(vector.new(-0.05, 0, 0)),
+      player_look_dir:add(vector.new(-0.1, 0, 0)),
+
+      player_look_dir:add(vector.new(0.1, 0.05, 0)),
+      player_look_dir:add(vector.new(0.05, 0.05, 0)),
+      player_look_dir:add(vector.new(0, 0.05, 0)),
+      player_look_dir:add(vector.new(-0.05, 0.05, 0)),
+      player_look_dir:add(vector.new(-0.1, 0.05, 0)),
+
+      player_look_dir:add(vector.new(0.1, -0.05, 0)),
+      player_look_dir:add(vector.new(0.05, -0.05, 0)),
+      player_look_dir:add(vector.new(0, -0.05, 0)),
+      player_look_dir:add(vector.new(-0.05, -0.05, 0)),
+      player_look_dir:add(vector.new(-0.1, -0.05, 0)),
+      -- vector.new(-6.5, 0, 0),
+      -- vector.new(6.5, 0, 0),
+    }
+    for index, value in ipairs(to_cast) do
+      -- what position we're looking at plus our wielded range
+      -- local lookatpos = player_look_dir:multiply(40):add(lookpos)
+      local lookatpos = value:multiply(40):add(lookpos)
+      local raycast_result = core.raycast(pos, lookatpos, true, false)
+      -- no raycast, no point!
+      if raycast_result then
+        -- iterate through raycast and find an interactable
+        for thing in raycast_result do
+          -- an entity!
+          -- if thing and thing.type == "object" then
+          --   ent = thing.ref:get_luaentity()
+          --   -- found a proper entity with a popup message, break loop!
+          --   if ent and ent._popup_msg then break end
+          -- end
+          if thing and thing.type == "node" then
+            -- core.log("this: "..dump(thing))
+            local pointed_under = thing.under
+            local node_under = core.get_node(pointed_under)
+            if node_under and node_under.name == mod_name .. ":flashlight_lit_spot" then
+              return
+            end
+            local pointed = thing.above
+            local node = core.get_node(pointed)
+            if node and node.name == "air" then
+              -- core.log("we have air")
+              core.set_node(pointed, { name = mod_name .. ":flashlight_lit_spot" })
+
+              -- core.log("node: ",dump(node))
+            end
+          end
+        end
+      end
+    end
+  end
+end)
