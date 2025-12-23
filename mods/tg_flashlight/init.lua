@@ -42,7 +42,7 @@ core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
   walkable = false,
   sunlight_propagates = true,
   on_construct = function(pos)
-    core.get_node_timer(pos):start(0.1)
+    core.get_node_timer(pos):start(4.0)
   end,
   on_timer = function(pos, elapsed, node, timeout)
     node = node or core.get_node(pos)
@@ -53,10 +53,10 @@ core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
 local flash_active = false
 local function toggleFlash(pos)
   core.sound_play({ name = "tg_paper_footstep" }, {
-    gain = 1.0,     -- default
-    fade = 100.0,   -- default
-    pitch = 1.8,    -- 1.0, -- default
-    pos = {x = pos.x, y = pos.y, z = pos.z},
+    gain = 1.0,   -- default
+    fade = 100.0, -- default
+    pitch = 1.8,  -- 1.0, -- default
+    pos = { x = pos.x, y = pos.y, z = pos.z },
   })
   flash_active = not flash_active
 end
@@ -156,20 +156,58 @@ core.register_globalstep(function(dtime)
             -- core.log("this: "..dump(thing))
             local pointed_under = thing.under
             local node_under = core.get_node(pointed_under)
-            if node_under and node_under.name == mod_name .. ":flashlight_lit_spot" then
-              return
-            end
+            -- if node_under and node_under.name == mod_name .. ":flashlight_lit_spot" then
+            --   return
+            -- end
             local pointed = thing.above
             local node = core.get_node(pointed)
             if node and node.name == "air" then
               -- core.log("we have air")
-              core.set_node(pointed, { name = mod_name .. ":flashlight_lit_spot" })
-
+              -- core.set_node(pointed, { name = mod_name .. ":flashlight_lit_spot" })
+              -- table.insert(now,pointed)
               -- core.log("node: ",dump(node))
             end
+            now[vector.to_string(pointed)] = true
           end
         end
       end
     end
+    -- get now
+    -- check if recent contains now
+    -- if recent does not contain now then add a flash.
+    -- clear recent and set recent to now
+    local temp = {}
+    for key, value in pairs(recent) do
+      temp[key] = value
+    end
+    recent = {}
+    for this_pos, value in pairs(now) do
+      local this_pos_pos = vector.from_string(this_pos)
+      if temp[this_pos] == true then
+        -- core.log("lets do nothing")
+      else
+        -- core.log("need to add a NODE")
+        -- tg_main.debug_particle(this_pos_pos)
+        local this_node = core.get_node(this_pos_pos)
+        if this_node and this_node.name == "air" then
+          core.set_node(this_pos_pos, { name = mod_name .. ":flashlight_lit_spot" })
+        end
+      end
+      recent[this_pos] = true -- they need to be added to it no matter what
+    end
+    for key, value in pairs(temp) do
+      if recent[key] == true then
+        -- nothing
+      else
+        local found_node = core.get_node(vector.from_string(key))
+        if found_node and found_node.name == mod_name..":flashlight_lit_spot" then
+          core.remove_node(vector.from_string(key))
+          -- core.log("this needs to be removed")
+        else
+          -- core.log("yes but lets not remove it")
+        end
+      end
+    end
+    now = {}
   end
 end)
