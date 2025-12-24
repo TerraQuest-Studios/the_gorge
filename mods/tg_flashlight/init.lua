@@ -2,6 +2,10 @@ local mod_name = core.get_current_modname()
 
 tg_flashlight = {}
 
+local flash_active = false
+local now = {}
+local recent = {}
+
 core.register_entity(mod_name .. ":flashlight", {
   initial_properties = {
     visual = "mesh",
@@ -42,15 +46,20 @@ core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
   walkable = false,
   sunlight_propagates = true,
   on_construct = function(pos)
-    core.get_node_timer(pos):start(4.0)
+    core.get_node_timer(pos):start(0.5)
   end,
   on_timer = function(pos, elapsed, node, timeout)
-    node = node or core.get_node(pos)
-    core.remove_node(pos)
+    -- node = node or core.get_node(pos)
+    if flash_active == false then
+      -- if recent[vector.to_string(pos)] ~= true then
+        core.log("should remove")
+        core.remove_node(pos)
+      -- end
+    end
+    core.get_node_timer(pos):start(0.5)
   end,
 })
 
-local flash_active = false
 local function toggleFlash(pos)
   core.sound_play({ name = "tg_paper_footstep" }, {
     gain = 1.0,   -- default
@@ -59,7 +68,17 @@ local function toggleFlash(pos)
     pos = { x = pos.x, y = pos.y, z = pos.z },
   })
   flash_active = not flash_active
+  if flash_active == false then
+    -- for index, value in pairs(recent) do
+    --   if core.get_node(vector.from_string(index)).name == mod_name..":flashlight_lit_spot" then
+    --     core.remove_node(vector.from_string(index))
+    --     core.log("should remove")
+    --   end
+    -- end
+    recent = {}
+  end
 end
+
 core.register_node(mod_name .. ":" .. "flashlight", {
   description = "flashlight, i can see in the dark with this.",
   -- inventory_image = "flashlight.png",
@@ -86,9 +105,6 @@ core.register_node(mod_name .. ":" .. "flashlight", {
   end,
   -- short_description = "",
 })
-
-local recent = {}
-local now = {}
 
 core.register_globalstep(function(dtime)
   if not flash_active then return end
