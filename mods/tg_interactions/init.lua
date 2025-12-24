@@ -755,9 +755,9 @@ tg_interactions.register_interactable("cave_passage_dialog", "none", "", "tg_nod
         for index, player in ipairs(near_by) do
           if player:is_player() then
             cave_passage = true
-            tg_dialog.dialog(player, "- Hmm, That looks like an elevator.")
+            tg_dialog.dialog(player, "Hmm, That looks like an elevator.")
             tg_dialog.dialog(player,
-              "- That could be my way out of here! just need to find a way around.")
+              "That could be my way out of here! just need to find a way around.")
           end
         end
       end
@@ -1024,7 +1024,7 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
   {
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
-      core.chat_send_all("..this locker is empty")
+      tg_dialog.dialog(clicker,"..this locker is empty",true)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -1043,14 +1043,14 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
   {
     _popup_msg = "[ search locker ]",
     on_rightclick = function(self, clicker)
-      tg_dialog.dialog(clicker,"hmm, a radiation suit. i should slip this on.")
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
         pitch = 1.8,  -- 1.0, -- default
       })
-      core.after(1, function()
+      tg_dialog.dialog(clicker,"hmm, a radiation suit. i should slip this on.",true)
+      core.after(3, function()
         tg_cut_scenes.run(clicker, { [[slipping into suit]] })
       end)
       if tg_main.dev_mode == false then
@@ -1227,7 +1227,6 @@ tg_interactions.register_interactable("door_hinge", "mesh", "radio.glb", "tg_nod
       local door = nil
       for index, value in pairs(near_by) do
         if value ~= self.object then
-          local obj_pos = value:get_pos()
           if door == nil then
             if not value:is_player() then -- not player
               if string.find(value:get_luaentity().name, "door") then

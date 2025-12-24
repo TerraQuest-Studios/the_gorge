@@ -1,12 +1,23 @@
 local mod_name = core.get_current_modname()
 
-tg_flashlight = {}
+---@ignore
+tg_torch = {}
 
-local flash_active = false
+-- a lot happened with this ~mod.
+-- when the player has the **torch** on, a "few" rays get shot
+-- if the node that is hit is air or spot_light
+-- then it gets add to the "now" var
+-- every new tick recent becomes now and now get reset and new points are gotten
+-- if the points are new then a new spot_light needs to be added in that new location
+-- if any points in recent are not in now, then the spot_lights in that point get removed
+-- the spot_lights also have a timer that checks if flash_active is false, if it is false they will remove themselves.
+
 local now = {}
 local recent = {}
 
-core.register_entity(mod_name .. ":flashlight", {
+local torch_active = false
+
+core.register_entity(mod_name .. ":torch", {
   initial_properties = {
     visual = "mesh",
     mesh = "flash.glb",
@@ -21,23 +32,20 @@ core.register_entity(mod_name .. ":flashlight", {
     -- backface_culling = false,
     physical = false,
     -- collide_with_objects = true,
-    -- collisionbox = tg_main,
-    -- selectionbox = shape,
   },
   on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
     if puncher:get_player_control().sneak == true then
-      if tg_main.dev_mode == true then
+      if core.is_creative_enabled() == true then
         self.object:remove()
       end
     end
   end,
 })
 
-
-core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
+core.register_node(mod_name .. ":" .. "torch_lit_spot", {
   description = "lit_spot, will remove it's self.",
   groups = { dig_immediate = 3 },
-  tiles = { { name = "tg_nodes_fog.png^[opacity:0" }, },
+  tiles = { { name = "tg_nodes_fog.png^[opacity:0" }, }, -- can i just gen a nill texture?
   use_texture_alpha = "blend",
   paramtype = "light",
   pointable = false,
@@ -50,7 +58,7 @@ core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
   end,
   on_timer = function(pos, elapsed, node, timeout)
     -- node = node or core.get_node(pos)
-    if flash_active == false then
+    if torch_active == false then
       -- if recent[vector.to_string(pos)] ~= true then
         -- core.log("should remove")
         core.remove_node(pos)
@@ -60,15 +68,15 @@ core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
   end,
 })
 
-local function toggleFlash(pos)
+local function toggleTorch(pos)
   core.sound_play({ name = "tg_paper_footstep" }, {
     gain = 1.0,   -- default
     fade = 100.0, -- default
     pitch = 1.8,  -- 1.0, -- default
     pos = { x = pos.x, y = pos.y, z = pos.z },
   })
-  flash_active = not flash_active
-  if flash_active == false then
+  torch_active = not torch_active
+  if torch_active == false then
     -- for index, value in pairs(recent) do
     --   if core.get_node(vector.from_string(index)).name == mod_name..":flashlight_lit_spot" then
     --     core.remove_node(vector.from_string(index))
@@ -79,20 +87,20 @@ local function toggleFlash(pos)
   end
 end
 
-core.register_node(mod_name .. ":" .. "flashlight", {
-  description = "flashlight, i can see in the dark with this.",
+core.register_node(mod_name .. ":" .. "torch", {
+  description = "torch, i can see in the dark with this.",
   -- inventory_image = "flashlight.png",
   groups = { dig_immediate = 3 },
   drawtype = "mesh",
-  mesh = "flashlight.glb",
-  tiles = { { name = "flashlight.png" } },
+  mesh = "torch.glb",
+  tiles = { { name = "torch.png" } },
   -- use_texture_alpha = "blend",
   visual_size = { x = 10, y = 10, z = 10 },
   visual_scale = 18.0,
   wield_scale = { x = 18, y = 18, z = 18 },
   node_placement_prediction = "",
   on_secondary_use = function(itemstack, user, pointed_thing)
-    toggleFlash(user:get_pos())
+    toggleTorch(user:get_pos())
   end,
   -- on_use = function(itemstack, user, pointed_thing)
   --   -- return -- lets just prevent breaking stuff with this
@@ -100,21 +108,21 @@ core.register_node(mod_name .. ":" .. "flashlight", {
   -- end,
 
   on_place = function(itemstack, placer, pointed_thing)
-    toggleFlash(placer:get_pos())
+    toggleTorch(placer:get_pos())
     return
   end,
   -- short_description = "",
 })
 
 core.register_globalstep(function(dtime)
-  if not flash_active then return end
+  if not torch_active then return end
   local players = core.get_connected_players()
   if #players < 0 then return end -- don't do anything below until there's a player
   for _, player in ipairs(players) do
     if player:get_wielded_item() == nil then return end
     local item_name = player:get_wielded_item():get_name()
     -- core.log("holding: "..dump(item_name))
-    if item_name ~= mod_name .. ":flashlight" then
+    if item_name ~= mod_name .. ":torch" then
       return
       -- core.log("mf is holding a damn flashlight")
     end
@@ -128,7 +136,7 @@ core.register_globalstep(function(dtime)
     local node_at_player = core.get_node(lookpos)
     if node_at_player and node_at_player.name == "air" then
       -- core.log("we have air")
-      core.set_node(lookpos, { name = mod_name .. ":flashlight_lit_spot" })
+      core.set_node(lookpos, { name = mod_name .. ":torch_lit_spot" })
 
       -- core.log("node: ",dump(node))
     end
@@ -203,10 +211,9 @@ core.register_globalstep(function(dtime)
         -- core.log("lets do nothing")
       else
         -- core.log("need to add a NODE")
-        -- tg_main.debug_particle(this_pos_pos)
         local this_node = core.get_node(this_pos_pos)
         if this_node and this_node.name == "air" then
-          core.set_node(this_pos_pos, { name = mod_name .. ":flashlight_lit_spot" })
+          core.set_node(this_pos_pos, { name = mod_name .. ":torch_lit_spot" })
         end
       end
       recent[this_pos] = true -- they need to be added to it no matter what
@@ -216,7 +223,7 @@ core.register_globalstep(function(dtime)
         -- nothing
       else
         local found_node = core.get_node(vector.from_string(key))
-        if found_node and found_node.name == mod_name..":flashlight_lit_spot" then
+        if found_node and found_node.name == mod_name..":torch_lit_spot" then
           core.remove_node(vector.from_string(key))
           -- core.log("this needs to be removed")
         else
