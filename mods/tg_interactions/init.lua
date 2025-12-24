@@ -755,9 +755,9 @@ tg_interactions.register_interactable("cave_passage_dialog", "none", "", "tg_nod
         for index, player in ipairs(near_by) do
           if player:is_player() then
             cave_passage = true
-            tg_dialog.dialog(player, "Hmm, That looks like an elevator.")
+            tg_dialog.dialog(player, "- Hmm, That looks like an elevator.")
             tg_dialog.dialog(player,
-              "That could be my way out of here! just need to find a way around.")
+              "- That could be my way out of here! just need to find a way around.")
           end
         end
       end

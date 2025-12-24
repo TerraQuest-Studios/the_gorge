@@ -42,7 +42,7 @@ core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
   paramtype = "light",
   pointable = false,
   drawtype = "glasslike",
-  light_source = 5,
+  light_source = 7,
   walkable = false,
   sunlight_propagates = true,
   on_construct = function(pos)
@@ -52,7 +52,7 @@ core.register_node(mod_name .. ":" .. "flashlight_lit_spot", {
     -- node = node or core.get_node(pos)
     if flash_active == false then
       -- if recent[vector.to_string(pos)] ~= true then
-        core.log("should remove")
+        -- core.log("should remove")
         core.remove_node(pos)
       -- end
     end
