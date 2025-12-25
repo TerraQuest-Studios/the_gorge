@@ -1,5 +1,7 @@
+--luacheck: ignore
 local mod_name = core.get_current_modname()
 
+--luacheck: ignore
 tg_dialog = {}
 
 ---@class dialog
@@ -8,6 +10,7 @@ tg_dialog = {}
 local dialog = {}              -- stores player's dialog to display
 
 tg_dialog.sound_enabled = true -- maybe someone does not want the sound to play?
+-- NOTE: this needs its own sound for text
 
 ---dialog to display to the player
 ---@param player any
