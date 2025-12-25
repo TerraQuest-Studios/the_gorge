@@ -1,7 +1,9 @@
 local mod_name = core.get_current_modname()
 
----@ignore
+--luacheck: ignore
 tg_torch = {}
+
+-- NOTE: this needs its own toggle_on/off sound
 
 -- a lot happened with this ~mod.
 -- when the player has the **torch** on, a "few" rays get shot
@@ -17,13 +19,12 @@ local recent = {}
 
 local torch_active = false
 
-core.register_entity(mod_name .. ":torch", {
+core.register_entity(mod_name .. ":flash", {
   initial_properties = {
     visual = "mesh",
     mesh = "flash.glb",
     visual_size = { x = 100, y = 100, z = 100 },
     -- visual = "wielditem",
-    -- wield_item = "tg_furniture:oak_chair",
     -- visual_size = { x = 0.65, y = 0.65, z = 0.65 }, -- i guess this is the size for drawtype node
     use_texture_alpha = true,
     textures = { "flash.png^[colorize:#fc3c3c:125" },
@@ -45,7 +46,7 @@ core.register_entity(mod_name .. ":torch", {
 core.register_node(mod_name .. ":" .. "torch_lit_spot", {
   description = "lit_spot, will remove it's self.",
   groups = { dig_immediate = 3 },
-  tiles = { { name = "tg_nodes_fog.png^[opacity:0" }, }, -- can i just gen a nill texture?
+  tiles = { { name = "[fill:1x1:#fff^[opacity:0" }, }, -- well now i know i can have no texture
   use_texture_alpha = "blend",
   paramtype = "light",
   pointable = false,
