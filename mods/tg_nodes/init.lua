@@ -61,42 +61,112 @@ local shapes = {
 	wiring = { -0.5, -0.2, -0.2, 0.5, 0.2, 0.2 },
 }
 
-tg_nodes["shapes"] = shapes
+tg_nodes.shapes = shapes
 
---- easily get going with nodes
----@param name string
----@param des string
----@param sounds table
----@param shape shape|nil
----@param texture string|nil : leave nil. the base node texture (name of a base node)
-local function createNode(name, des, sounds, shape, texture)
-	local this_texture = "tg_nodes_" .. name .. ".png"
-	if texture then
-		this_texture = "tg_nodes_" .. texture .. ".png"
-	end
-	local param1 = "none"
-	local param2 = "none"
-	if shape ~= nil and shape ~= shapes.box then
-		param1 = "light"
-		param2 = "facedir"
-	end
-	core.register_node("tg_nodes:" .. name, {
-		description = S(des),
-		groups = defualt_groups,
-		tiles = {
-			{
-				name = this_texture,
-			},
-		},
-		sounds = tg_sound.node_defaults(sounds),
-		paramtype = param1,
-		paramtype2 = param2,
-		drawtype = "nodebox",
-		node_box = {
-			type = "fixed",
-			fixed = shape or shapes.box
-		},
-	})
+--- function for creating simple node definitions (without registering!)
+--- def can accept "node_texture" for prefixing with texture "tg_nodes", "texture" for prefixing with own mod origin, or can
+--- accept "raw_texture" for a specific texture string to use w/o automation. Otherwise uses own name for texture if no tiles
+--- shape is what will be used for the node_box (if drawtype is nodebox or otherwise not specified)
+--- can be string to index `tg_nodes.shapes`, or a table, only if node_box type is fixed or otherwise unspecified
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+function tg_nodes.create_node_def(name, def, desc)
+    if type(name) ~= "string" then
+        error("tg_nodes.register_node: given 'name' is not a string, got type '"..type(name).."'")
+    end
+    -- create def table as to permit unnecessary lazy streamlining
+    def = type(def) == "table" and def or {}
+    def.mod_origin = core.get_current_modname()
+    -- create name if not properly set
+    if not name:match(":") then
+        name = def.mod_origin .. ":" .. name
+    end
+    -- override description!
+    if type(desc) == "string" then
+        def.definition = S(desc)
+    end
+    -- give folk the freedom to do their own tiles if provided!!!
+    -- otherwise let's make some
+    if type(def.tiles) ~= "table" then
+        -- figuring out what texture we wanna use
+        local select_texture
+        -- assumes you want to grab a texture from our textures file
+        if def.node_texture then
+            select_texture = "tg_nodes_" .. def.node_texture
+            -- clear
+            def.node_texture = nil
+        -- will add modname and png file extension to
+        elseif def.texture then
+            select_texture = def.mod_origin .. "_" .. def.texture
+            def.texture = nil
+        -- assumes you don't wanna do any automatic modifications
+        elseif def.raw_texture then
+            select_texture = def.raw_texture
+            def.raw_texture = nil
+        end
+        -- generate one with our name if could not find a suitable texture!
+        -- replaces ":" with "_", appends file extension
+        select_texture = select_texture or name:gsub(":", "_") .. ".png"
+        -- add png if no file extension
+        -- looks for dot with %., then any alphanumeric characters with %w+, with $ at the end to ensure it checks for
+        -- at end of string
+        -- otherwise adds .png
+        select_texture = select_texture:find("%.%w+$") and select_texture or select_texture..".png"
+        -- create!
+        def.tiles = {
+            {
+                name = select_texture
+            }
+        }
+    end
+    -- now checking shape!
+    -- permit indexing a shape with string, otherwise must be a table or else it defaults to box shape
+    local shape = type(def.shape) == "string" and shapes[def.shape] or
+      type(def.shape) == "table" and def.shape or shapes.box
+    def.shape = nil -- clear!
+    -- figure out drawtype
+    def.drawtype = def.drawtype or "nodebox"
+    -- only do shape stuff if a nodebox
+    if def.drawtype == "nodebox" then
+        local nodebox = def.node_box or {}
+        nodebox.type = nodebox.type or "fixed"
+        -- only bother with shaping if our type is fixed
+        if nodebox.type == "fixed" then
+            -- modify paramtype
+            if shape and shape ~= shapes.box then
+                def.paramtype = def.paramtype or "light"
+                def.paramtype2 = def.paramtype2 or "facedir"
+            end
+            -- add to nodebox if successful!
+            nodebox.fixed = shape or nodebox.fixed
+        end
+    end
+    -- sounds!
+    def.sounds = tg_sound.node_defaults(def.sounds)
+    -- groups!
+    def.groups = def.groups or {}
+    -- add default groups
+    for grpname, grpval in pairs(defualt_groups) do
+        -- add this group!
+        if not def.groups[grpname] then
+            def.groups[grpname] = grpval
+        end
+    end
+    -- return reformed definition and name, as well as shape for specific stuff
+    return def, name, shape
+end
+
+--- function for more simply registering nodes, see tg_nodes.create_node for more details
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+function tg_nodes.register_node(name, def, desc)
+    -- register!
+    def, name = tg_nodes.create_node_def(name, def, desc)
+    core.register_node(name, def)
+    -- returns definition
+    return core.registered_nodes[def.name]
 end
 
 
@@ -138,41 +208,48 @@ local function createMisc(name, des, sounds, shape, texture)
 	})
 end
 
---- same as createNodes but for plants
----@param name string
----@param des string
----@param shape shape|nil
-local function createPlant(name, des, shape, texture)
-	local this_texture = "tg_nodes_" .. name .. ".png"
-	if texture then
-		this_texture = "tg_nodes_" .. texture
-	end
-	local scale = 1.0
-	if string.find(texture, "8x8") then
-		scale = 2.0
-	end
-	core.register_node("tg_nodes:" .. name, {
-		description = S(des),
-		groups = defualt_groups,
-		tiles = {
-			{
-				name = this_texture
-			},
-		},
-		visual_scale = scale,
-		-- waving = 1, -- there is no wind down here
-		buildable_to = true, -- If true, placed nodes can replace this node
-		floodable = false,
-		paramtype = "light",
-		drawtype = "plantlike",
-		sunlight_propagates = true,
-		walkable = false,
-		selection_box = {
-			type = "fixed",
-			fixed = shape or shapes.box
-		},
-		sounds = tg_sound.plant_defaults()
-	})
+--- same as tg_nodes.register_node but for plants
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+function tg_nodes.register_plant(name, def, desc)
+    -- create definition table
+    def = def or {}
+    def.drawtype = "plantlike" -- force drawtype
+    def.sounds = tg_sound.plant_defaults(def.sounds)
+    def.shape = def.shape or "tiny_box" -- add a shape into definition
+    -- paramtype
+    def.paramtype = "light" -- required
+    -- create a definition
+    local shape -- will be filled out by create_node_def or will be box
+    def, name, shape = tg_nodes.create_node_def(name, def, desc)
+    -- do selection box
+    def.selection_box = def.selection_box or {}
+    local selcbox = def.selection_box -- grab it after above so that I can lazily have it be already added
+    selcbox.type = "fixed"
+    selcbox.fixed = shape
+    -- modify visual scale accordingly
+    local texture = def.tiles[1]
+    texture = type(texture) == "string" and texture or type(texture) == "table" and (texture[1] or texture.name)
+    texture = type(texture) == "table" and texture.name or texture
+    if not texture then return end -- BE AN ERROR!
+    -- figure out scale
+    -- if smaller texture, increase scale
+    def.visual_scale = texture:find("8x8") and 2 or 1
+    -- misc plant stuff
+    def.waving = nil -- no wind down here
+    -- if true, placed nodes can replace this node (default true))
+    def.buildable_to = def.buildable_to ~= false
+    -- if true, sun light will go through (default true)
+    def.sunlight_propagates = def.sunlight_propagates ~= true
+    -- if true, can be flooded by water (default false)
+    def.floodable = def.floodable == true
+    -- if true, player collides with (default false)
+    def.walkable = def.walkable == true
+    -- register!
+    core.register_node(name, def)
+    -- returns definition
+    return core.registered_nodes[def.name]
 end
 
 --- same as createNodes but for lights
@@ -707,21 +784,29 @@ function tg_nodes.defNode(name, sounds)
 	end
 end
 
-createNode("stone", "stone", tg_sound.stone_defaults())
-createNode("stone_slab", "stone slab", tg_sound.stone_defaults(), shapes.slab, "stone")
-createNode("stone_stairs", "stone stairs", tg_sound.stone_defaults(), shapes.stairs, "stone")
-createNode("cave_ground", "cave ground", tg_sound.gravel_defaults())
-createNode("cave_ground_2", "cave ground, feels moist", tg_sound.gravel_defaults())
-createNode("dirt", "dirt, cold", tg_sound.dirt_defaults())
-createNode("dirt_slab", "dirt, cold", tg_sound.dirt_defaults(), shapes.slab, "dirt")
-createNode("cave_ground_dirt", "cave ground, with dirt", tg_sound.gravel_defaults())
-createNode("concrete", "concrete, no one is taking care of this.")
-createNode("concrete_stair", "concrete, no one is taking care of this.", nil,
-	shapes.stairs, "concrete")
-createNode("concrete_slab", "concrete, no one is taking care of this.", nil,
-	shapes.slab, "concrete")
-createNode("concrete_floor", "concrete floor, almost like sand paper.")
-
+-- nodes;
+-- stone
+tg_nodes.register_node("stone", {sounds=tg_sound.stone_defaults()}, "stone")
+tg_nodes.register_node("stone_slab", {sounds=tg_sound.stone_defaults(), shape="slab", texture="stone"}, "stone")
+tg_nodes.register_node("stone_stairs", {sounds=tg_sound.stone_defaults(), shape="stairs", texture="stone"}, "stone")
+-- cave
+tg_nodes.register_node("cave_ground", {sounds=tg_sound.gravel_defaults()}, "cave ground")
+tg_nodes.register_node("cave_ground_2", {sounds=tg_sound.gravel_defaults()}, "cave ground, feels moist")
+-- dirt
+tg_nodes.register_node("dirt", {sounds=tg_sound.dirt_defaults()}, "dirt, cold")
+tg_nodes.register_node("dirt_slab", {sounds=tg_sound.dirt_defaults(), texture="dirt"}, "dirt, cold")
+tg_nodes.register_node("cave_ground_dirt", {sounds=tg_sound.gravel_defaults()}, "cave ground, with dirt")
+-- concrete
+tg_nodes.register_node("concrete", nil, "concrete, no one is taking care of this.")
+tg_nodes.register_node("concrete_stair", {shape="stairs", texture="concrete"}, "concrete, no one is taking care of this.")
+tg_nodes.register_node("concrete_slab", {shape="slab", texture="concrete"}, "concrete, no one is taking care of this.")
+tg_nodes.register_node("concrete_floor", nil, "concrete floor, almost like sand paper.")
+-- wooden crates
+-- these two nodes need more work
+tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
+tg_nodes.register_node("crate2", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
+-- misc;
+-- misc
 createMisc("locker", "Locker, LET ME IN!!", nil, shapes.double,
 	{ { name = "tg_nodes_misc.png^[sheet:16x16:3,0" }, { name = "tg_nodes_misc.png^[sheet:16x8:0,0" } })
 createMisc("paper", "Paper", tg_sound.paper_defaults(), shapes.sheet,
@@ -737,22 +822,22 @@ createMisc("stick_notes_2", "Sticky Note, one of these had gotta have something 
 	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:2,4" } })
 createMisc("stick_notes_3", "Sticky Note, one of these had gotta have something important on it.",
 	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:3,4" } })
-
-createPlant("short_grass", "Grass, they tickle", shapes.tiny_box, "plants.png^[sheet:16x16:7,0")
-createPlant("plant", "Plant, they tickle", shapes.slim_box, "plants.png^[sheet:16x16:6,1")
-createPlant("caladium", "Caladium, odd looking plants.", shapes.slim_box, "plants.png^[sheet:16x16:6,0")
-createPlant("fungus", "Fungus, a King trumpet.", shapes.tiny_box, "plants.png^[sheet:16x16:9,0")
-createPlant("fungus_small", "Fungus, a King trumpet.", shapes.tiny_box, "plants.png^[sheet:16x16:9,1")
-createPlant("shrub", "Shrub, it' dry.", shapes.slim_box, "plants.png^[sheet:8x8:0,0")
-
+-- flora;
+-- plants
+tg_nodes.register_plant("short_grass", {texture="plants.png^[sheet:16x16:7,0"}, "Grass, they tickle")
+tg_nodes.register_plant("plant", {shape="slim_box", texture="plants.png^[sheet:16x16:6,1"}, "Plant, they tickle")
+tg_nodes.register_plant("caladium", {texture="plants.png^[sheet:16x16:6,0"}, "Caladium, odd looking plants.")
+-- shrubs
+tg_nodes.register_plant("shrub", {shape="slim_box", texture="plants.png^[sheet:8x8:0,0"}, "Shrub, it' dry.")
+-- fungus
+tg_nodes.register_plant("fungus", {texture="plants.png^[sheet:16x16:9,0"}, "Fungus, a King trumpet.")
+tg_nodes.register_plant("fungus_small", {texture="plants.png^[sheet:16x16:9,1"}, "Fungus, a King trumpet.")
+-- wall lights;
+-- LEDs
 createWallLight("led_on", "led, blinding.", shapes.panel, 13)
 createWallLight("led_off", "led, blinding.", shapes.panel, 0)
 createWallLight2("led_on_red", "led, blinding.", shapes.panel, 7)
 
 tg_nodes.defNode("steel_enclosure", tg_sound.metal_defaults())
 tg_nodes.defNode("concrete_tiled")
-
--- these two nodes need more work
-createNode("crate", "crate, looks heavy", tg_sound.woodplank_defaults())
-createNode("crate2", "crate, looks heavy", tg_sound.woodplank_defaults())
 ------
