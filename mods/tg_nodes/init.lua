@@ -141,6 +141,8 @@ function tg_nodes.create_node_def(name, def, desc)
             -- add to nodebox if successful!
             nodebox.fixed = shape or nodebox.fixed
         end
+        -- set nodebox
+        def.node_box = nodebox
     end
     -- sounds!
     def.sounds = tg_sound.node_defaults(def.sounds)
@@ -154,7 +156,8 @@ function tg_nodes.create_node_def(name, def, desc)
         end
     end
     -- return reformed definition and name, as well as shape for specific stuff
-    return def, name, shape
+    -- shape can be the fixed box of nodebox as well
+    return def, name, (shape or (def.node_box and def.node_box.fixed) )
 end
 
 --- function for more simply registering nodes, see tg_nodes.create_node for more details
@@ -170,42 +173,45 @@ function tg_nodes.register_node(name, def, desc)
 end
 
 
---- easily get going with nodes
----@param name string
----@param des string
----@param sounds table
----@param shape shape
----@param texture table : leave nil. the base node texture (name of a base node)
-local function createMisc(name, des, sounds, shape, texture)
-	local selectable = nil
-	if tg_main.dev_mode == false then
-		selectable = {
-			type = "fixed",
-			fixed = { 0, 0, 0, 0, 0, 0 }
-		}
-	end
-	local node_box = {
-		type = "fixed",
-		fixed = shape or shapes.box
-	}
-	local is_walkable = true
-	if shape == shapes.panel or shape == shapes.sheet then
-		is_walkable = false
-	end
-	core.register_node("tg_nodes:" .. name, {
-		description = S(des),
-		groups = defualt_groups,
-		tiles = texture,
-		sounds = tg_sound.node_defaults(sounds),
-		paramtype2 = "facedir",
-		paramtype = "light",
-		drawtype = "nodebox",
-		walkable = is_walkable,
-		use_texture_alpha = "clip",
-		sunlight_propagates = true,
-		node_box = node_box,
-		selection_box = selectable or node_box,
-	})
+--- same as tg_nodes.register_node, but for registering more misc stuff!
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+function tg_nodes.register_misc(name, def, desc)
+    -- create definition table
+    def = type(def) == "table" and def or {}
+    -- basics prior to registration
+    -- whether or not to show a selection box!
+    -- if dev_mode, always true, if not dev_mode, resort to specified boolean (default false)
+    local selectable = tg_main.dev_mode == false or def.selectable == true
+    def.selectable = nil -- remove!
+    -- create a definition
+    local shape -- will be filled out by create_node_def or will be box
+    def, name, shape = tg_nodes.create_node_def(name, def, desc)
+    -- automate whether or not to be walkable
+    if type(def.walkable) ~= "boolean" then
+        -- will be true unless one of these are true
+        def.walkable = not (shape == shapes.panel or shape == shapes.sheet)
+    end
+    -- whether or not we're selectable!
+    -- only need to change selection box if not selectable (as selection_box will be set by definition)
+    if not selectable then
+        def.selection_box = {
+            type = "fixed",
+            fixed = { 0, 0, 0, 0, 0, 0 }
+        }
+    end
+    -- misc, well, misc stuff!
+    def.use_texture_alpha = def.use_texture_alpha or "clip"
+    -- whether or not sun light goes through (default true)
+    def.sunlight_propagates = def.sunlight_propagates ~= false
+    -- paramtypes
+    def.paramtype = def.paramtype or "light"
+    def.paramtype2 = def.paramtype2 or "facedir"
+    -- register!
+    core.register_node(name, def)
+    -- returns definition
+    return core.registered_nodes[def.name]
 end
 
 --- same as tg_nodes.register_node but for plants
@@ -215,6 +221,7 @@ end
 function tg_nodes.register_plant(name, def, desc)
     -- create definition table
     def = def or {}
+    -- basics prior to registration
     def.drawtype = "plantlike" -- force drawtype
     def.sounds = tg_sound.plant_defaults(def.sounds)
     def.shape = def.shape or "tiny_box" -- add a shape into definition
@@ -223,6 +230,8 @@ function tg_nodes.register_plant(name, def, desc)
     -- create a definition
     local shape -- will be filled out by create_node_def or will be box
     def, name, shape = tg_nodes.create_node_def(name, def, desc)
+    -- add a group
+    def.groups.flora = def.groups.flora or 1
     -- do selection box
     def.selection_box = def.selection_box or {}
     local selcbox = def.selection_box -- grab it after above so that I can lazily have it be already added
@@ -806,22 +815,24 @@ tg_nodes.register_node("concrete_floor", nil, "concrete floor, almost like sand 
 tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
 tg_nodes.register_node("crate2", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
 -- misc;
--- misc
-createMisc("locker", "Locker, LET ME IN!!", nil, shapes.double,
-	{ { name = "tg_nodes_misc.png^[sheet:16x16:3,0" }, { name = "tg_nodes_misc.png^[sheet:16x8:0,0" } })
-createMisc("paper", "Paper", tg_sound.paper_defaults(), shapes.sheet,
-	{ { name = "tg_nodes_misc.png^[sheet:16x16:0,3" } })
-createMisc("paper_1", "Paper", tg_sound.paper_defaults(), shapes.sheet,
-	{ { name = "tg_nodes_misc.png^[sheet:16x16:1,3" } })
--- sticky notes, 4 texture options.. the quickest implementation is multiple nodes
-createMisc("stick_notes", "Sticky Note, one of these had gotta have something important on it.",
-	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:0,4" } })
-createMisc("stick_notes_1", "Sticky Note, one of these had gotta have something important on it.",
-	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:1,4" } })
-createMisc("stick_notes_2", "Sticky Note, one of these had gotta have something important on it.",
-	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:2,4" } })
-createMisc("stick_notes_3", "Sticky Note, one of these had gotta have something important on it.",
-	tg_sound.paper_defaults(), shapes.sheet, { { name = "tg_nodes_misc.png^[sheet:16x16:3,4" } })
+-- lockers
+tg_nodes.register_misc("locker", {shape="double", sounds=tg_sound.metal_defaults(),
+  tiles={ {name="tg_nodes_misc.png^[sheet:16x16:3,0"}, {name="tg_nodes_misc.png^[sheet:16x8:0,0"} },
+  }, "Locker, LET ME IN!!")
+-- paper
+tg_nodes.register_misc("paper", {shape="sheet", texture="misc.png^[sheet:16x16:0,3",
+  sounds=tg_sound.paper_defaults()}, "Paper")
+tg_nodes.register_misc("paper_1", {shape="sheet", texture="misc.png^[sheet:16x16:1,3",
+  sounds=tg_sound.paper_defaults()}, "Paper")
+-- sticky notes
+tg_nodes.register_misc("stick_notes", {shape="sheet", texture="misc.png^[sheet:16x16:0,4",
+  sounds=tg_sound.paper_defaults()}, "Sticky Note; one of these had gotta have something important on it.")
+tg_nodes.register_misc("stick_notes_1", {shape="sheet", texture="misc.png^[sheet:16x16:1,4",
+  sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
+tg_nodes.register_misc("stick_notes_2", {shape="sheet", texture="misc.png^[sheet:16x16:2,4",
+  sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
+tg_nodes.register_misc("stick_notes_3", {shape="sheet", texture="misc.png^[sheet:16x16:3,4",
+  sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
 -- flora;
 -- plants
 tg_nodes.register_plant("short_grass", {texture="plants.png^[sheet:16x16:7,0"}, "Grass, they tickle")
