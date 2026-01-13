@@ -437,95 +437,35 @@ function tg_nodes.register_cable(name, def, desc)
     return core.registered_nodes[def.name]
 end
 
-
-core.register_node("tg_nodes:tubes", {
-	description = S("tubes, for transfering liquids."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "tubes.glb",
-	visual_scale = 10.0,
-	tiles = { "tubes.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.slab
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.slab
-	},
-	sounds = tg_sound.metal_defaults()
-})
-core.register_node("tg_nodes:tubes_left", {
-	description = S("tubes_left, for transfering liquids."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "tubes_left.glb",
-	visual_scale = 10.0,
-	tiles = { "tubes.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.slab
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.slab
-	},
-	sounds = tg_sound.metal_defaults()
-})
-core.register_node("tg_nodes:tubes_right", {
-	description = S("tubes_right, for transfering liquids."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "tubes_right.glb",
-	visual_scale = 10.0,
-	tiles = { "tubes.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.slab
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.slab
-	},
-	sounds = tg_sound.metal_defaults()
-})
-core.register_node("tg_nodes:tubes_down", {
-	description = S("tubes_down, for transfering liquids."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "tubes_down.glb",
-	visual_scale = 10.0,
-	tiles = { "tubes.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.half_slab
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.half_slab
-	},
-	sounds = tg_sound.metal_defaults()
-})
+--- same as tg_nodes.register_node but for tube (piping) nodes
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
+function tg_nodes.register_piping(name, def, desc)
+    -- create def
+    def = def or {}
+    -- basics prior to creating nodedef
+    def.shape = def.shape or "slab"
+    def.drawtype = def.drawtype or "mesh"
+    def.mesh = def.drawtype == "mesh" and (def.mesh or "tubes.glb") or nil
+    def.visual_scale = def.visual_scale or 10
+    -- paramtypes
+    def.paramtype = def.paramtype or "light"
+    def.paramtype2 = def.paramtype2 or "facedir"
+    -- raw texture for tiling (if no tiles specified)
+    def.raw_texture = (not def.tiles) and (def.raw_texture or "tubes.png") or nil
+    -- sound
+    def.sounds = tg_sound.metal_defaults(def.sounds)
+    -- description
+    def.description = (def.desc or def.description) or S("@1, for transfering liquids.", name)
+    -- create node def
+    def, name = tg_nodes.create_node_def(name, def, desc)
+    -- add group
+    def.groups.piping = def.groups.piping or 1
+    -- register and return def!
+    core.register_node(name, def)
+    return core.registered_nodes[def.name]
+end
 
 core.register_node("tg_nodes:radio", {
 	description = S("Radio, nice tunes."),
@@ -753,7 +693,11 @@ tg_nodes.register_node("beam", {sounds=tg_sound.metal_defaults(), paramtype="lig
 tg_nodes.register_cable("cable")
 tg_nodes.register_cable("cables", {mesh="cables.glb"})
 tg_nodes.register_cable("cables_angle", {mesh="cable_angle.glb"})
-
+-- tubes
+tg_nodes.register_piping("tubes")
+tg_nodes.register_piping("tubes_left", {mesh="tubes_left.glb"})
+tg_nodes.register_piping("tubes_right", {mesh="tubes_right.glb"})
+tg_nodes.register_piping("tubes_down", {mesh="tubes_down.glb", shape="half_slab"})
 -- wooden crates
 -- these two nodes need more work
 tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
