@@ -400,97 +400,6 @@ function tg_nodes.register_wall_light_powered(name, def, desc, light)
 end
 
 
-
-
-
-core.register_node("tg_nodes:beam", {
-	description = S("beam, cold to the touch."),
-	groups = defualt_groups,
-	waving = 0, -- there is no wind down here
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "beam.glb",
-	visual_scale = 10.0,
-	tiles = { "beam.png" },
-	paramtype2 = "facedir",
-	use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.beam
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.beam
-	},
-})
-
-core.register_node("tg_nodes:cables", {
-	description = S("cables, I don't don't trust these."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "cables.glb",
-	visual_scale = 10.0,
-	tiles = { "cables.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-})
-
-core.register_node("tg_nodes:cable", {
-	description = S("cable, I don't don't trust these."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "cable.glb",
-	visual_scale = 10.0,
-	tiles = { "cables.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-})
-
-core.register_node("tg_nodes:cable_angle", {
-	description = S("cable_angle, I don't don't trust these."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "cable_angle.glb",
-	visual_scale = 10.0,
-	tiles = { "cables.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-})
 core.register_node("tg_nodes:tubes", {
 	description = S("tubes, for transfering liquids."),
 	groups = defualt_groups,
@@ -797,6 +706,19 @@ tg_nodes.register_node("concrete_stair", {shape="stairs", texture="concrete"},
 tg_nodes.register_node("concrete_slab", {shape="slab", texture="concrete"},
   "concrete, no one is taking care of this.")
 tg_nodes.register_node("concrete_floor", nil, "concrete floor, almost like sand paper.")
+
+-- misc base nodes
+tg_nodes.register_node("beam", {sounds=tg_sound.metal_defaults(), paramtype="light", paramtype2="facedir",
+  tiles={"beam.png"}, drawtype="mesh", mesh="beam.glb", visual_scale=10, use_texture_alpha = "clip",
+  shape="beam"}, "beam, cold to the touch.")
+-- cables
+tg_nodes.register_node("cable", {tiles={"cables.png"}, paramtype="light", paramtype2="facedir", visual_scale=10,
+  drawtype="mesh", mesh="cable.glb", walkable=false, shape="panel"}, "cables, I don't don't trust these.")
+tg_nodes.register_node("cables", {tiles={"cables.png"}, paramtype="light", paramtype2="facedir", visual_scale=10,
+  drawtype="mesh", mesh="cables.glb", walkable=false, shape="panel"}, "cables, I don't don't trust these.")
+tg_nodes.register_node("cable_angle", {tiles={"cables.png"}, paramtype="light", paramtype2="facedir", visual_scale=10,
+  drawtype="mesh", mesh="cable_angle.glb", walkable=false, shape="panel"}, "cables, I don't don't trust these.")
+
 -- wooden crates
 -- these two nodes need more work
 tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
