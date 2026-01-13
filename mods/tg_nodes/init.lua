@@ -250,7 +250,7 @@ function tg_nodes.register_plant(name, def, desc)
     -- if true, placed nodes can replace this node (default true))
     def.buildable_to = def.buildable_to ~= false
     -- if true, sun light will go through (default true)
-    def.sunlight_propagates = def.sunlight_propagates ~= true
+    def.sunlight_propagates = def.sunlight_propagates ~= false
     -- if true, can be flooded by water (default false)
     def.floodable = def.floodable == true
     -- if true, player collides with (default false)
@@ -261,107 +261,133 @@ function tg_nodes.register_plant(name, def, desc)
     return core.registered_nodes[def.name]
 end
 
---- same as createNodes but for lights
----@param name string
----@param des string
----@param shape shape|nil
-local function createWallLight(name, des, shape, light_level)
-	core.register_node("tg_nodes:" .. name, {
-		description = S(des),
-		groups = defualt_groups,
-		tiles = {
-			{
-				name = "tg_nodes_" .. name .. ".png"
-			},
-		},
-		drawtype = "signlike",
-		paramtype = "light",
-		paramtype2 = "wallmounted",
-		light_source = light_level,
-		walkable = false,
-		sunlight_propagates = true,
-		selection_box = {
-			type = "fixed",
-			fixed = shape or shapes.box
-		},
-		on_construct = function(pos)
-			core.get_node_timer(pos):start(1.0)
-		end,
-		on_timer = function(pos, elapsed, node, timeout)
-			node = node or core.get_node(pos)
-			local power = tg_power.getPower()
-			if power == false then
-				-- core.log("light should be off")
-				if not string.find(node.name, "off") then
-					-- local meta = core.get_meta(pos)
-					-- local updated_node = node
-					-- updated_node.light_source = 1
-					-- core.set_node(pos, updated_node)
-					core.swap_node(pos, { name = "tg_nodes:led_off", param2 = node.param2 })
-				end
-			else
-				if string.find(node.name, "off") then
-					-- core.log("light should be on")
-					core.swap_node(pos, { name = "tg_nodes:led_on", param2 = node.param2 })
-					core.sound_play({ name = tg_nodes.sounds.paper, gain = 0.01, pitch = 0.8 },
-						{ pos = { x = pos.x, y = pos.y, z = pos.z },
-						})
-				end
-			end
-			-- core.log("is the power on? " .. dump(power))
-			core.get_node_timer(pos):start(1.0)
-		end,
-	})
+
+--- same as tg_nodes.create_node_def but for wall lights!
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+function tg_nodes.create_wall_light_def(name, def, desc, light)
+    -- create definition table
+    def = def or {}
+    -- basics prior to registration
+    -- let there be LIGHT!
+    if light then
+        def.light_source = light
+    elseif def.light then
+        def.light_source = def.light
+        def.light = nil
+    end
+    -- base shape
+    def.shape = def.shape or "panel"
+    -- required
+    def.paramtype = "light"
+    def.paramtype2 = "wallmounted"
+    def.drawtype = "signlike"
+    -- create a definition
+    local shape
+    def, name, shape = tg_nodes.create_node_def(name, def, desc)
+    -- add group
+    def.groups.wall_light = 1
+    -- misc light stuff
+    -- if true, player collides with (default false)
+    def.walkable = def.walkable == true
+    -- if true, sun light will go through (default true)
+    def.sunlight_propagates = def.sunlight_propagates ~= false
+    -- return reformed definition and name, as well as shape for specific stuff
+    -- shape can be the fixed box of nodebox as well
+    return def, name, (shape or (def.node_box and def.node_box.fixed) )
 end
 
---- same as createNodes but for lights
----@param name string
----@param des string
----@param shape shape|nil
-local function createWallLight2(name, des, shape, light_level)
-	core.register_node("tg_nodes:" .. name, {
-		description = S(des),
-		groups = defualt_groups,
-		tiles = {
-			{
-				name = "tg_nodes_" .. name .. ".png"
-			},
-		},
-		drawtype = "signlike",
-		paramtype = "light",
-		paramtype2 = "wallmounted",
-		light_source = light_level,
-		walkable = false,
-		sunlight_propagates = true,
-		selection_box = {
-			type = "fixed",
-			fixed = shape or shapes.box
-		},
-		on_construct = function(pos)
-			-- core.get_node_timer(pos):start(1.0)
-		end,
-		-- on_timer = function(pos, elapsed, node, timeout)
-		-- 	local power = tg_power.getPower()
-		-- 	if power == false then
-		-- 		-- core.log("light should be off")
-		-- 		if not string.find(node.name, "off") then
-		-- 			-- local meta = core.get_meta(pos)
-		-- 			local updated_node = node
-		-- 			-- updated_node.light_source = 1
-		-- 			-- core.set_node(pos, updated_node)
-		-- 			core.swap_node(pos, { name = "tg_nodes:led_off", param2 = node.param2})
-		-- 		end
-		-- 	else
-		-- 		if string.find(node.name, "off") then
-		-- 		-- core.log("light should be on")
-		-- 		core.swap_node(pos, { name = "tg_nodes:led_on", param2 = node.param2 })
-		-- 		end
-		-- 	end
-		-- 	-- core.log("is the power on? " .. dump(power))
-		-- 	core.get_node_timer(pos):start(1.0)
-		-- end,
-	})
+--- same as tg_nodes.register_node but for wall light type 1 (power not needed)
+--- will be registered as "(name)_on"
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+function tg_nodes.register_wall_light(name, def, desc, light)
+    -- change name
+    name = name.."_on"
+    -- register!
+    def, name = tg_nodes.create_wall_light_def(name, def, desc, light)
+    -- register and return def
+    core.register_node(name, def)
+    return core.registered_nodes[def.name]
 end
+
+--- same as tg_nodes.register_wall_light but for wall light type 2 (power required)
+--- registers BOTH alit and unlit variants (on and off)
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+function tg_nodes.register_wall_light_powered(name, def, desc, light)
+    local defs = {} -- stored alit and unlit definitions
+    -- create def
+    def = def or {}
+    -- basics prior to definition
+    -- add group
+    def.groups = def.groups or {}
+    def.groups.powerable = def.groups.powerable or 1 -- powerable!
+    -- functions!
+    -- start timer
+    def.on_construct = def.on_construct or
+    function(pos)
+        core.get_node_timer(pos):start(1)
+    end
+    -- change name
+    name = name.."_on"
+    -- DO ALIT VARIANT
+    local adef = table.copy(def)
+    -- create the basics
+    adef, name = tg_nodes.create_wall_light_def(name, adef, desc, light)
+    -- permit specifying an on_timer for a light that is alit
+    adef.on_timer = adef.alit_on_timer or
+    function(pos, elapsed, node, timeout)
+        local power = tg_power.getPower()
+        if power then return true end -- already powered! check later
+        -- turn off!
+        node = node or core.get_node(pos)
+        node.name = node.name:gsub("_on", "_off")
+        -- swap switch
+        core.swap_node(pos, node)
+        -- play sound
+        core.sound_play("tg_dirt_footstep", {gain = 0.15, pitch = math.random(60,85)/100, pos = pos})
+        return true -- run check again
+    end
+    -- remove now unnecessary
+    adef.alit_on_timer = nil
+    def.alit_on_timer = nil
+    adef.unlit_on_timer = nil
+    -- register and add alit variant
+    core.register_node(name, adef)
+    defs.alit = core.registered_nodes[adef.name]
+    -- DO UNLIT VARIANT
+    name = name:gsub("_on", "_off") -- replace with "_off" for name
+    def.light_source = nil -- not needed
+    def.light = nil
+    -- create the basics
+    def, name = tg_nodes.create_wall_light_def(name, def, desc)
+    -- unlit timer
+    def.on_timer = def.unlit_on_timer or
+    function(pos, elapsed, node, timeout)
+        local power = tg_power.getPower()
+        if not power then return true end -- already off! check later
+        -- turn on!
+        node = node or core.get_node(pos)
+        node.name = node.name:gsub("_off", "_on")
+        core.swap_node(pos, node)
+        -- play sound
+        core.sound_play("tg_paper_footstep", {gain = 0.05, pitch = math.random(60,85)/100, pos = pos})
+        return true -- run check again
+    end
+    -- remove unnecessary
+    def.unlit_on_timer = nil
+    -- register and add unlit variant
+    core.register_node(name, def)
+    defs.unlit = core.registered_nodes[def.name]
+    -- returns defs
+    return defs
+end
+
+
 
 core.register_node("tg_nodes:fog", {
 	description = S("Fog, hard to look past."),
@@ -845,9 +871,10 @@ tg_nodes.register_plant("fungus", {texture="plants.png^[sheet:16x16:9,0"}, "Fung
 tg_nodes.register_plant("fungus_small", {texture="plants.png^[sheet:16x16:9,1"}, "Fungus, a King trumpet.")
 -- wall lights;
 -- LEDs
-createWallLight("led_on", "led, blinding.", shapes.panel, 13)
-createWallLight("led_off", "led, blinding.", shapes.panel, 0)
-createWallLight2("led_on_red", "led, blinding.", shapes.panel, 7)
+tg_nodes.register_wall_light("led_red", nil, "led, blinding", 7)
+core.register_alias_force("tg_nodes:led_on_red", "tg_nodes:led_red_on") -- convert to better system
+-- powered LEDs
+tg_nodes.register_wall_light_powered("led", nil, "led, blinding", 13)
 
 tg_nodes.defNode("steel_enclosure", tg_sound.metal_defaults())
 tg_nodes.defNode("concrete_tiled")
