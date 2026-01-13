@@ -149,6 +149,19 @@ function tg_nodes.create_node_def(name, def, desc)
         -- set nodebox
         def.node_box = nodebox
     end
+    -- figure out selection_box!
+    if shape and not def.node_box then
+        if not def.selection_box then
+            local selcbox = def.selection_box or {}
+            selcbox.type = selcbox.type or "fixed"
+            -- only bother with shaping if our type is fixed and no fixed exists
+            if selcbox.type == "fixed" and not selcbox.fixed then
+                selcbox.fixed = shape
+            end
+            -- set selection_box
+            def.selection_box = selcbox
+        end
+    end
     -- sounds!
     def.sounds = tg_sound.node_defaults(def.sounds)
     -- groups!
@@ -237,11 +250,6 @@ function tg_nodes.register_plant(name, def, desc)
     def, name, shape = tg_nodes.create_node_def(name, def, desc)
     -- add a group
     def.groups.flora = def.groups.flora or 1
-    -- do selection box
-    def.selection_box = def.selection_box or {}
-    local selcbox = def.selection_box -- grab it after above so that I can lazily have it be already added
-    selcbox.type = "fixed"
-    selcbox.fixed = shape
     -- modify visual scale accordingly
     local texture = def.tiles[1]
     texture = type(texture) == "string" and texture or type(texture) == "table" and (texture[1] or texture.name)
@@ -397,6 +405,36 @@ function tg_nodes.register_wall_light_powered(name, def, desc, light)
     defs.unlit = core.registered_nodes[def.name]
     -- returns defs
     return defs
+end
+
+--- same as tg_nodes.register_node but for cable nodes
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
+function tg_nodes.register_cable(name, def, desc)
+    -- create def
+    def = def or {}
+    -- basics prior to creating nodedef
+    def.shape = def.shape or "panel"
+    def.drawtype = def.drawtype or "mesh"
+    def.mesh = def.drawtype == "mesh" and (def.mesh or "cable.glb") or nil
+    def.visual_scale = def.visual_scale or 10
+    -- if true, player collides with (default false)
+    def.walkable = def.walkable == true
+    -- raw texture for tiling (if no tiles specified)
+    def.raw_texture = (not def.tiles) and (def.raw_texture or "cables.png") or nil
+    -- paramtypes
+    def.paramtype = def.paramtype or "light"
+    def.paramtype2 = def.paramtype2 or "facedir"
+    -- description
+    def.description = (def.desc or def.description) or S("cables, I don't don't trust these.")
+    -- create node def
+    def, name = tg_nodes.create_node_def(name, def, desc)
+    -- add group
+    def.groups.cable = def.groups.cable or 1
+    -- register and return def!
+    core.register_node(name, def)
+    return core.registered_nodes[def.name]
 end
 
 
@@ -712,12 +750,9 @@ tg_nodes.register_node("beam", {sounds=tg_sound.metal_defaults(), paramtype="lig
   tiles={"beam.png"}, drawtype="mesh", mesh="beam.glb", visual_scale=10, use_texture_alpha = "clip",
   shape="beam"}, "beam, cold to the touch.")
 -- cables
-tg_nodes.register_node("cable", {tiles={"cables.png"}, paramtype="light", paramtype2="facedir", visual_scale=10,
-  drawtype="mesh", mesh="cable.glb", walkable=false, shape="panel"}, "cables, I don't don't trust these.")
-tg_nodes.register_node("cables", {tiles={"cables.png"}, paramtype="light", paramtype2="facedir", visual_scale=10,
-  drawtype="mesh", mesh="cables.glb", walkable=false, shape="panel"}, "cables, I don't don't trust these.")
-tg_nodes.register_node("cable_angle", {tiles={"cables.png"}, paramtype="light", paramtype2="facedir", visual_scale=10,
-  drawtype="mesh", mesh="cable_angle.glb", walkable=false, shape="panel"}, "cables, I don't don't trust these.")
+tg_nodes.register_cable("cable")
+tg_nodes.register_cable("cables", {mesh="cables.glb"})
+tg_nodes.register_cable("cables_angle", {mesh="cable_angle.glb"})
 
 -- wooden crates
 -- these two nodes need more work
