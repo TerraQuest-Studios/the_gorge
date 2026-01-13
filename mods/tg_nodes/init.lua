@@ -227,7 +227,7 @@ function tg_nodes.register_plant(name, def, desc)
     -- create definition table
     def = def or {}
     -- basics prior to registration
-    def.drawtype = "plantlike" -- force drawtype
+    def.drawtype = def.drawtype or "plantlike"
     def.sounds = tg_sound.plant_defaults(def.sounds)
     def.shape = def.shape or "tiny_box" -- add a shape into definition
     -- paramtype
@@ -246,10 +246,17 @@ function tg_nodes.register_plant(name, def, desc)
     local texture = def.tiles[1]
     texture = type(texture) == "string" and texture or type(texture) == "table" and (texture[1] or texture.name)
     texture = type(texture) == "table" and texture.name or texture
-    if not texture then return end -- BE AN ERROR!
-    -- figure out scale
-    -- if smaller texture, increase scale
-    def.visual_scale = texture:find("8x8") and 2 or 1
+    -- figure out scale (if not provided)
+    -- if mesh, default to 16
+    -- if smaller texture, increase scale to 2
+    -- default to 1
+    def.visual_scale = def.visual_scale or (def.drawtype == "mesh" and 16) or
+      texture and (texture:find("8x8") and 2) or 1
+    -- IF MESH!
+    if def.drawtype == "mesh" then
+        def.paramtype2 = def.paramtype2 or "4dir"
+        def.use_texture_alpha = def.use_texture_alpha or "clip"
+    end
     -- misc plant stuff
     def.waving = nil -- no wind down here
     -- if true, placed nodes can replace this node (default true))
@@ -394,65 +401,7 @@ end
 
 
 
-core.register_node("tg_nodes:fog", {
-	description = S("Fog, hard to look past."),
-	groups = defualt_groups,
-	tiles = {
-		{
-			name = "tg_nodes_fog.png^[opacity:90",
-		},
-	},
-	use_texture_alpha = "blend",
-	-- backface_culling = false,
-	paramtype = "light",
-	drawtype = "glasslike",
-	node_box = {
-		type = "fixed",
-		fixed = shapes.box
-	},
-	sunlight_propagates = false,
-	walkable = true,
-	pointable = false,
-})
 
-core.register_node("tg_nodes:fern", {
-	description = S("fern, very lushes"),
-	groups = defualt_groups,
-	waving = 0, -- there is no wind down here
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "fern.glb",
-	visual_scale = 16.0,
-	tiles = { "fern.png" },
-	paramtype2 = "4dir",
-	use_texture_alpha = "clip",
-	sunlight_propagates = true,
-	walkable = false,
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.slim_box
-	},
-	sounds = tg_sound.plant_defaults()
-})
-
-core.register_node("tg_nodes:king_trumpet", {
-	description = S("king_trumpet, very lushes"),
-	groups = defualt_groups,
-	waving = 0, -- there is no wind down here
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "king_trumpet.glb",
-	visual_scale = 16.0,
-	tiles = { "king_trumpet.png" },
-	paramtype2 = "4dir",
-	use_texture_alpha = "clip",
-	sunlight_propagates = true,
-	walkable = false,
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.slim_box
-	},
-})
 
 core.register_node("tg_nodes:beam", {
 	description = S("beam, cold to the touch."),
@@ -825,6 +774,11 @@ function tg_nodes.defNode(name, sounds)
 end
 
 -- nodes;
+-- fog
+tg_nodes.register_node("fog", { texture = "fog.png^[opacity:90", use_texture_alpha = "blend",
+    paramtype = "light", drawtype = "glasslike", pointable = false
+    -- sunlight propagates nor walkable need to be specified
+}, "Fog, hard to look past.")
 -- stone
 tg_nodes.register_node("stone", {sounds=tg_sound.stone_defaults()}, "stone")
 tg_nodes.register_node("stone_slab", {sounds=tg_sound.stone_defaults(), shape="slab", texture="stone"}, "stone")
@@ -847,6 +801,7 @@ tg_nodes.register_node("concrete_floor", nil, "concrete floor, almost like sand 
 -- these two nodes need more work
 tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
 tg_nodes.register_node("crate2", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
+
 -- misc;
 -- lockers
 tg_nodes.register_misc("locker", {shape="double", sounds=tg_sound.metal_defaults(),
@@ -866,16 +821,26 @@ tg_nodes.register_misc("stick_notes_2", {shape="sheet", texture="misc.png^[sheet
   sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
 tg_nodes.register_misc("stick_notes_3", {shape="sheet", texture="misc.png^[sheet:16x16:3,4",
   sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
+
 -- flora;
 -- plants
 tg_nodes.register_plant("short_grass", {texture="plants.png^[sheet:16x16:7,0"}, "Grass, they tickle")
 tg_nodes.register_plant("plant", {shape="slim_box", texture="plants.png^[sheet:16x16:6,1"}, "Plant, they tickle")
 tg_nodes.register_plant("caladium", {texture="plants.png^[sheet:16x16:6,0"}, "Caladium, odd looking plants.")
+-- more complex def
+tg_nodes.register_plant("fern", { tiles={"fern.png"}, drawtype = "mesh", mesh = "fern.glb",
+  visual_scale = 16, selection_box = { type="fixed", fixed=shapes.slim_box } }, "fern, very lushes")
+
 -- shrubs
 tg_nodes.register_plant("shrub", {shape="slim_box", texture="plants.png^[sheet:8x8:0,0"}, "Shrub, it' dry.")
 -- fungus
 tg_nodes.register_plant("fungus", {texture="plants.png^[sheet:16x16:9,0"}, "Fungus, a King trumpet.")
 tg_nodes.register_plant("fungus_small", {texture="plants.png^[sheet:16x16:9,1"}, "Fungus, a King trumpet.")
+-- more complex def
+tg_nodes.register_plant("king_trumpet", {tiles={"king_trumpet.png"}, drawtype="mesh", mesh="king_trumpet.glb",
+  visual_scale = 16, selection_box = { type="fixed", fixed=shapes.slim_box } },
+  "king trumpet, very lushes")
+
 -- wall lights;
 -- LEDs
 tg_nodes.register_wall_light("led_red", nil, "led, blinding", 7)
