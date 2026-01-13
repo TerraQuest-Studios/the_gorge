@@ -64,13 +64,14 @@ local shapes = {
 tg_nodes.shapes = shapes
 
 --- function for creating simple node definitions (without registering!)
---- def can accept "node_texture" for prefixing with texture "tg_nodes", "texture" for prefixing with own mod origin, or can
---- accept "raw_texture" for a specific texture string to use w/o automation. Otherwise uses own name for texture if no tiles
+--- def can accept "node_texture" for prefixing with texture "tg_nodes", "texture" for prefixing with own mod origin,
+--- or can accept "raw_texture" for a specific texture string to use w/o automation. Otherwise uses own
+--- name for texture if no tiles
 --- shape is what will be used for the node_box (if drawtype is nodebox or otherwise not specified)
 --- can be string to index `tg_nodes.shapes`, or a table, only if node_box type is fixed or otherwise unspecified
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
---- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
 function tg_nodes.create_node_def(name, def, desc)
     if type(name) ~= "string" then
         error("tg_nodes.register_node: given 'name' is not a string, got type '"..type(name).."'")
@@ -84,7 +85,11 @@ function tg_nodes.create_node_def(name, def, desc)
     end
     -- override description!
     if type(desc) == "string" then
-        def.definition = S(desc)
+        def.description = S(desc)
+    end
+    if def.desc then
+        def.description = def.desc
+        def.desc = nil
     end
     -- give folk the freedom to do their own tiles if provided!!!
     -- otherwise let's make some
@@ -163,7 +168,7 @@ end
 --- function for more simply registering nodes, see tg_nodes.create_node for more details
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
---- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
 function tg_nodes.register_node(name, def, desc)
     -- register!
     def, name = tg_nodes.create_node_def(name, def, desc)
@@ -176,7 +181,7 @@ end
 --- same as tg_nodes.register_node, but for registering more misc stuff!
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
---- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
 function tg_nodes.register_misc(name, def, desc)
     -- create definition table
     def = type(def) == "table" and def or {}
@@ -217,7 +222,7 @@ end
 --- same as tg_nodes.register_node but for plants
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
---- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
 function tg_nodes.register_plant(name, def, desc)
     -- create definition table
     def = def or {}
@@ -265,7 +270,7 @@ end
 --- same as tg_nodes.create_node_def but for wall lights!
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
---- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
 function tg_nodes.create_wall_light_def(name, def, desc, light)
     -- create definition table
     def = def or {}
@@ -302,7 +307,7 @@ end
 --- will be registered as "(name)_on"
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
---- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
 function tg_nodes.register_wall_light(name, def, desc, light)
     -- change name
     name = name.."_on"
@@ -317,7 +322,7 @@ end
 --- registers BOTH alit and unlit variants (on and off)
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
---- @param desc? string if provided, will override definition description, and will translate according to tg_nodes files
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
 function tg_nodes.register_wall_light_powered(name, def, desc, light)
     local defs = {} -- stored alit and unlit definitions
     -- create def
@@ -833,8 +838,10 @@ tg_nodes.register_node("dirt_slab", {sounds=tg_sound.dirt_defaults(), texture="d
 tg_nodes.register_node("cave_ground_dirt", {sounds=tg_sound.gravel_defaults()}, "cave ground, with dirt")
 -- concrete
 tg_nodes.register_node("concrete", nil, "concrete, no one is taking care of this.")
-tg_nodes.register_node("concrete_stair", {shape="stairs", texture="concrete"}, "concrete, no one is taking care of this.")
-tg_nodes.register_node("concrete_slab", {shape="slab", texture="concrete"}, "concrete, no one is taking care of this.")
+tg_nodes.register_node("concrete_stair", {shape="stairs", texture="concrete"},
+  "concrete, no one is taking care of this.")
+tg_nodes.register_node("concrete_slab", {shape="slab", texture="concrete"},
+  "concrete, no one is taking care of this.")
 tg_nodes.register_node("concrete_floor", nil, "concrete floor, almost like sand paper.")
 -- wooden crates
 -- these two nodes need more work
