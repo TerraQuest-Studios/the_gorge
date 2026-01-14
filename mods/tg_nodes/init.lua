@@ -540,54 +540,42 @@ function tg_nodes.register_paper(name, def, desc)
     tg_nodes.register_misc(name, def, desc)
 end
 
----will create multiple node shapes
----@param name any
----@param sounds any
-function tg_nodes.defNode(name, sounds)
-	local nodes_to_register = { name, name .. "_stairs", name .. "_slab", name .. "_panel", name .. "_rails" }
-	for index, value in ipairs(nodes_to_register) do
-		local param1 = "none"
-		local param2 = "none"
-		local shape = shapes.box
-		local sel_box = nil
-		if string.find(value, "stairs") or string.find(value, "slab") or string.find(value, "panel")
-				or string.find(value, "rails") then
-			param1 = "light"
-			param2 = "facedir"
-			if string.find(value, "stairs") then
-				shape = shapes.stairs
-			elseif string.find(value, "slab") then
-				shape = shapes.slab
-			elseif string.find(value, "panel") then
-				shape = shapes.panel
-			elseif string.find(value, "rails") then
-				shape = shapes.rails
-				sel_box = {
-					type = "fixed",
-					fixed = shapes.panel
-				}
-			end
-		end
-		local nodebox = {
-			type = "fixed",
-			fixed = shape
-		}
-		core.register_node("tg_nodes:" .. value, {
-			description = S(value),
-			groups = defualt_groups,
-			tiles = {
-				{
-					name = "tg_nodes_" .. name .. ".png",
-				},
-			},
-			sounds = tg_sound.node_defaults(sounds),
-			paramtype = param1,
-			paramtype2 = param2,
-			drawtype = "nodebox",
-			node_box = nodebox,
-			selection_box = sel_box or nodebox,
-		})
-	end
+--- registers node and different shape versions of it
+--- shapes; "stairs", "slab", "panel", "rails"
+--- @param name string name of node (does not require mod_origin to be specified)
+--- @param def table|nil node's definition, can be nil but not usually recommended
+function tg_nodes.register_and_shape_node(name, def)
+    local defs = {} -- store each def to here
+    -- register main node, reuse definition
+    def = tg_nodes.register_node(name, def)
+    defs.node = def
+    -- register our lil others
+    local rshapes = {"stairs", "slab", "panel", "rails"} -- register shapes
+    for _,shape in ipairs(rshapes) do
+        local ndef = table.copy(def) -- new definition
+        -- new name
+        ndef.name = ndef.name .. "_" ..shape
+        -- erase some stuff
+        ndef.drawtype = "nodebox" -- and force this too
+        ndef.node_box = nil
+        ndef.selection_box = nil
+        ndef.collision_box = nil
+        -- add new stuff
+        ndef.paramtype2 = "facedir" -- forced
+        ndef.shape = shape
+        -- add to groups
+        ndef.groups[shape] = 1
+        -- shape specific (have panel shaped selection box for rails)
+        if shape == "rails" then
+            ndef.selection_box = {type = "fixed", fixed = shapes.panel}
+        end
+        -- add tag for original node
+        ndef.node_original = def.name
+        -- register!
+        defs[shape] = tg_nodes.register_node_complex(ndef.name, ndef)
+    end
+    -- return table of definitions
+    return defs
 end
 
 -- nodes;
@@ -694,6 +682,7 @@ core.register_alias_force("tg_nodes:led_on_red", "tg_nodes:led_red_on") -- conve
 -- powered LEDs
 tg_nodes.register_wall_light_powered("led", nil, "led, blinding", 13)
 
-tg_nodes.defNode("steel_enclosure", tg_sound.metal_defaults())
-tg_nodes.defNode("concrete_tiled")
+-- nodes and shaped variants;
+tg_nodes.register_and_shape_node("steel_enclosure", {sounds=tg_sound.metal_defaults()})
+tg_nodes.register_and_shape_node("concrete_tiled")
 ------
