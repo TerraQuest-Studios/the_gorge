@@ -246,8 +246,7 @@ function tg_nodes.register_plant(name, def, desc)
     -- paramtype
     def.paramtype = "light" -- required
     -- create a definition
-    local shape -- will be filled out by create_node_def or will be box
-    def, name, shape = tg_nodes.create_node_def(name, def, desc)
+    def, name = tg_nodes.create_node_def(name, def, desc)
     -- add a group
     def.groups.flora = def.groups.flora or 1
     -- modify visual scale accordingly
