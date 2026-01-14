@@ -467,148 +467,36 @@ function tg_nodes.register_piping(name, def, desc)
     return core.registered_nodes[def.name]
 end
 
-core.register_node("tg_nodes:radio", {
-	description = S("Radio, nice tunes."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "radio.glb",
-	visual_scale = 10.0,
-	tiles = { "radio.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.tiny_box
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.tiny_box
-	},
-})
-
-core.register_node("tg_nodes:dial_pad", {
-	description = S("dial_pad, nice tunes."),
-	groups = defualt_groups,
-	paramtype = "light",
-	drawtype = "mesh",
-	mesh = "dial_pad.glb",
-	visual_scale = 10.0,
-	tiles = { "dial_pad.png" },
-	paramtype2 = "facedir",
-	-- use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.panel
-	},
-})
-
-core.register_node("tg_nodes:blood_slatter", {
-	description = S("blood_slatter, wow that is a lot of blood."),
-	groups = defualt_groups,
-	drawtype = "nodebox",
-	-- mesh = "dial_pad.glb",
-	visual_scale = 1,
-	-- tiles = {
-	-- 	name = "tg_nodes_misc.png^[sheet:8x8:3,0",
-	-- 	align_style = "world",
-	-- 	scale = 2,
-	-- },
-	tiles = {
-		{
-			name = "tg_nodes_misc.png^[sheet:8x8:5,0",
-			align_style = "world",
-			scale = 2,
-		},
-	},
-	paramtype = "light",
-	paramtype2 = "facedir",
-	use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.decal
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.decal
-	},
-})
-
-core.register_node("tg_nodes:blood_slatter_creature", {
-	description = S("blood_slatter_creature, looks dry."),
-	groups = defualt_groups,
-	drawtype = "nodebox",
-	-- mesh = "dial_pad.glb",
-	visual_scale = 1,
-	-- tiles = {
-	-- 	name = "tg_nodes_misc.png^[sheet:8x8:3,0",
-	-- 	align_style = "world",
-	-- 	scale = 2,
-	-- },
-	tiles = {
-		{
-			name = "tg_nodes_misc.png^[sheet:8x8:4,0",
-			align_style = "world",
-			scale = 2,
-		},
-	},
-	paramtype = "light",
-	paramtype2 = "facedir",
-	use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.decal
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.decal
-	},
-})
-
-core.register_node("tg_nodes:sludge_slatter", {
-	description = S("sludge_slatter, maybe i shouldn't touch that."),
-	groups = defualt_groups,
-	drawtype = "nodebox",
-	-- mesh = "dial_pad.glb",
-	visual_scale = 1,
-	-- tiles = {
-	-- 	name = "tg_nodes_misc.png^[sheet:8x8:3,0",
-	-- 	align_style = "world",
-	-- 	scale = 2,
-	-- },
-	tiles = {
-		{
-			name = "tg_nodes_misc.png^[sheet:8x8:3,0",
-			align_style = "world",
-			scale = 2,
-		},
-	},
-	paramtype = "light",
-	paramtype2 = "facedir",
-	use_texture_alpha = "clip",
-	-- sunlight_propagates = true,
-	-- walkable = false,
-	node_box = {
-		type = "fixed",
-		fixed = shapes.decal
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = shapes.decal
-	},
-})
+--- same as tg_nodes.register_node but for splatter nodes
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
+function tg_nodes.register_splatter(name, def, desc)
+    -- create def
+    def = def or {}
+    -- basics prior to creating nodedef
+    def.use_texture_alpha = def.use_texture_alpha or "clip"
+    def.shape = def.shape or "decal"
+    -- paramtype
+    def.paramtype = def.paramtype or "light"
+    def.paramtype2 = def.paramtype2 or "facedir"
+    -- create node def
+    def, name = tg_nodes.create_node_def(name, def, desc)
+    -- modify name
+    name = name.."_splatter"
+    -- modify tile
+    local tile = def.tiles and type(def.tiles[1]) == "table" and def.tiles[1]
+    -- align world, scale 2 defaults
+    if tile then
+        tile.align_style = tile.align_style or "world"
+        tile.scale = tile.scale or 2
+    end
+    -- add group
+    def.groups.splatter = def.groups.splatter or 1
+    -- register and return def!
+    core.register_node(name, def)
+    return core.registered_nodes[def.name]
+end
 
 ---will create multiple node shapes
 ---@param name any
@@ -702,6 +590,12 @@ tg_nodes.register_piping("tubes_down", {mesh="tubes_down.glb", shape="half_slab"
 -- these two nodes need more work
 tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
 tg_nodes.register_node("crate2", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
+-- misc accessories
+tg_nodes.register_node("radio", {paramtype="light", drawtype="mesh", mesh="radio.glb", visual_scale=10,
+  raw_texture="radio.png", paramtype2="facedir", shape="tiny_box"}, "Radio, nice tunes.")
+tg_nodes.register_node("dial_pad", {paramtype="light", drawtype="mesh", mesh="dial_pad.glb",
+  visual_scale=10, raw_texture="dial_pad.png", paramtype2="facedir", shape="panel"},
+  "dial pad, nice tunes")
 
 -- misc;
 -- lockers
@@ -741,6 +635,19 @@ tg_nodes.register_plant("fungus_small", {texture="plants.png^[sheet:16x16:9,1"},
 tg_nodes.register_plant("king_trumpet", {tiles={"king_trumpet.png"}, drawtype="mesh", mesh="king_trumpet.glb",
   visual_scale = 16, selection_box = { type="fixed", fixed=shapes.slim_box } },
   "king trumpet, very lushes")
+
+-- decals;
+-- splatters
+tg_nodes.register_splatter("blood", {texture="misc.png^[sheet:8x8:5,0"},
+  "blood_splatter, wow that is a lot of blood.")
+tg_nodes.register_splatter("blood_creature", {texture="misc.png^[sheet:8x8:4,0"},
+  "blood_splatter_creature, looks dry.")
+tg_nodes.register_splatter("sludge", {texture="misc.png^[sheet:8x8:3,0"},
+  "sludge_slatter, maybe I shouldn't touch that.")
+-- convert to better system;
+core.register_alias_force("tg_nodes:blood_slatter", "tg_nodes:blood_splatter")
+core.register_alias_force("tg_nodes:blood_slatter_creature", "tg_nodes:blood_creature_splatter")
+core.register_alias_force("tg_nodes:sludge_slatter", "tg_nodes:sludge_splatter")
 
 -- wall lights;
 -- LEDs
