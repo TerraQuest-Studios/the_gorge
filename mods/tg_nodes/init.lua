@@ -149,7 +149,7 @@ function tg_nodes.create_node_def(name, def, desc)
         -- set nodebox
         def.node_box = nodebox
     end
-    -- figure out selection_box!
+    -- figure out selection_box and collision_box!
     if shape and not def.node_box then
         if not def.selection_box then
             local selcbox = def.selection_box or {}
@@ -160,6 +160,18 @@ function tg_nodes.create_node_def(name, def, desc)
             end
             -- set selection_box
             def.selection_box = selcbox
+        end
+
+        if not def.collision_box then
+            local colbox = def.collision_box or {}
+            colbox.type = colbox.type or "fixed"
+            if colbox.type == "fixed" and not colbox.fixed then
+                -- we can actually reuse selection box lol, otherwise use shape
+                colbox.fixed = def.selection_box.type == "fixed" and def.selection_box.fixed or
+                  shape
+            end
+            -- set
+            def.collision_box = colbox
         end
     end
     -- sounds!
@@ -178,7 +190,30 @@ function tg_nodes.create_node_def(name, def, desc)
     return def, name, (shape or (def.node_box and def.node_box.fixed) )
 end
 
---- function for more simply registering nodes, see tg_nodes.create_node for more details
+--- same as `tg_nodes.create_node_def`, but sets basic paramtypes
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
+function tg_nodes.create_node_def_complex(name, def, desc)
+    -- create def
+    def = def or {}
+    -- prerequisites (become mesh if mesh specified)
+    def.drawtype = def.drawtype or def.mesh and "mesh" or nil
+    -- reform time
+    local shape -- a return result of the function, may as well return if we can
+    def, name, shape = tg_nodes.create_node_def(name, def, desc)
+    -- paramtypes
+    def.paramtype = def.paramtype or "light"
+    def.paramtype2 = def.paramtype2 or "facedir"
+    -- mesh specific
+    if def.drawtype == "mesh" then
+        def.visual_scale = def.visual_scale or 10
+    end
+    -- return reformed
+    return def, name, shape
+end
+
+--- function for more simply registering nodes, see tg_nodes.create_node_def for more details
 --- @param name string name of node to be registered (does not require mod_origin to be specified)
 --- @param def? table can be nil but not recommended, definition of node
 --- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
@@ -187,6 +222,19 @@ function tg_nodes.register_node(name, def, desc)
     def, name = tg_nodes.create_node_def(name, def, desc)
     core.register_node(name, def)
     -- returns definition
+    return core.registered_nodes[def.name]
+end
+
+--- same as tg_nodes.register_node, but for registering more uniquely shaped nodes,
+--- see tg_nodes.create_node_def_complex for more details
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
+function tg_nodes.register_node_complex(name, def, desc)
+    -- register!
+    def, name = tg_nodes.create_node_def_complex(name, def, desc)
+    core.register_node(name, def)
+    -- return def
     return core.registered_nodes[def.name]
 end
 
@@ -205,7 +253,7 @@ function tg_nodes.register_misc(name, def, desc)
     def.selectable = nil -- remove!
     -- create a definition
     local shape -- will be filled out by create_node_def or will be box
-    def, name, shape = tg_nodes.create_node_def(name, def, desc)
+    def, name, shape = tg_nodes.create_node_def_complex(name, def, desc)
     -- automate whether or not to be walkable
     if type(def.walkable) ~= "boolean" then
         -- will be true unless one of these are true
@@ -223,12 +271,8 @@ function tg_nodes.register_misc(name, def, desc)
     def.use_texture_alpha = def.use_texture_alpha or "clip"
     -- whether or not sun light goes through (default true)
     def.sunlight_propagates = def.sunlight_propagates ~= false
-    -- paramtypes
-    def.paramtype = def.paramtype or "light"
-    def.paramtype2 = def.paramtype2 or "facedir"
-    -- register!
+    -- register and return def!
     core.register_node(name, def)
-    -- returns definition
     return core.registered_nodes[def.name]
 end
 
@@ -415,25 +459,19 @@ function tg_nodes.register_cable(name, def, desc)
     def = def or {}
     -- basics prior to creating nodedef
     def.shape = def.shape or "panel"
-    def.drawtype = def.drawtype or "mesh"
-    def.mesh = def.drawtype == "mesh" and (def.mesh or "cable.glb") or nil
-    def.visual_scale = def.visual_scale or 10
+    -- if drawtype is mesh or unspecified, set mesh so that it can be utilized in register_node_complex
+    def.mesh = (def.drawtype == "mesh" or not def.drawtype) and (def.mesh or "cable.glb") or nil
     -- if true, player collides with (default false)
     def.walkable = def.walkable == true
     -- raw texture for tiling (if no tiles specified)
     def.raw_texture = (not def.tiles) and (def.raw_texture or "cables.png") or nil
-    -- paramtypes
-    def.paramtype = def.paramtype or "light"
-    def.paramtype2 = def.paramtype2 or "facedir"
     -- description
     def.description = (def.desc or def.description) or S("cables, I don't don't trust these.")
-    -- create node def
-    def, name = tg_nodes.create_node_def(name, def, desc)
-    -- add group
+    -- groups
+    def.groups = def.groups or {}
     def.groups.cable = def.groups.cable or 1
     -- register and return def!
-    core.register_node(name, def)
-    return core.registered_nodes[def.name]
+    return tg_nodes.register_node_complex(name, def)
 end
 
 --- same as tg_nodes.register_node but for tube (piping) nodes
@@ -445,25 +483,18 @@ function tg_nodes.register_piping(name, def, desc)
     def = def or {}
     -- basics prior to creating nodedef
     def.shape = def.shape or "slab"
-    def.drawtype = def.drawtype or "mesh"
-    def.mesh = def.drawtype == "mesh" and (def.mesh or "tubes.glb") or nil
-    def.visual_scale = def.visual_scale or 10
-    -- paramtypes
-    def.paramtype = def.paramtype or "light"
-    def.paramtype2 = def.paramtype2 or "facedir"
+    def.mesh = (def.drawtype == "mesh" or not def.drawtype) and (def.mesh or "tubes.glb") or nil
     -- raw texture for tiling (if no tiles specified)
     def.raw_texture = (not def.tiles) and (def.raw_texture or "tubes.png") or nil
     -- sound
     def.sounds = tg_sound.metal_defaults(def.sounds)
     -- description
     def.description = (def.desc or def.description) or S("@1, for transfering liquids.", name)
-    -- create node def
-    def, name = tg_nodes.create_node_def(name, def, desc)
-    -- add group
+    -- groups
+    def.groups = def.groups or {}
     def.groups.piping = def.groups.piping or 1
     -- register and return def!
-    core.register_node(name, def)
-    return core.registered_nodes[def.name]
+    return tg_nodes.register_node_complex(name, def)
 end
 
 --- same as tg_nodes.register_node but for splatter nodes
@@ -476,11 +507,8 @@ function tg_nodes.register_splatter(name, def, desc)
     -- basics prior to creating nodedef
     def.use_texture_alpha = def.use_texture_alpha or "clip"
     def.shape = def.shape or "decal"
-    -- paramtype
-    def.paramtype = def.paramtype or "light"
-    def.paramtype2 = def.paramtype2 or "facedir"
     -- create node def
-    def, name = tg_nodes.create_node_def(name, def, desc)
+    def, name = tg_nodes.create_node_def_complex(name, def, desc)
     -- modify name
     name = name.."_splatter"
     -- modify tile
@@ -495,6 +523,21 @@ function tg_nodes.register_splatter(name, def, desc)
     -- register and return def!
     core.register_node(name, def)
     return core.registered_nodes[def.name]
+end
+
+--- same as tg_nodes.register_misc, but for registering papery stuff!
+--- @param name string name of node to be registered (does not require mod_origin to be specified)
+--- @param def? table can be nil but not recommended, definition of node
+--- @param desc? string if provided, will override def description, and will translate according to tg_nodes files
+function tg_nodes.register_paper(name, def, desc)
+    -- create def
+    def = def or {}
+    -- prerequisites
+    def.shape = def.shape or "sheet"
+    desc = desc or "Paper"
+    def.sounds = tg_sound.paper_defaults(def.sounds)
+    -- register and return def!
+    tg_nodes.register_misc(name, def, desc)
 end
 
 ---will create multiple node shapes
@@ -573,9 +616,8 @@ tg_nodes.register_node("concrete_slab", {shape="slab", texture="concrete"},
 tg_nodes.register_node("concrete_floor", nil, "concrete floor, almost like sand paper.")
 
 -- misc base nodes
-tg_nodes.register_node("beam", {sounds=tg_sound.metal_defaults(), paramtype="light", paramtype2="facedir",
-  tiles={"beam.png"}, drawtype="mesh", mesh="beam.glb", visual_scale=10, use_texture_alpha = "clip",
-  shape="beam"}, "beam, cold to the touch.")
+tg_nodes.register_node_complex("beam", {sounds=tg_sound.metal_defaults(), tiles={"beam.png"},
+  mesh="beam.glb", use_texture_alpha = "clip", shape="beam"}, "beam, cold to the touch.")
 -- cables
 tg_nodes.register_cable("cable")
 tg_nodes.register_cable("cables", {mesh="cables.glb"})
@@ -590,11 +632,10 @@ tg_nodes.register_piping("tubes_down", {mesh="tubes_down.glb", shape="half_slab"
 tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
 tg_nodes.register_node("crate2", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
 -- misc accessories
-tg_nodes.register_node("radio", {paramtype="light", drawtype="mesh", mesh="radio.glb", visual_scale=10,
-  raw_texture="radio.png", paramtype2="facedir", shape="tiny_box"}, "Radio, nice tunes.")
-tg_nodes.register_node("dial_pad", {paramtype="light", drawtype="mesh", mesh="dial_pad.glb",
-  visual_scale=10, raw_texture="dial_pad.png", paramtype2="facedir", shape="panel"},
-  "dial pad, nice tunes")
+tg_nodes.register_node_complex("radio", {mesh="radio.glb",
+  raw_texture="radio.png", shape="tiny_box"}, "Radio, nice tunes.")
+tg_nodes.register_node_complex("dial_pad", {mesh="dial_pad.glb",
+  raw_texture="dial_pad.png", shape="panel"}, "dial pad, nice tunes")
 
 -- misc;
 -- lockers
@@ -602,19 +643,17 @@ tg_nodes.register_misc("locker", {shape="double", sounds=tg_sound.metal_defaults
   tiles={ {name="tg_nodes_misc.png^[sheet:16x16:3,0"}, {name="tg_nodes_misc.png^[sheet:16x8:0,0"} },
   }, "Locker, LET ME IN!!")
 -- paper
-tg_nodes.register_misc("paper", {shape="sheet", texture="misc.png^[sheet:16x16:0,3",
-  sounds=tg_sound.paper_defaults()}, "Paper")
-tg_nodes.register_misc("paper_1", {shape="sheet", texture="misc.png^[sheet:16x16:1,3",
-  sounds=tg_sound.paper_defaults()}, "Paper")
+tg_nodes.register_paper("paper", {texture="misc.png^[sheet:16x16:0,3"})
+tg_nodes.register_paper("paper_1", {texture="misc.png^[sheet:16x16:1,3"})
 -- sticky notes
-tg_nodes.register_misc("stick_notes", {shape="sheet", texture="misc.png^[sheet:16x16:0,4",
-  sounds=tg_sound.paper_defaults()}, "Sticky Note; one of these had gotta have something important on it.")
-tg_nodes.register_misc("stick_notes_1", {shape="sheet", texture="misc.png^[sheet:16x16:1,4",
-  sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
-tg_nodes.register_misc("stick_notes_2", {shape="sheet", texture="misc.png^[sheet:16x16:2,4",
-  sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
-tg_nodes.register_misc("stick_notes_3", {shape="sheet", texture="misc.png^[sheet:16x16:3,4",
-  sounds=tg_sound.paper_defaults()}, "Sticky Note, one of these had gotta have something important on it.")
+tg_nodes.register_paper("stick_notes", {texture="misc.png^[sheet:16x16:0,4"},
+  "Sticky Note; one of these had gotta have something important on it.")
+tg_nodes.register_paper("stick_notes_1", {texture="misc.png^[sheet:16x16:1,4"},
+  "Sticky Note; one of these had gotta have something important on it.")
+tg_nodes.register_paper("stick_notes_2", {texture="misc.png^[sheet:16x16:2,4"},
+  "Sticky Note; one of these had gotta have something important on it.")
+tg_nodes.register_paper("stick_notes_3", {texture="misc.png^[sheet:16x16:3,4"},
+  "Sticky Note; one of these had gotta have something important on it.")
 
 -- flora;
 -- plants
@@ -623,7 +662,7 @@ tg_nodes.register_plant("plant", {shape="slim_box", texture="plants.png^[sheet:1
 tg_nodes.register_plant("caladium", {texture="plants.png^[sheet:16x16:6,0"}, "Caladium, odd looking plants.")
 -- more complex def
 tg_nodes.register_plant("fern", { tiles={"fern.png"}, drawtype = "mesh", mesh = "fern.glb",
-  visual_scale = 16, selection_box = { type="fixed", fixed=shapes.slim_box } }, "fern, very lushes")
+  selection_box = { type="fixed", fixed=shapes.slim_box } }, "fern, very lushes")
 
 -- shrubs
 tg_nodes.register_plant("shrub", {shape="slim_box", texture="plants.png^[sheet:8x8:0,0"}, "Shrub, it' dry.")
@@ -632,7 +671,7 @@ tg_nodes.register_plant("fungus", {texture="plants.png^[sheet:16x16:9,0"}, "Fung
 tg_nodes.register_plant("fungus_small", {texture="plants.png^[sheet:16x16:9,1"}, "Fungus, a King trumpet.")
 -- more complex def
 tg_nodes.register_plant("king_trumpet", {tiles={"king_trumpet.png"}, drawtype="mesh", mesh="king_trumpet.glb",
-  visual_scale = 16, selection_box = { type="fixed", fixed=shapes.slim_box } },
+  selection_box = { type="fixed", fixed=shapes.slim_box } },
   "king trumpet, very lushes")
 
 -- decals;
