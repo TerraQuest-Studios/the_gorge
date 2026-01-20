@@ -1412,7 +1412,10 @@ for _, ename in ipairs({ -- for _, event name
     -- interactable indicators refreshed
     "player_hud_interactables",
     -- player looking at an interactable indicator
-    "player_looking_at_interactable"
+    "player_looking_at_interactable",
+    -- events correlated to player's interactable indicator message hug
+    "player_hud_message_typing",
+    "player_hud_message_complete"
 }) do
     -- name, automatic setup definition: add register function to `tg_interactions`
     -- return will be data of this event
@@ -1669,7 +1672,7 @@ tg_interactions.register_on_player_hud_interactables(function(plr, pdata, intera
     if focus and (focus.ent.object == found.ent.object and
       found.typeto_text == focus.typeto_text) then
         focus.icon = found.icon
-        return events.player_looking_at_interactable(plr, pdata, focus)
+        return events.player_looking_at_interactable(plr, pdata, focus, focus.icon)
     -- TIME TO CREATE A FOCUS !
     else
         destroy_focused_interactable_hud(pdata) -- time to start anew!
@@ -1687,13 +1690,14 @@ end)
 
 -- ran each step a player is pointing at an interactable (provided information from `pdata.focused_interactable` )
 -- this types out focus' text
-tg_interactions.register_on_player_looking_at_interactable(function(plr, pdata, focus)
+-- icon is data correlated to the interactable indicator icon
+tg_interactions.register_on_player_looking_at_interactable(function(plr, pdata, focus, icon)
     -- if no hud, create one!
     local hud = focus.msg_hud or create_msg_hud(pdata)
     -- update text pos
-    if not vector.equals(focus.mainpos, focus.icon.pos) then
-        focus.mainpos = focus.icon.pos:new() -- clone for next check
-        plr:hud_change(hud, "world_pos", focus.icon.pos:add(focus.addpos))
+    if not vector.equals(focus.mainpos, icon.pos) then
+        focus.mainpos = icon.pos:new() -- clone for next check
+        plr:hud_change(hud, "world_pos", icon.pos:add(focus.addpos))
     end
     -- return if complete or no hud (huh?)
     if focus.typing_complete or not hud then return end
@@ -1712,8 +1716,14 @@ tg_interactions.register_on_player_looking_at_interactable(function(plr, pdata, 
     -- complete?
     if textdex >= focus.typing_length then
         focus.typing_complete = true
+        -- run event of completion
+        -- provides 5th parameter for total message length
+        events.player_hud_message_complete(plr, pdata, focus, icon, focus.typing_length)
     end
     focus.typing_index = textdex
+    -- run typing event
+    -- textdex = current printing character index
+    events.player_hud_message_typing(plr, pdata, focus, icon, textdex)
 end)
 
 
