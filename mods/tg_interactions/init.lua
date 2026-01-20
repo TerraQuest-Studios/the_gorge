@@ -1390,205 +1390,332 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
     -- end,
   })
 
+-- create constant so that we're not constantly creating this
+local PWN = mod_name..":wrench" -- potential wrench name
 
-
-
-----------------
--- HUD POPUP
-----------------
-
----@class player_huds
----@field player_name string
----@field huds table
-
----@class all_huds
----@field player_huds table
-
----@type table
-local all_huds = {}
-
-tg_interactions["huds"] = all_huds
-
-local function getPlayerHuds(player_name)
-  ---@type player_huds
-  local players_hud
-  if all_huds ~= nil then
-    for _, value in ipairs(all_huds) do
-      if value.player_name == player_name then
-        players_hud = value
-      end
-    end
-  end
-  if players_hud == nil then
-    -- core.log("player's huds not found")
-    -- player does not have a hud
-    -- need to create the hud element if the player needs it
-    -- note that we cannot change the hud if there is no hud to start with
-    players_hud = { player_name = player_name, huds = {} }
-  end
-  if all_huds == nil then
-    all_huds = {}
-  end
-  table.insert(all_huds, players_hud)
-  return players_hud
+-- create events for player handling
+local events = {}
+for _, ename in ipairs({ -- for _, event name
+    -- basic
+    "joinplayer",
+    "leaveplayer",
+    -- on step
+    "stepplayer",
+    -- individual stats
+    -- player's pos changed
+    "player_change_pos",
+    -- player's lookdir changed
+    "player_change_lookdir",
+    -- either player's eye pos or lookdir changed
+    "player_change_eyepos_or_lookdir",
+    -- more specific
+    -- interactable indicators refreshed
+    "player_hud_interactables",
+    -- player looking at an interactable indicator
+    "player_looking_at_interactable"
+}) do
+    -- name, automatic setup definition: add register function to `tg_interactions`
+    -- return will be data of this event
+    events[ename] = events_api.create(ename, {global = tg_interactions})
 end
 
--- player hover over interactables
-local msgs = {} -- stores message text and entity
-core.register_globalstep(function(dtime)
-  local msg = {
-    type = "waypoint",
-    name = "",
-    precision = 0,
-    scale = { x = 80, y = 80 },
-    number = 0xFFFFFF,
-    z_index = -300,
-    alignment = 0,
-    -- text = "where are you? i do not see you..",
-    world_pos = { x = 0, y = 1, z = 0 },
-  }
 
-  local players = core.get_connected_players()
-  if #players < 0 then return end -- don't do anything below until there's a player
-  for _, player in ipairs(players) do
-    local pos = player:get_pos()
-    local eye_height = player:get_properties().eye_height
-    pos.y = pos.y + eye_height -- add eye height
-
-    -- core.log("so what is this: " .. dump(raycast_result))
-    --local hud_pos = nil
-    -- local popup_msg = player:hud_add(msg)
-
-    -- need to know to remove or change the current hud at all times
-    local pname = player:get_player_name()
-    local players_hud = getPlayerHuds(pname)
-    -- core.log("does the player have huds? "..dump(players_hud.huds))
-
-    for _, id in pairs(players_hud.huds) do
-      -- core.log("wtf is this:"..value)
-      player:hud_remove(id)
-    end
-    players_hud.huds = {}
-    --- in radius --
-    local within_radius = core.get_objects_inside_radius(pos, tg_interactions.popup_radius)
-    local interacble_indicator = {
-      -- type = "waypoint",
-      -- name = "o",
-      type = "image_waypoint",
-      text = "tg_nodes_misc.png^[sheet:16x16:0,5",
-      -- precision = 0,
-      scale = { x = 2, y = 2 },
-      number = 0xFFFFFF,
-      z_index = -300,
-      alignment = 0,
-      -- text = "where are you? i do not see you..",
-      world_pos = { x = 0, y = 1, z = 0 },
+-- array of data of players
+local pdatas = {}
+-- create data
+core.register_on_joinplayer(function(plr)
+    local pdata = {
+        obj = plr,
+        name = plr:get_player_name(),
+        time = 0, -- total time
+        ranged_icons = {} -- displaying icons in range
     }
-    local found_interactable -- whether or not there's an interactable entity in range
-    for _, obj in ipairs(within_radius) do
-      local ent = not core.is_player(obj) and obj:get_luaentity()
-      if ent then
-        -- if interactable
-        if ent._interactable == 1 then
-          --luacheck: ignore
-          if ent._popup_hidden == true
-              and player:get_wielded_item():get_name() ~= mod_name .. ":wrench" then
-          else
-            local obj_pos = obj:get_pos()
-            interacble_indicator["world_pos"] = obj_pos
-            -- use custom popup texture if exists, otherwise use default image
-            local popup_texture = ent._popup_texture
-            interacble_indicator["text"] = popup_texture or
-              "tg_nodes_misc.png^[sheet:16x16:0,5"
-            if ent._interactable_pos ~= nil then
-              local specific_pos = vector.from_string(ent._interactable_pos)
-              interacble_indicator["world_pos"] = vector.add(obj_pos, specific_pos)
-            end
-            local indicator = player:hud_add(interacble_indicator)
-            table.insert(players_hud.huds, indicator)
-            found_interactable = true -- there is, there is!!!
-            -- core.log("where am i? " .. dump())
-          end
-        end
-      end
-    end
-    --- in radius end ---
-    -- no point in continuing calculations, none nearby
-    if not found_interactable then return end
-
-    -- looking direction
-    local player_look_dir = player:get_look_dir()
-    local lookpos = pos:add(player_look_dir) -- forwards our view
-    -- what position we're looking at plus our wielded range
-    local lookatpos = player_look_dir:multiply(tg_main.reach - 1):add(lookpos)
-    local raycast_result = core.raycast(pos, lookatpos, true, false)
-    -- no raycast, no point!
-    if not raycast_result then return end
-    local ent -- declare
-    -- iterate through raycast and find an interactable
-    for thing in raycast_result do
-      -- an entity!
-      if thing and thing.type == "object" then
-        ent = thing.ref:get_luaentity()
-        -- found a proper entity with a popup message, break loop!
-        if ent and ent._popup_msg then break end
-      end
-    end
-    if not ent then return end -- couldn't find one
-
-    -- popup time
-    local hover_popup = ent._popup_msg
-    if hover_popup == nil then
-      hover_popup = "-"
-    end
-    local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
-
-    local msgdata = msgs[pname] or {} -- get or create a msgdata for player
-    msgs[pname] = msgdata -- set
-    -- reset gradually typed message
-    -- if different entity or popup message is different
-    if msgdata.ent ~= ent or msgdata.typeto ~= hover_popup then
-      msgdata.ent = ent -- used for identification purposes
-      msgdata.text = ""
-      msgdata.text_index = 1 -- index of character grabbed
-      msgdata.complete = nil -- to tell code to stop trying to type more of the popup message
-      msgdata.typeto = hover_popup -- what we're intending to type
-      msgdata.add_y = nil -- whether or not we should have the text pop up higher
-    end
-
-    -- not finished typing out popup message
-    if not msgdata.complete then
-      local textdex = msgdata.text_index -- what character we're going to grab
-      local char = hover_popup:sub(textdex, textdex) -- grabbing from position of message, e.g. :sub(1,1)
-      -- if newline found
-      if char == "\n" then
-        -- add 0.08 to y
-        msgdata.add_y = (msgdata.add_y or 0) + 0.08
-      end
-      -- growing the text
-      msgdata.text = msgdata.text..char
-      -- add 1 to get the next character next step
-      textdex = textdex + 1
-      msgdata.complete = textdex > #hover_popup -- becomes true if we've finished typing it out
-      msgdata.text_index = textdex -- update accordingly
-    end
-    -- if there is Y to be added, then add it!
-    if msgdata.add_y then hud_pos.y = hud_pos.y + msgdata.add_y end
-    -- waypoint message will be what the current developed text is
-    msg.name = msgdata.text
-    msg.world_pos = hud_pos
-    if ent._interactable_pos ~= nil then
-      local specefic_pos = vector.from_string(ent._interactable_pos)
-      msg.world_pos = vector.add(hud_pos, specefic_pos)
-    end
-    local new_hud = player:hud_add(msg)
-    table.insert(players_hud.huds, new_hud)
-    -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
-
-    -- core.log("who dis: " .. hover_popup)
-    -- core.log("what is the pos? "..dump(hud_pos))
-  end
+    pdatas[#pdatas + 1] = pdata
+    -- event
+    events.joinplayer(plr, pdata)
 end)
+-- remove data (index required for actually removing the data
+local function on_leaveplayer(plr, pdata, index)
+    -- event
+    events.leaveplayer(plr, pdata)
+    -- destroy
+    table.remove(pdatas, index)
+end
+-- player leaving
+core.register_on_leaveplayer(function(plr)
+    for ind,pdata in ipairs(pdatas) do
+        -- found! remove
+        if pdata.obj == plr then
+            return on_leaveplayer(plr, pdata, ind)
+        end
+    end
+end)
+-- server shutdown
+core.register_on_shutdown(function()
+    -- destroy ALL player datas
+    for ind,pdata in ipairs(pdatas) do
+        on_leaveplayer(pdata.obj, pdata, ind)
+    end
+end)
+
+-- hud options
+local huds = {
+    -- hud to appear over each interactable entity
+    indicator = {
+          type = "image_waypoint",
+          name = "interaction_indicator",
+          text = "tg_nodes_misc.png^[sheet:16x16:0,5",
+          scale = { x = 2, y = 2 },
+          number = 0xFFFFFF,
+          z_index = -300,
+          alignment = 0,
+          --world_pos = { x = 0, y = 1, z = 0 },
+    },
+    -- text that appears alongside an indicator if viewed upon directly
+    msg = {
+        type = "waypoint",
+        text = "messagetext", -- don't ask me how, but the engine is using `name` as the text field
+        precision = 0,
+        scale = { x = 80, y = 80 },
+        number = 0xFFFFFF,
+        z_index = -300,
+        alignment = 0,
+        --world_pos = { x = 0, y = 1, z = 0 },
+    }
+}
+
+-- run step for player interactables
+core.register_globalstep(function(dtime)
+    for _,pdata in ipairs(pdatas) do
+        -- update time
+        pdata.time = pdata.time + dtime
+        pdata.dtime = dtime
+        -- get player object for ease
+        local plr = pdata.obj
+        -- update certain values
+        -- position
+        local oldpos = pdata.pos
+        local pos = plr:get_pos()
+        pdata.pos = pos
+        -- properties
+        pdata.props = plr:get_properties()
+        -- lookdir
+        local oldlookdir = pdata.lookdir
+        pdata.lookdir = plr:get_look_dir()
+        -- get wielded item
+        pdata.wielded = plr:get_wielded_item()
+        -- explode into a table of stack (itemstack) and def (definition)
+        pdata.wielded = {stack = pdata.wielded, def = pdata.wielded:get_definition() or
+          -- create a "ghost" definition in failure
+          {name=pdata.wielded:get_name()} }
+        -- run event
+        events.stepplayer(plr, pdata)
+        -- run pos change event
+        if oldpos == nil or not vector.equals(pos, oldpos) then
+            -- create eyepos
+            pdata.eyepos = vector.new(pos.x, pos.y + pdata.props.eye_height, pos.z)
+            -- in event of a nil oldpos, default to current player's position
+            events.player_change_pos(plr, pdata, pos, oldpos or pos)
+        end
+        -- run lookdir change event
+        if oldlookdir == nil or not vector.equals(pdata.lookdir, oldlookdir) then
+            -- ditto to pos change
+            events.player_change_lookdir(plr, pdata, pdata.lookdir, oldlookdir or pdata.lookdir)
+        end
+    end
+end)
+
+-- clear any interactable indicator huds for a player's data
+local function clear_interactable_indicators(pdata, refresh)
+    if not pdata.hud_interactables then return end -- none to speak of
+    for _,data in ipairs(pdata.hud_interactables) do
+        pdata.obj:hud_remove(data.icon) -- icon is the hud return
+    end
+    -- remove data as a whole
+    pdata.hud_interactables = nil
+end
+
+-- ran each time a player's position changes
+-- handles creating interactable indicator HUDs (`pdata.hud_interactables`)
+tg_interactions.register_on_stepplayer(function(plr, pdata)
+    -- interactable entities within radius (will include player)
+    local within_radius = core.get_objects_inside_radius(pdata.pos, tg_interactions.popup_radius)
+    -- player will be 1, odd if there is 0 but let's check for that
+    if #within_radius < 2 then return clear_interactable_indicators(pdata) end
+    local finteractables = {} -- found interactables
+    for _, obj in ipairs(within_radius) do
+        local ent = not core.is_player(obj) and obj:get_luaentity()
+        if ent and ent._interactable then -- if interactable (was == 1)
+            -- add popup if holding wrench or if popup isn't hidden
+            if pdata.wielded.def.name == PWN or ent._popup_hidden ~= true then
+                finteractables[#finteractables + 1] = ent
+            end
+        end
+    end
+    -- do not continue if no interactables found
+    if #finteractables == 0 then return clear_interactable_indicators(pdata) end
+    -- refresh interactables
+    clear_interactable_indicators(pdata)
+    pdata.hud_interactables = {}
+    for _, ent in ipairs(finteractables) do -- ent is equal to found interactable entity
+        -- set up interactable data (entity, icon, position)
+        local idata = {ent = ent, icon = table.copy(huds.indicator), pos = ent.object:get_pos()}
+        local icon = idata.icon
+        icon.world_pos = idata.pos
+        -- permit custom popup textures or else default
+        icon.text = ent._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
+        -- permit custom addition to position
+        if ent._interactable_pos then
+            local addpos = vector.from_string(ent._interactable_pos)
+            if addpos then
+                idata.pos = idata.pos:add(addpos)
+            end
+        end
+        -- finalize
+        idata.icon.world_pos = idata.pos
+        idata.icon = plr:hud_add(idata.icon)
+        -- add to table
+        table.insert(pdata.hud_interactables, idata)
+    end
+    -- run event for interactables successfully finished drawing
+    events.player_hud_interactables(plr, pdata, pdata.hud_interactables)
+end)
+
+-- RUN `player_change_eyepos_or_lookdir` EVENT!
+-- ran each pos change
+tg_interactions.register_on_player_change_pos(function(plr, pdata, pos, oldpos)
+    events.player_change_eyepos_or_lookdir(plr, pdata, pdata.eyepos, pdata.lookdir)
+end)
+-- ran each lookdir change
+tg_interactions.register_on_player_change_lookdir(function(plr, pdata, lookdir, oldlookdir)
+    events.player_change_eyepos_or_lookdir(plr, pdata, pdata.eyepos, lookdir)
+end)
+
+-- ran each lookdir or eyepos (or pos) change
+-- handle creating lookpos and lookatpos
+tg_interactions.register_on_player_change_eyepos_or_lookdir(function(plr, pdata, eyepos, lookdir)
+    -- forwards our view
+    pdata.lookpos = eyepos:add(lookdir)
+    -- what position we're looking at plus reach range
+    pdata.lookatpos = lookdir:multiply(tg_main.reach - 1):add(pdata.lookpos)
+end)
+
+-- destroys the floating text above an interactor indicator
+-- if hudonly, destroys ONLY the hud, and not the information behind it
+local function destroy_focused_interactable_hud(pdata, hudonly)
+    local focus = pdata.focused_interactable
+    local hud = focus and focus.msg_hud
+    if not hud then return end
+    pdata.obj:hud_remove(hud)
+    if hudonly then
+        focus.msg_hud = nil
+        return
+    end
+    pdata.focused_interactable = nil
+end
+
+-- create a message hud for pointed indicator
+local function create_msg_hud(pdata)
+    local focus, plr = pdata.focused_interactable, pdata.obj
+    if not (focus and plr) then return end -- oops!
+    -- delete any previous hud
+    if focus.msg_hud then
+        destroy_focused_interactable_hud(pdata, true)
+    end
+    -- create our hud
+    local hud = table.copy(huds.msg)
+    hud.name = focus.typing_text
+    hud.world_pos = focus.mainpos:add(focus.addpos) -- adding!
+    -- add hud, return ID
+    focus.msg_hud = plr:hud_add(hud)
+    return focus.msg_hud
+end
+
+-- ran each eye position or lookdir change
+-- this runs pointed interactable indicator code
+tg_interactions.register_on_player_hud_interactables(function(plr, pdata, interactables)
+    local focus = pdata.focused_interactable -- for checking purposes
+    -- now to actually do code
+    local found -- declare
+    -- raycast time!
+    local ray = core.raycast(pdata.eyepos, pdata.lookatpos)
+    -- iterate through raycast and find an interactable
+    for thing in ray do
+        if thing and thing.type == "object" then
+            local ent = thing.ref:get_luaentity()
+            -- found a proper entity with a popup message
+            if ent and ent._popup_msg then
+                -- verify if it's an interactable we can look at
+                for _,interactable in ipairs(interactables) do
+                    -- we GOT EM!
+                    if ent.object == interactable.ent.object then
+                        found = {icon=interactable, ent = ent}
+                        break
+                    end
+                end
+                -- break loop through pointed thing upon finding a found
+                if found then break end
+            end
+        end
+    end
+    -- oh no we're not looking at anything
+    if not found then
+        return destroy_focused_interactable_hud(pdata, true) -- 2nd boolean says to only delete hud not info
+    end
+    -- now to do some stuff
+    local ent = found.ent
+    found.typeto_text = ent._popup_msg -- will NEVER be nil
+    -- we're still looking at this indicator (and text is the same!)
+    if focus and (focus.ent.object == found.ent.object and
+      found.typeto_text == focus.typeto_text) then
+        focus.icon = found.icon
+        return events.player_looking_at_interactable(plr, pdata, focus)
+    -- TIME TO CREATE A FOCUS !
+    else
+        destroy_focused_interactable_hud(pdata) -- time to start anew!
+        pdata.focused_interactable = found
+    end
+    found.typing_length = #found.typeto_text
+    found.typing_index = 1
+    found.typing_text = found.typeto_text:sub(1,1) -- START!
+    -- where our text will float from the popup icon's pos
+    found.addpos = vector.new(0, 0.12, 0) -- will be added to popup icon position (mainpos)
+    found.mainpos = found.icon.pos -- save to ourself for position checking
+    -- create hud
+    create_msg_hud(pdata)
+end)
+
+-- ran each step a player is pointing at an interactable (provided information from `pdata.focused_interactable` )
+-- this types out focus' text
+tg_interactions.register_on_player_looking_at_interactable(function(plr, pdata, focus)
+    -- if no hud, create one!
+    local hud = focus.msg_hud or create_msg_hud(pdata)
+    -- update text pos
+    if not vector.equals(focus.mainpos, focus.icon.pos) then
+        focus.mainpos = focus.icon.pos:new() -- clone for next check
+        plr:hud_change(hud, "world_pos", focus.icon.pos:add(focus.addpos))
+    end
+    -- return if complete or no hud (huh?)
+    if focus.typing_complete or not hud then return end
+    -- TYPING OUT TIME!
+    local textdex = focus.typing_index + 1 -- text (typing) index, yeah
+    -- grabbing from position of message, e.g. `:sub(1,1)`
+    local char = focus.typeto_text:sub(textdex, textdex)
+    -- newline found, update Y coord
+    if char == "\n" then
+        focus.addpos.y = focus.addpos.y + 0.08
+        plr:hud_change(hud, "world_pos", focus.icon.pos:add(focus.addpos))
+    end
+    -- growing the text
+    focus.typing_text = focus.typing_text..char
+    plr:hud_change(hud, "name", focus.typing_text) -- update!
+    -- complete?
+    if textdex >= focus.typing_length then
+        focus.typing_complete = true
+    end
+    focus.typing_index = textdex
+end)
+
 
 
 local all_objects = core.registered_entities
