@@ -1020,6 +1020,17 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
     end,
   })
 
+
+local function locker_stop_sound(self)
+    -- uses saved id to stop sound, remove
+    local id = self._sound_locker_open
+    if id then
+        core.sound_fade(id, 5, 0)
+        self._sound_locker_open = nil
+    end
+end
+
+-- when locker is clicked on
 local function locker_interact(self, clicker)
     local opening = self._holding_data
     -- if currently opening, then return!
@@ -1027,10 +1038,17 @@ local function locker_interact(self, clicker)
     -- create new opening
     -- holder (player), total time (0sec)
     self._holding_data = {holder = clicker, ttime = 0}
+    self._sound_locker_open = core.sound_play("tg_interactions_locker",
+    {
+        obj = self.object,
+        gain = 2,
+        pitch = math.random(85, 110)/100
+    })
 end
 
+-- when player stops opening the locker
 local function locker_interact_failed(self, clicker, holddata, ttime, reason)
-    core.log("held for "..ttime.." seconds, failed due to "..reason)
+    locker_stop_sound(self)
 end
 
 tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
@@ -1038,9 +1056,9 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
   {
     _popup_msg = "[ search locker ]",
     _holding_functionality = 1, -- quicker to type than true!
-    _holding_time = 1, -- in seconds
-    player_held_success = function(self, clicker, holddata, ttime)
-      core.log("held for "..holddata.ttime.." seconds, successfully opened")
+    _holding_time = 1.5, -- in seconds
+    player_held_success = function(self, clicker, holddata)
+      locker_stop_sound(self)
         tg_dialog.dialog(clicker,"..this locker is empty",true)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
@@ -1064,7 +1082,7 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
   {
     _popup_msg = "[ search locker ]",
     _holding_functionality = 1,
-    _holding_time = 1, -- in seconds
+    _holding_time = 1.5, -- in seconds
     player_held_success = function(self, clicker, ttime)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
@@ -1512,6 +1530,13 @@ local huds = {
         z_index = -300,
         alignment = 0,
         --world_pos = { x = 0, y = 1, z = 0 },
+    },
+    -- displays texture for 60 circle holding input visual
+    circle60 = {
+        type = "image_waypoint",
+        name = "circle60",
+        scale = {x=0.13, y=0.13},
+        z_index = -300,
     }
 }
 
@@ -1760,16 +1785,89 @@ tg_interactions.register_on_player_looking_at_interactable(function(plr, pdata, 
     events.player_hud_message_typing(plr, pdata, focus, icon, textdex)
 end)
 
+local function create_circle_slice(iter)
+    -- dir of 1 is top right, 2 is bottom right, 3 is bottom left, 4 is top left
+    local dir = iter > 15 and (iter > 45 and 4 or iter > 30 and 3 or iter > 15 and 2) or 1
+    local texmod = dir == 4 and "^[transformR90" or dir == 3 and "^[transformR180" or
+      dir == 2 and "^[transformR270" or ""
+    -- texture iteration (will be modulo 15, as there are 3 total texmods that can happen (with 4th being none) )
+    local texiter = iter % 15 -- ensures it will be 1 to 15
+    texiter = texiter == 0 and 15 or texiter -- will be 0 if reached 15, so correct it
+    -- return concatenated texture string and texture modifier
+    return table.concat({
+        "60circle-15-", -- base
+        tostring(texiter), -- texiter (tostring needs to be ran as it won't like the number)
+        ".png" -- image file
+    }), texmod
+end
+
+-- count must be 1 to 60
+-- 1 will be first lil dash, 60 will be complete circle
+local function create_circle_texture(count)
+    -- integer'ify
+    count = math.floor(count)
+    -- clamp between 1 and 60
+    count = math.max( math.min(count, 60), 1 )
+    -- create texture
+    local texture = {}
+    local texmod = ""
+    for i=1, count do
+        local slice, ltexmod = create_circle_slice(i) -- slice, localized texture modifier
+        -- we've gotta separate
+        if texmod ~= ltexmod then
+            -- close the previous!
+            if texmod ~= "" then
+                table.insert(texture, texmod)
+                table.insert(texture, ")")
+            end
+            -- start of a new era
+            if ltexmod ~= "" then
+                table.insert(texture, "^(")
+            end
+            texmod = ltexmod -- update!
+        end
+        -- add
+        table.insert(texture, slice)
+        -- connector (only add if not reached limit)
+        if i ~= count then
+            table.insert(texture, "^")
+        end
+    end
+    -- add closing parenthesis
+    if count > 15 then
+        table.insert(texture, texmod)
+        table.insert(texture, ")")
+    end
+    -- return concatenated texture
+    return table.concat(texture)
+end
+
+-- handles turning a percentage into relevant slice
+local function create_60circle_texture(perc)
+    perc = 60 * perc -- 60 slices
+    return create_circle_texture(perc)
+end
+
+-- remove that hud!
+local function remove_circle60_hud(pdata)
+    local circle60 = pdata.circle60
+    if not circle60 then return end
+    -- and refresh too!
+    pdata.obj:hud_remove(circle60)
+    pdata.circle60 = nil
+end
+
 -- ran each step a player is pointing at an interactable (provided information from `pdata.focused_interactable` )
 -- use register from event for ease of text length
 -- handles functionality with holding down
 events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
+    local circle60 = pdata.circle60 -- get circle60
     -- get entity
     local ent = focus.ent or icon.ent
     if not ent then return end
     -- not meant for this world
     if not ent.player_held_success then return end
-    -- alright, let's find our opener functionality
+    -- alright, let's find our holding data functionality
     local hdata = ent._holding_data
     if not hdata then return end -- oops! no one's home
     if hdata.holder ~= plr then return end -- not us! not us!
@@ -1781,18 +1879,35 @@ events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
             -- entity, player, self._holding_data, total time, reason
             ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped action")
         end
+        -- remove 60circle hud
+        if circle60 then
+            remove_circle60_hud(pdata)
+        end
         return
     end
     -- continue progress
     hdata.ttime = (hdata.ttime or 0) + pdata.dtime
     -- if reached required time (rqtime), run success function
     local rqtime = ent._holding_time or 1 -- default to 1 second on failure to retrieve
+    -- creating or updating 60 circle
+    local circle60tex = create_60circle_texture(hdata.ttime / rqtime)
+    if not circle60 then
+        circle60 = table.copy(huds.circle60)
+        circle60 = plr:hud_add(circle60)
+        pdata.circle60 = circle60
+    end
+    -- update text and position
+    plr:hud_change(circle60, "text", circle60tex)
+    plr:hud_change(circle60, "world_pos", icon.pos)--focus.mainpos:add(focus.addpos))
+    -- completed!
     if hdata.ttime > rqtime then
         ent.player_held_success(ent, plr, hdata)
         -- clear!
         if ent then
             ent._holding_data = nil
         end
+        -- delete circle60
+        remove_circle60_hud(pdata)
     -- run on step
     elseif ent.player_held_step then
         ent.player_held_step(ent, plr, hdata, pdata.dtime)
@@ -1801,13 +1916,19 @@ end)
 
 -- ran when player stops looking at interactable
 -- use register from event for ease of text length
--- handles deleting "holding_data" functionality above
+-- handles deleting "holding_data" functionality above, as well as removing 60circle
 events.player_looking_at_interactable_stopped.register(function(plr, pdata, focus, icon)
+    -- erase 60circle
+    local circle60 = pdata.circle60
+    if circle60 then
+        remove_circle60_hud(pdata)
+    end
+    -- main code
     local ent = focus.ent or icon.ent
     if not ent then return end
      -- not meant for this world
     if not ent.player_held_success then return end
-    -- alright, let's find our opener functionality
+    -- alright, let's find our holding data functionality
     local hdata = ent._holding_data
     if not hdata then return end -- oops! no one's home
     -- run entity function if exist
