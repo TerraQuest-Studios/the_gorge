@@ -1019,12 +1019,47 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
       core.chat_send_all("NOTE READS: \"took me a few attemps to get this note up here..\"")
     end,
   })
+
+
+local function locker_stop_sound(self)
+    -- uses saved id to stop sound, remove
+    local id = self._sound_locker_open
+    if id then
+        core.sound_fade(id, 5, 0)
+        self._sound_locker_open = nil
+    end
+end
+
+-- when locker is clicked on
+local function locker_interact(self, clicker)
+    local opening = self._holding_data
+    -- if currently opening, then return!
+    if opening then return end
+    -- create new opening
+    -- holder (player), total time (0sec)
+    self._holding_data = {holder = clicker, ttime = 0}
+    self._sound_locker_open = core.sound_play("tg_interactions_locker",
+    {
+        obj = self.object,
+        gain = 2,
+        pitch = math.random(85, 110)/100
+    })
+end
+
+-- when player stops opening the locker
+local function locker_interact_failed(self, clicker, holddata, ttime, reason)
+    locker_stop_sound(self)
+end
+
 tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
   {
     _popup_msg = "[ search locker ]",
-    on_rightclick = function(self, clicker)
-      tg_dialog.dialog(clicker,"..this locker is empty",true)
+    _holding_functionality = 1, -- quicker to type than true!
+    _holding_time = 1.5, -- in seconds
+    player_held_success = function(self, clicker, holddata)
+      locker_stop_sound(self)
+        tg_dialog.dialog(clicker,"..this locker is empty",true)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -1037,12 +1072,18 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
+    player_held_failed = locker_interact_failed,
+    -- interacting
+    on_rightclick = locker_interact,
+    on_punch = locker_interact
   })
 tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
   .centerd_box,
   {
     _popup_msg = "[ search locker ]",
-    on_rightclick = function(self, clicker)
+    _holding_functionality = 1,
+    _holding_time = 1.5, -- in seconds
+    player_held_success = function(self, clicker, ttime)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -1060,6 +1101,10 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
+    player_held_failed = locker_interact_failed,
+    -- interacting
+    on_rightclick = locker_interact,
+    on_punch = locker_interact
   })
 
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
@@ -1390,205 +1435,412 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
     -- end,
   })
 
+-- create constant so that we're not constantly creating this
+local PWN = mod_name..":wrench" -- potential wrench name
 
-
-
-----------------
--- HUD POPUP
-----------------
-
----@class player_huds
----@field player_name string
----@field huds table
-
----@class all_huds
----@field player_huds table
-
----@type table
-local all_huds = {}
-
-tg_interactions["huds"] = all_huds
-
-local function getPlayerHuds(player_name)
-  ---@type player_huds
-  local players_hud
-  if all_huds ~= nil then
-    for _, value in ipairs(all_huds) do
-      if value.player_name == player_name then
-        players_hud = value
-      end
-    end
-  end
-  if players_hud == nil then
-    -- core.log("player's huds not found")
-    -- player does not have a hud
-    -- need to create the hud element if the player needs it
-    -- note that we cannot change the hud if there is no hud to start with
-    players_hud = { player_name = player_name, huds = {} }
-  end
-  if all_huds == nil then
-    all_huds = {}
-  end
-  table.insert(all_huds, players_hud)
-  return players_hud
+-- create events for player handling
+local events = {}
+for _, ename in ipairs({ -- for _, event name
+    -- more specific
+    -- interactable indicators refreshed
+    "player_hud_interactables",
+    -- player looking at an interactable indicator
+    "player_looking_at_interactable",
+    "player_looking_at_interactable_stopped", -- for when player has stopped looking
+    -- events correlated to player's interactable indicator message hug
+    "player_hud_message_typing",
+    "player_hud_message_complete"
+}) do
+    -- name, automatic setup definition: add register function to `tg_interactions`
+    -- return will be data of this event
+    events[ename] = events_api.create(ename, {global = tg_interactions})
 end
 
--- player hover over interactables
-local msgs = {} -- stores message text and entity
-core.register_globalstep(function(dtime)
-  local msg = {
-    type = "waypoint",
-    name = "",
-    precision = 0,
-    scale = { x = 80, y = 80 },
-    number = 0xFFFFFF,
-    z_index = -300,
-    alignment = 0,
-    -- text = "where are you? i do not see you..",
-    world_pos = { x = 0, y = 1, z = 0 },
-  }
 
-  local players = core.get_connected_players()
-  if #players < 0 then return end -- don't do anything below until there's a player
-  for _, player in ipairs(players) do
-    local pos = player:get_pos()
-    local eye_height = player:get_properties().eye_height
-    pos.y = pos.y + eye_height -- add eye height
 
-    -- core.log("so what is this: " .. dump(raycast_result))
-    --local hud_pos = nil
-    -- local popup_msg = player:hud_add(msg)
-
-    -- need to know to remove or change the current hud at all times
-    local pname = player:get_player_name()
-    local players_hud = getPlayerHuds(pname)
-    -- core.log("does the player have huds? "..dump(players_hud.huds))
-
-    for _, id in pairs(players_hud.huds) do
-      -- core.log("wtf is this:"..value)
-      player:hud_remove(id)
-    end
-    players_hud.huds = {}
-    --- in radius --
-    local within_radius = core.get_objects_inside_radius(pos, tg_interactions.popup_radius)
-    local interacble_indicator = {
-      -- type = "waypoint",
-      -- name = "o",
-      type = "image_waypoint",
-      text = "tg_nodes_misc.png^[sheet:16x16:0,5",
-      -- precision = 0,
-      scale = { x = 2, y = 2 },
-      number = 0xFFFFFF,
-      z_index = -300,
-      alignment = 0,
-      -- text = "where are you? i do not see you..",
-      world_pos = { x = 0, y = 1, z = 0 },
+-- hud options
+local huds = {
+    -- hud to appear over each interactable entity
+    indicator = {
+          type = "image_waypoint",
+          name = "interaction_indicator",
+          text = "tg_nodes_misc.png^[sheet:16x16:0,5",
+          scale = { x = 2, y = 2 },
+          number = 0xFFFFFF,
+          z_index = -300,
+          alignment = 0,
+          --world_pos = { x = 0, y = 1, z = 0 },
+    },
+    -- text that appears alongside an indicator if viewed upon directly
+    msg = {
+        type = "waypoint",
+        text = "messagetext", -- don't ask me how, but the engine is using `name` as the text field
+        precision = 0,
+        scale = { x = 80, y = 80 },
+        number = 0xFFFFFF,
+        z_index = -300,
+        alignment = 0,
+        --world_pos = { x = 0, y = 1, z = 0 },
+    },
+    -- displays texture for 60 circle holding input visual
+    circle60 = {
+        type = "image_waypoint",
+        name = "circle60",
+        scale = {x=0.13, y=0.13},
+        z_index = -300,
     }
-    local found_interactable -- whether or not there's an interactable entity in range
+}
+
+-- clear any interactable indicator huds for a player's data
+local function clear_interactable_indicators(pdata, refresh)
+    if not pdata.hud_interactables then return end -- none to speak of
+    for _,data in ipairs(pdata.hud_interactables) do
+        pdata.obj:hud_remove(data.icon) -- icon is the hud return
+    end
+    -- remove data as a whole
+    pdata.hud_interactables = nil
+end
+
+-- ran each player globalstep
+-- handles creating interactable indicator HUDs (`pdata.hud_interactables`)
+tg_player.register_on_step(function(plr, pdata)
+    -- interactable entities within radius (will include player)
+    local within_radius = core.get_objects_inside_radius(pdata.pos, tg_interactions.popup_radius)
+    -- player will be 1, odd if there is 0 but let's check for that
+    if #within_radius < 2 then return clear_interactable_indicators(pdata) end
+    local finteractables = {} -- found interactables
     for _, obj in ipairs(within_radius) do
-      local ent = not core.is_player(obj) and obj:get_luaentity()
-      if ent then
-        -- if interactable
-        if ent._interactable == 1 then
-          --luacheck: ignore
-          if ent._popup_hidden == true
-              and player:get_wielded_item():get_name() ~= mod_name .. ":wrench" then
-          else
-            local obj_pos = obj:get_pos()
-            interacble_indicator["world_pos"] = obj_pos
-            -- use custom popup texture if exists, otherwise use default image
-            local popup_texture = ent._popup_texture
-            interacble_indicator["text"] = popup_texture or
-              "tg_nodes_misc.png^[sheet:16x16:0,5"
-            if ent._interactable_pos ~= nil then
-              local specific_pos = vector.from_string(ent._interactable_pos)
-              interacble_indicator["world_pos"] = vector.add(obj_pos, specific_pos)
+        local ent = not core.is_player(obj) and obj:get_luaentity()
+        if ent and ent._interactable then -- if interactable (was == 1)
+            -- add popup if holding wrench or if popup isn't hidden
+            if pdata.wielded.def.name == PWN or ent._popup_hidden ~= true then
+                finteractables[#finteractables + 1] = ent
             end
-            local indicator = player:hud_add(interacble_indicator)
-            table.insert(players_hud.huds, indicator)
-            found_interactable = true -- there is, there is!!!
-            -- core.log("where am i? " .. dump())
-          end
         end
-      end
     end
-    --- in radius end ---
-    -- no point in continuing calculations, none nearby
-    if not found_interactable then return end
-
-    -- looking direction
-    local player_look_dir = player:get_look_dir()
-    local lookpos = pos:add(player_look_dir) -- forwards our view
-    -- what position we're looking at plus our wielded range
-    local lookatpos = player_look_dir:multiply(tg_main.reach - 1):add(lookpos)
-    local raycast_result = core.raycast(pos, lookatpos, true, false)
-    -- no raycast, no point!
-    if not raycast_result then return end
-    local ent -- declare
-    -- iterate through raycast and find an interactable
-    for thing in raycast_result do
-      -- an entity!
-      if thing and thing.type == "object" then
-        ent = thing.ref:get_luaentity()
-        -- found a proper entity with a popup message, break loop!
-        if ent and ent._popup_msg then break end
-      end
+    -- do not continue if no interactables found
+    if #finteractables == 0 then return clear_interactable_indicators(pdata) end
+    -- refresh interactables
+    clear_interactable_indicators(pdata)
+    pdata.hud_interactables = {}
+    for _, ent in ipairs(finteractables) do -- ent is equal to found interactable entity
+        -- set up interactable data (entity, icon, position)
+        local idata = {ent = ent, icon = table.copy(huds.indicator), pos = ent.object:get_pos()}
+        local icon = idata.icon
+        icon.world_pos = idata.pos
+        -- permit custom popup textures or else default
+        icon.text = ent._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
+        -- permit custom addition to position
+        if ent._interactable_pos then
+            local addpos = vector.from_string(ent._interactable_pos)
+            if addpos then
+                idata.pos = idata.pos:add(addpos)
+            end
+        end
+        -- finalize
+        idata.icon.world_pos = idata.pos
+        idata.icon = plr:hud_add(idata.icon)
+        -- add to table
+        table.insert(pdata.hud_interactables, idata)
     end
-    if not ent then return end -- couldn't find one
-
-    -- popup time
-    local hover_popup = ent._popup_msg
-    if hover_popup == nil then
-      hover_popup = "-"
-    end
-    local hud_pos = vector.add(ent.object:get_pos(), vector.new(0, 0.1, 0))
-
-    local msgdata = msgs[pname] or {} -- get or create a msgdata for player
-    msgs[pname] = msgdata -- set
-    -- reset gradually typed message
-    -- if different entity or popup message is different
-    if msgdata.ent ~= ent or msgdata.typeto ~= hover_popup then
-      msgdata.ent = ent -- used for identification purposes
-      msgdata.text = ""
-      msgdata.text_index = 1 -- index of character grabbed
-      msgdata.complete = nil -- to tell code to stop trying to type more of the popup message
-      msgdata.typeto = hover_popup -- what we're intending to type
-      msgdata.add_y = nil -- whether or not we should have the text pop up higher
-    end
-
-    -- not finished typing out popup message
-    if not msgdata.complete then
-      local textdex = msgdata.text_index -- what character we're going to grab
-      local char = hover_popup:sub(textdex, textdex) -- grabbing from position of message, e.g. :sub(1,1)
-      -- if newline found
-      if char == "\n" then
-        -- add 0.08 to y
-        msgdata.add_y = (msgdata.add_y or 0) + 0.08
-      end
-      -- growing the text
-      msgdata.text = msgdata.text..char
-      -- add 1 to get the next character next step
-      textdex = textdex + 1
-      msgdata.complete = textdex > #hover_popup -- becomes true if we've finished typing it out
-      msgdata.text_index = textdex -- update accordingly
-    end
-    -- if there is Y to be added, then add it!
-    if msgdata.add_y then hud_pos.y = hud_pos.y + msgdata.add_y end
-    -- waypoint message will be what the current developed text is
-    msg.name = msgdata.text
-    msg.world_pos = hud_pos
-    if ent._interactable_pos ~= nil then
-      local specefic_pos = vector.from_string(ent._interactable_pos)
-      msg.world_pos = vector.add(hud_pos, specefic_pos)
-    end
-    local new_hud = player:hud_add(msg)
-    table.insert(players_hud.huds, new_hud)
-    -- tg_main.debug_particle(hud_pos, "#fff", 2, 0, 2)
-
-    -- core.log("who dis: " .. hover_popup)
-    -- core.log("what is the pos? "..dump(hud_pos))
-  end
+    -- run event for interactables successfully finished drawing
+    events.player_hud_interactables(plr, pdata, pdata.hud_interactables)
 end)
+
+-- ran each lookdir or eyepos (or pos) change
+-- handle creating lookpos and lookatpos
+tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, lookdir)
+    -- forwards our view
+    pdata.lookpos = eyepos:add(lookdir)
+    -- what position we're looking at plus reach range
+    pdata.lookatpos = lookdir:multiply(tg_main.reach - 1):add(pdata.lookpos)
+end)
+
+-- destroys the floating text above an interactor indicator
+-- if hudonly, destroys ONLY the hud, and not the information behind it
+local function destroy_focused_interactable_hud(pdata, hudonly)
+    local focus = pdata.focused_interactable
+    local plr = pdata.obj
+    if not (focus and plr) then return end -- nothing to do
+    local hud = focus.msg_hud
+    -- run event
+    events.player_looking_at_interactable_stopped(plr, pdata, focus, focus.icon)
+    -- run code
+    if hud then
+        plr:hud_remove(hud)
+        if hudonly then
+            focus.msg_hud = nil
+            return
+        end
+    end
+    pdata.focused_interactable = nil
+end
+
+-- create a message hud for pointed indicator
+local function create_msg_hud(pdata)
+    local focus, plr = pdata.focused_interactable, pdata.obj
+    if not (focus and plr) then return end -- oops!
+    -- delete any previous hud
+    if focus.msg_hud then
+        destroy_focused_interactable_hud(pdata, true)
+    end
+    -- create our hud
+    local hud = table.copy(huds.msg)
+    hud.name = focus.typing_text
+    hud.world_pos = focus.mainpos:add(focus.addpos) -- adding!
+    -- add hud, return ID
+    focus.msg_hud = plr:hud_add(hud)
+    return focus.msg_hud
+end
+
+-- ran each eye position or lookdir change
+-- this runs pointed interactable indicator code
+tg_interactions.register_on_player_hud_interactables(function(plr, pdata, interactables)
+    if not (pdata.eyepos and pdata.lookatpos) then return end -- shouldn't happen, but just in case it does...
+    local focus = pdata.focused_interactable -- for checking purposes
+    -- now to actually do code
+    local found -- declare
+    -- raycast time!
+    local ray = core.raycast(pdata.eyepos, pdata.lookatpos)
+    -- iterate through raycast and find an interactable
+    for thing in ray do
+        if thing and thing.type == "object" then
+            local ent = thing.ref:get_luaentity()
+            -- found a proper entity with a popup message
+            if ent and ent._popup_msg then
+                -- verify if it's an interactable we can look at
+                for _,interactable in ipairs(interactables) do
+                    -- we GOT EM!
+                    if ent.object == interactable.ent.object then
+                        found = {icon=interactable, ent = ent}
+                        break
+                    end
+                end
+                -- break loop through pointed thing upon finding a found
+                if found then break end
+            end
+        end
+    end
+    -- oh no we're not looking at anything
+    if not found then
+        return destroy_focused_interactable_hud(pdata, true) -- 2nd boolean says to only delete hud not info
+    end
+    -- now to do some stuff
+    local ent = found.ent
+    found.typeto_text = ent._popup_msg -- will NEVER be nil
+    -- we're still looking at this indicator (and text is the same!)
+    if focus and (focus.ent.object == found.ent.object and
+      found.typeto_text == focus.typeto_text) then
+        focus.icon = found.icon
+        return events.player_looking_at_interactable(plr, pdata, focus, focus.icon)
+    -- TIME TO CREATE A FOCUS !
+    else
+        destroy_focused_interactable_hud(pdata) -- time to start anew!
+        pdata.focused_interactable = found
+    end
+    found.typing_length = #found.typeto_text
+    found.typing_index = 1
+    found.typing_text = found.typeto_text:sub(1,1) -- START!
+    -- where our text will float from the popup icon's pos
+    found.addpos = vector.new(0, 0.12, 0) -- will be added to popup icon position (mainpos)
+    found.mainpos = found.icon.pos -- save to ourself for position checking
+    -- create hud
+    create_msg_hud(pdata)
+end)
+
+-- ran each step a player is pointing at an interactable (provided information from `pdata.focused_interactable` )
+-- this types out focus' text
+-- icon is data correlated to the interactable indicator icon
+tg_interactions.register_on_player_looking_at_interactable(function(plr, pdata, focus, icon)
+    -- if no hud, create one!
+    local hud = focus.msg_hud or create_msg_hud(pdata)
+    -- update text pos
+    if not vector.equals(focus.mainpos, icon.pos) then
+        focus.mainpos = icon.pos:new() -- clone for next check
+        plr:hud_change(hud, "world_pos", icon.pos:add(focus.addpos))
+    end
+    -- return if complete or no hud (huh?)
+    if focus.typing_complete or not hud then return end
+    -- TYPING OUT TIME!
+    local textdex = focus.typing_index + 1 -- text (typing) index, yeah
+    -- grabbing from position of message, e.g. `:sub(1,1)`
+    local char = focus.typeto_text:sub(textdex, textdex)
+    -- newline found, update Y coord
+    if char == "\n" then
+        focus.addpos.y = focus.addpos.y + 0.08
+        plr:hud_change(hud, "world_pos", focus.icon.pos:add(focus.addpos))
+    end
+    -- growing the text
+    focus.typing_text = focus.typing_text..char
+    plr:hud_change(hud, "name", focus.typing_text) -- update!
+    -- complete?
+    if textdex >= focus.typing_length then
+        focus.typing_complete = true
+        -- run event of completion
+        -- provides 5th parameter for total message length
+        events.player_hud_message_complete(plr, pdata, focus, icon, focus.typing_length)
+    end
+    focus.typing_index = textdex
+    -- run typing event
+    -- textdex = current printing character index
+    events.player_hud_message_typing(plr, pdata, focus, icon, textdex)
+end)
+
+local function create_circle_slice(iter)
+    -- dir of 1 is top right, 2 is bottom right, 3 is bottom left, 4 is top left
+    local dir = iter > 15 and (iter > 45 and 4 or iter > 30 and 3 or iter > 15 and 2) or 1
+    local texmod = dir == 4 and "^[transformR90" or dir == 3 and "^[transformR180" or
+      dir == 2 and "^[transformR270" or ""
+    -- texture iteration (will be modulo 15, as there are 3 total texmods that can happen (with 4th being none) )
+    local texiter = iter % 15 -- ensures it will be 1 to 15
+    texiter = texiter == 0 and 15 or texiter -- will be 0 if reached 15, so correct it
+    -- return concatenated texture string and texture modifier
+    return table.concat({
+        "60circle-15-", -- base
+        tostring(texiter), -- texiter (tostring needs to be ran as it won't like the number)
+        ".png" -- image file
+    }), texmod
+end
+
+-- count must be 1 to 60
+-- 1 will be first lil dash, 60 will be complete circle
+local function create_circle_texture(count)
+    -- integer'ify
+    count = math.floor(count)
+    -- clamp between 1 and 60
+    count = math.max( math.min(count, 60), 1 )
+    -- create texture
+    local texture = {}
+    local texmod = ""
+    for i=1, count do
+        local slice, ltexmod = create_circle_slice(i) -- slice, localized texture modifier
+        -- we've gotta separate
+        if texmod ~= ltexmod then
+            -- close the previous!
+            if texmod ~= "" then
+                table.insert(texture, texmod)
+                table.insert(texture, ")")
+            end
+            -- start of a new era
+            if ltexmod ~= "" then
+                table.insert(texture, "^(")
+            end
+            texmod = ltexmod -- update!
+        end
+        -- add
+        table.insert(texture, slice)
+        -- connector (only add if not reached limit)
+        if i ~= count then
+            table.insert(texture, "^")
+        end
+    end
+    -- add closing parenthesis
+    if count > 15 then
+        table.insert(texture, texmod)
+        table.insert(texture, ")")
+    end
+    -- return concatenated texture
+    return table.concat(texture)
+end
+
+-- handles turning a percentage into relevant slice
+local function create_60circle_texture(perc)
+    perc = 60 * perc -- 60 slices
+    return create_circle_texture(perc)
+end
+
+-- remove that hud!
+local function remove_circle60_hud(pdata)
+    local circle60 = pdata.circle60
+    if not circle60 then return end
+    -- and refresh too!
+    pdata.obj:hud_remove(circle60)
+    pdata.circle60 = nil
+end
+
+-- ran each step a player is pointing at an interactable (provided information from `pdata.focused_interactable` )
+-- use register from event for ease of text length
+-- handles functionality with holding down
+events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
+    local circle60 = pdata.circle60 -- get circle60
+    -- get entity
+    local ent = focus.ent or icon.ent
+    if not ent then return end
+    -- not meant for this world
+    if not ent.player_held_success then return end
+    -- alright, let's find our holding data functionality
+    local hdata = ent._holding_data
+    if not hdata then return end -- oops! no one's home
+    if hdata.holder ~= plr then return end -- not us! not us!
+    local ctrl = plr:get_player_control()
+    -- if not holding any mouse button, destroy holding data and return
+    if not (ctrl.RMB or ctrl.LMB) then
+        ent._holding_data = nil
+        if ent.player_held_failed then
+            -- entity, player, self._holding_data, total time, reason
+            ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped action")
+        end
+        -- remove 60circle hud
+        if circle60 then
+            remove_circle60_hud(pdata)
+        end
+        return
+    end
+    -- continue progress
+    hdata.ttime = (hdata.ttime or 0) + pdata.dtime
+    -- if reached required time (rqtime), run success function
+    local rqtime = ent._holding_time or 1 -- default to 1 second on failure to retrieve
+    -- creating or updating 60 circle
+    local circle60tex = create_60circle_texture(hdata.ttime / rqtime)
+    if not circle60 then
+        circle60 = table.copy(huds.circle60)
+        circle60 = plr:hud_add(circle60)
+        pdata.circle60 = circle60
+    end
+    -- update text and position
+    plr:hud_change(circle60, "text", circle60tex)
+    plr:hud_change(circle60, "world_pos", icon.pos)--focus.mainpos:add(focus.addpos))
+    -- completed!
+    if hdata.ttime > rqtime then
+        ent.player_held_success(ent, plr, hdata)
+        -- clear!
+        if ent then
+            ent._holding_data = nil
+        end
+        -- delete circle60
+        remove_circle60_hud(pdata)
+    -- run on step
+    elseif ent.player_held_step then
+        ent.player_held_step(ent, plr, hdata, pdata.dtime)
+    end
+end)
+
+-- ran when player stops looking at interactable
+-- use register from event for ease of text length
+-- handles deleting "holding_data" functionality above, as well as removing 60circle
+events.player_looking_at_interactable_stopped.register(function(plr, pdata, focus, icon)
+    -- erase 60circle
+    local circle60 = pdata.circle60
+    if circle60 then
+        remove_circle60_hud(pdata)
+    end
+    -- main code
+    local ent = focus.ent or icon.ent
+    if not ent then return end
+     -- not meant for this world
+    if not ent.player_held_success then return end
+    -- alright, let's find our holding data functionality
+    local hdata = ent._holding_data
+    if not hdata then return end -- oops! no one's home
+    -- run entity function if exist
+    if ent.player_held_failed then
+        -- entity, player, self._holding_data, total time, reason
+        ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped looking")
+    end
+    -- erase data
+    ent._holding_data = nil
+end)
+
 
 
 local all_objects = core.registered_entities
