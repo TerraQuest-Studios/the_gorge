@@ -255,26 +255,35 @@ end)
 -- ran each keypress step
 -- handle player crouching + proning (and gradual decreasing of eye height)
 events.keypress_step.register(function(plr, pdata, key, time)
-      if key ~= "sneak" then return end
-      -- sneaky time
-      local props = pdata.props -- player's properties
-      local eheight = props.eye_height
-      -- ideal eye height
-      local IEH = pdata.proning and tg_player.eye_height_prone or
-        tg_player.eye_height_sneak
-      -- slowly transitioning down
-      if eheight ~= IEH then
-          -- subtract by 0.06, clamp to IEH if below
-          props.eye_height = math.max(eheight - 0.06, IEH)
-          -- update player properties
-          plr:set_properties(props)
-      end
-      -- set boolean
-      if not pdata.sneaking then
-          -- sneak is active!
-          pdata.sneaking = true -- we're sneaking, we're sneaking!
-          pdata.getting_up = nil -- stop trying to get up
-      end
+    if key ~= "sneak" then return end -- not pressing sneak
+    if pdata.held_keys.jump then return end -- JUMPING, AAAH!!!
+    -- sneaky time
+    local props = pdata.props -- player's properties
+    local eheight = props.eye_height
+    -- ideal eye height
+    local IEH = pdata.proning and tg_player.eye_height_prone or
+      tg_player.eye_height_sneak
+    -- slowly transitioning down
+    if eheight ~= IEH then
+        -- subtract by 0.06, clamp to IEH if below
+        props.eye_height = math.max(eheight - 0.06, IEH)
+        -- update player properties
+        plr:set_properties(props)
+        -- gradually change proning player's look
+        if pdata.proning then
+            local clook = math.deg(plr:get_look_vertical()) -- current look
+            if clook > 10 then
+                clook = math.max(clook - 6, 10) -- clamp above 10
+                plr:set_look_vertical(math.rad(clook))
+            end
+        end
+    end
+    -- set boolean
+    if not pdata.sneaking then
+        -- sneak is active!
+        pdata.sneaking = true -- we're sneaking, we're sneaking!
+        pdata.getting_up = nil -- stop trying to get up
+    end
 end)
 
 -- ran each keypress start
@@ -289,14 +298,12 @@ events.keypress_start.register(function(plr, pdata, key)
     --core.log("do proning")
     -- proning is active!
     pdata.proning = true
-    plr:set_look_vertical(math.rad(10))
 end)
 
 -- ran each keypress end
 -- tell ourselves that we're getting up (stopped pressing sneak)
 events.keypress_end.register(function(plr, pdata, key, time)
-    if key ~= "sneak" then return end -- sneaking didn't end
-    if not pdata.sneaking then return end -- not sneaking
+    if key ~= "sneak" then return end -- not sneaking
     if pdata.getting_up then return end -- we're already getting up!
     -- we're getting up!
     pdata.getting_up = true
@@ -323,5 +330,15 @@ events.step.register(function(plr, pdata)
     -- completed!
     if eheight == IEH then
         pdata.getting_up = nil
+    end
+end)
+
+-- ran each keypress step
+-- can't crouch if we're jumping!
+events.keypress_step.register(function(plr, pdata, key, time)
+    if key == "jump" then
+        pdata.sneaking = nil
+        pdata.proning = nil
+        pdata.getting_up = true
     end
 end)
