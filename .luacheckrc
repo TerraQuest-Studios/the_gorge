@@ -16,6 +16,7 @@ globals = {
 	"hyperloop",
     "mtt",
     "mtzip",
+	"events_api",
 
     --mod provided
 }
