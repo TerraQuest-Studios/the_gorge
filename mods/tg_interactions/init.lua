@@ -1441,18 +1441,6 @@ local PWN = mod_name..":wrench" -- potential wrench name
 -- create events for player handling
 local events = {}
 for _, ename in ipairs({ -- for _, event name
-    -- basic
-    "joinplayer",
-    "leaveplayer",
-    -- on step
-    "stepplayer",
-    -- individual stats
-    -- player's pos changed
-    "player_change_pos",
-    -- player's lookdir changed
-    "player_change_lookdir",
-    -- either player's eye pos or lookdir changed
-    "player_change_eyepos_or_lookdir",
     -- more specific
     -- interactable indicators refreshed
     "player_hud_interactables",
@@ -1469,43 +1457,6 @@ for _, ename in ipairs({ -- for _, event name
 end
 
 
--- array of data of players
-local pdatas = {}
--- create data
-core.register_on_joinplayer(function(plr)
-    local pdata = {
-        obj = plr,
-        name = plr:get_player_name(),
-        time = 0, -- total time
-        ranged_icons = {} -- displaying icons in range
-    }
-    pdatas[#pdatas + 1] = pdata
-    -- event
-    events.joinplayer(plr, pdata)
-end)
--- remove data (index required for actually removing the data
-local function on_leaveplayer(plr, pdata, index)
-    -- event
-    events.leaveplayer(plr, pdata)
-    -- destroy
-    table.remove(pdatas, index)
-end
--- player leaving
-core.register_on_leaveplayer(function(plr)
-    for ind,pdata in ipairs(pdatas) do
-        -- found! remove
-        if pdata.obj == plr then
-            return on_leaveplayer(plr, pdata, ind)
-        end
-    end
-end)
--- server shutdown
-core.register_on_shutdown(function()
-    -- destroy ALL player datas
-    for ind,pdata in ipairs(pdatas) do
-        on_leaveplayer(pdata.obj, pdata, ind)
-    end
-end)
 
 -- hud options
 local huds = {
@@ -1540,47 +1491,6 @@ local huds = {
     }
 }
 
--- run step for player interactables
-core.register_globalstep(function(dtime)
-    for _,pdata in ipairs(pdatas) do
-        -- update time
-        pdata.time = pdata.time + dtime
-        pdata.dtime = dtime
-        -- get player object for ease
-        local plr = pdata.obj
-        -- update certain values
-        -- position
-        local oldpos = pdata.pos
-        local pos = plr:get_pos()
-        pdata.pos = pos
-        -- properties
-        pdata.props = plr:get_properties()
-        -- lookdir
-        local oldlookdir = pdata.lookdir
-        pdata.lookdir = plr:get_look_dir()
-        -- get wielded item
-        pdata.wielded = plr:get_wielded_item()
-        -- explode into a table of stack (itemstack) and def (definition)
-        pdata.wielded = {stack = pdata.wielded, def = pdata.wielded:get_definition() or
-          -- create a "ghost" definition in failure
-          {name=pdata.wielded:get_name()} }
-        -- run event
-        events.stepplayer(plr, pdata)
-        -- run pos change event
-        if oldpos == nil or not vector.equals(pos, oldpos) then
-            -- create eyepos
-            pdata.eyepos = vector.new(pos.x, pos.y + pdata.props.eye_height, pos.z)
-            -- in event of a nil oldpos, default to current player's position
-            events.player_change_pos(plr, pdata, pos, oldpos or pos)
-        end
-        -- run lookdir change event
-        if oldlookdir == nil or not vector.equals(pdata.lookdir, oldlookdir) then
-            -- ditto to pos change
-            events.player_change_lookdir(plr, pdata, pdata.lookdir, oldlookdir or pdata.lookdir)
-        end
-    end
-end)
-
 -- clear any interactable indicator huds for a player's data
 local function clear_interactable_indicators(pdata, refresh)
     if not pdata.hud_interactables then return end -- none to speak of
@@ -1591,9 +1501,9 @@ local function clear_interactable_indicators(pdata, refresh)
     pdata.hud_interactables = nil
 end
 
--- ran each time a player's position changes
+-- ran each player globalstep
 -- handles creating interactable indicator HUDs (`pdata.hud_interactables`)
-tg_interactions.register_on_stepplayer(function(plr, pdata)
+tg_player.register_on_step(function(plr, pdata)
     -- interactable entities within radius (will include player)
     local within_radius = core.get_objects_inside_radius(pdata.pos, tg_interactions.popup_radius)
     -- player will be 1, odd if there is 0 but let's check for that
@@ -1637,19 +1547,9 @@ tg_interactions.register_on_stepplayer(function(plr, pdata)
     events.player_hud_interactables(plr, pdata, pdata.hud_interactables)
 end)
 
--- RUN `player_change_eyepos_or_lookdir` EVENT!
--- ran each pos change
-tg_interactions.register_on_player_change_pos(function(plr, pdata, pos, oldpos)
-    events.player_change_eyepos_or_lookdir(plr, pdata, pdata.eyepos, pdata.lookdir)
-end)
--- ran each lookdir change
-tg_interactions.register_on_player_change_lookdir(function(plr, pdata, lookdir, oldlookdir)
-    events.player_change_eyepos_or_lookdir(plr, pdata, pdata.eyepos, lookdir)
-end)
-
 -- ran each lookdir or eyepos (or pos) change
 -- handle creating lookpos and lookatpos
-tg_interactions.register_on_player_change_eyepos_or_lookdir(function(plr, pdata, eyepos, lookdir)
+tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, lookdir)
     -- forwards our view
     pdata.lookpos = eyepos:add(lookdir)
     -- what position we're looking at plus reach range
