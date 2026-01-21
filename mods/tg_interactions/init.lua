@@ -1696,6 +1696,7 @@ end
 -- ran each eye position or lookdir change
 -- this runs pointed interactable indicator code
 tg_interactions.register_on_player_hud_interactables(function(plr, pdata, interactables)
+    if not (pdata.eyepos and pdata.lookatpos) then return end -- shouldn't happen, but just in case it does...
     local focus = pdata.focused_interactable -- for checking purposes
     -- now to actually do code
     local found -- declare
