@@ -265,15 +265,17 @@ events.keypress_step.register(function(plr, pdata, key, time)
       tg_player.eye_height_sneak
     -- slowly transitioning down
     if eheight ~= IEH then
-        -- subtract by 0.06, clamp to IEH if below
-        props.eye_height = math.max(eheight - 0.06, IEH)
+        local dtimeperc = pdata.dtime/0.025 -- delta time percentage (every 25ms)
+        -- subtract by 0.06 per dtimeperc, clamp to IEH if below
+        props.eye_height = math.max(eheight - (0.06*dtimeperc), IEH)
         -- update player properties
         plr:set_properties(props)
         -- gradually change proning player's look
         if pdata.proning then
             local clook = math.deg(plr:get_look_vertical()) -- current look
             if clook > 10 then
-                clook = math.max(clook - 6, 10) -- clamp above 10
+                -- subtract by 6 per dtimeperc
+                clook = math.max(clook - (8*dtimeperc), 10) -- clamp above 10
                 plr:set_look_vertical(math.rad(clook))
             end
         end
