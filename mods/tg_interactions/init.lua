@@ -1019,12 +1019,29 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
       core.chat_send_all("NOTE READS: \"took me a few attemps to get this note up here..\"")
     end,
   })
+
+local function locker_interact(self, clicker)
+    local opening = self._holding_data
+    -- if currently opening, then return!
+    if opening then return end
+    -- create new opening
+    -- holder (player), total time (0sec)
+    self._holding_data = {holder = clicker, ttime = 0}
+end
+
+local function locker_interact_failed(self, clicker, holddata, ttime, reason)
+    core.log("held for "..ttime.." seconds, failed due to "..reason)
+end
+
 tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
   {
     _popup_msg = "[ search locker ]",
-    on_rightclick = function(self, clicker)
-      tg_dialog.dialog(clicker,"..this locker is empty",true)
+    _holding_functionality = 1, -- quicker to type than true!
+    _holding_time = 1, -- in seconds
+    player_held_success = function(self, clicker, holddata, ttime)
+      core.log("held for "..holddata.ttime.." seconds, successfully opened")
+        tg_dialog.dialog(clicker,"..this locker is empty",true)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -1037,12 +1054,18 @@ tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
+    player_held_failed = locker_interact_failed,
+    -- interacting
+    on_rightclick = locker_interact,
+    on_punch = locker_interact
   })
 tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
   .centerd_box,
   {
     _popup_msg = "[ search locker ]",
-    on_rightclick = function(self, clicker)
+    _holding_functionality = 1,
+    _holding_time = 1, -- in seconds
+    player_held_success = function(self, clicker, ttime)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -1060,6 +1083,10 @@ tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
     end,
+    player_held_failed = locker_interact_failed,
+    -- interacting
+    on_rightclick = locker_interact,
+    on_punch = locker_interact
   })
 
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
@@ -1413,6 +1440,7 @@ for _, ename in ipairs({ -- for _, event name
     "player_hud_interactables",
     -- player looking at an interactable indicator
     "player_looking_at_interactable",
+    "player_looking_at_interactable_stopped", -- for when player has stopped looking
     -- events correlated to player's interactable indicator message hug
     "player_hud_message_typing",
     "player_hud_message_complete"
@@ -1607,12 +1635,18 @@ end)
 -- if hudonly, destroys ONLY the hud, and not the information behind it
 local function destroy_focused_interactable_hud(pdata, hudonly)
     local focus = pdata.focused_interactable
-    local hud = focus and focus.msg_hud
-    if not hud then return end
-    pdata.obj:hud_remove(hud)
-    if hudonly then
-        focus.msg_hud = nil
-        return
+    local plr = pdata.obj
+    if not (focus and plr) then return end -- nothing to do
+    local hud = focus.msg_hud
+    -- run event
+    events.player_looking_at_interactable_stopped(plr, pdata, focus, focus.icon)
+    -- run code
+    if hud then
+        plr:hud_remove(hud)
+        if hudonly then
+            focus.msg_hud = nil
+            return
+        end
     end
     pdata.focused_interactable = nil
 end
@@ -1724,6 +1758,65 @@ tg_interactions.register_on_player_looking_at_interactable(function(plr, pdata, 
     -- run typing event
     -- textdex = current printing character index
     events.player_hud_message_typing(plr, pdata, focus, icon, textdex)
+end)
+
+-- ran each step a player is pointing at an interactable (provided information from `pdata.focused_interactable` )
+-- use register from event for ease of text length
+-- handles functionality with holding down
+events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
+    -- get entity
+    local ent = focus.ent or icon.ent
+    if not ent then return end
+    -- not meant for this world
+    if not ent.player_held_success then return end
+    -- alright, let's find our opener functionality
+    local hdata = ent._holding_data
+    if not hdata then return end -- oops! no one's home
+    if hdata.holder ~= plr then return end -- not us! not us!
+    local ctrl = plr:get_player_control()
+    -- if not holding any mouse button, destroy holding data and return
+    if not (ctrl.RMB or ctrl.LMB) then
+        ent._holding_data = nil
+        if ent.player_held_failed then
+            -- entity, player, self._holding_data, total time, reason
+            ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped action")
+        end
+        return
+    end
+    -- continue progress
+    hdata.ttime = (hdata.ttime or 0) + pdata.dtime
+    -- if reached required time (rqtime), run success function
+    local rqtime = ent._holding_time or 1 -- default to 1 second on failure to retrieve
+    if hdata.ttime > rqtime then
+        ent.player_held_success(ent, plr, hdata)
+        -- clear!
+        if ent then
+            ent._holding_data = nil
+        end
+    -- run on step
+    elseif ent.player_held_step then
+        ent.player_held_step(ent, plr, hdata, pdata.dtime)
+    end
+end)
+
+-- ran when player stops looking at interactable
+-- use register from event for ease of text length
+-- handles deleting "holding_data" functionality above
+events.player_looking_at_interactable_stopped.register(function(plr, pdata, focus, icon)
+    local ent = focus.ent or icon.ent
+    if not ent then return end
+     -- not meant for this world
+    if not ent.player_held_success then return end
+    -- alright, let's find our opener functionality
+    local hdata = ent._holding_data
+    if not hdata then return end -- oops! no one's home
+    -- run entity function if exist
+    if ent.player_held_failed then
+        -- entity, player, self._holding_data, total time, reason
+        ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped looking")
+    end
+    -- erase data
+    ent._holding_data = nil
 end)
 
 
