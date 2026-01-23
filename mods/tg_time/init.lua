@@ -111,7 +111,7 @@ core.register_globalstep(function(dtime)
         if elapsed > data.delay then
             data.func(elapsed, unpack(data.args))
             -- remove from list
-            table.remove(funclist, ind)
+            table.remove(funclist.after, ind)
         end
     end
 end)
