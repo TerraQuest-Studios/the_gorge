@@ -52,7 +52,7 @@ funclist.after = {}
 function tg_time.get_time(since)
     return type(since) == "number" and activetime - since or activetime
 end
-    
+
 --- provides `gametime`, or a number subtracted by gametime if provided a `since`
 ---@param since? number if provided, subtracts gaetime by said number
 ---@return number
