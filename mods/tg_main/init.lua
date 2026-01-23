@@ -240,21 +240,18 @@ local all_objects = {
   },
 }
 
-core.register_on_newplayer(function(player)
-  -- [ ] TODO: should also take in to account the object's rotations
-
-  core.after(4, function()
-    for index, value in ipairs(all_objects) do
-      core.add_entity(value.pos, value.name)
+-- load list of objects
+tg_time.register_timed_from_worldcreate(4, function(time)
+    -- [ ] TODO: should also take in to account the object's rotations
+    for _, data in ipairs(all_objects) do
+        core.add_entity(data.pos, data.name)
     end
-
     -- local file, err = io.open("all_objects.json", "w")
     -- if err then return 0 end
     -- if file ~= nil then
     -- 	file:write(dump(jsoned))
     -- 	file:close()
     -- end
-  end)
 end)
 
 -- core.register_chatcommand(mod_name .. ":" .. "resetobjects", {
