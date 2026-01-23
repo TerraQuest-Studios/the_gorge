@@ -47,14 +47,6 @@ local all_objects = {
     }
   },
   {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = -4.9889998435974121,
-      y = 3,
-      z = -11.50100040435791,
-    }
-  },
-  {
     name = "tg_interactions:draggable_chair",
     pos = {
       x = 1.6128000020980835,
@@ -87,67 +79,11 @@ local all_objects = {
     }
   },
   {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = 5.5169997215271,
-      y = 3,
-      z = -13.955999374389648,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = 1.0369000434875488,
-      y = 3,
-      z = -13.399999618530273,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = 2.9938998222351074,
-      y = 3,
-      z = -11.566999435424805,
-    }
-  },
-  {
     name = "tg_interactions:draggable_power_core",
     pos = {
       x = 8.6449995040893555,
       y = 2,
       z = -46.169898986816406,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = 0.015000000596046448,
-      y = 3,
-      z = -17.503000259399414,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = 7.0309996604919434,
-      y = 3,
-      z = -17.200000762939453,
-    }
-  },
-  {
-    name = "tg_interactions:locker_suit",
-    pos = {
-      x = 4.0139999389648438,
-      y = 3,
-      z = -15.535000801086426,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = -1.0449999570846558,
-      y = 3,
-      z = -13.496000289916992,
     }
   },
   {
@@ -167,27 +103,11 @@ local all_objects = {
     }
   },
   {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = -7.4379997253417969,
-      y = 3,
-      z = -14.085000991821289,
-    }
-  },
-  {
     name = "tg_interactions:draggable_chair",
     pos = {
       x = -17.130901336669922,
       y = 2,
       z = -24.030200958251953,
-    }
-  },
-  {
-    name = "tg_interactions:locker_empty",
-    pos = {
-      x = -7.4769997596740723,
-      y = 3,
-      z = -15.991999626159668,
     }
   },
   {
