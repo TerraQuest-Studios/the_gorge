@@ -1020,93 +1020,6 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
     end,
   })
 
-
-local function locker_stop_sound(self)
-    -- uses saved id to stop sound, remove
-    local id = self._sound_locker_open
-    if id then
-        core.sound_fade(id, 5, 0)
-        self._sound_locker_open = nil
-    end
-end
-
--- when locker is clicked on
-local function locker_interact(self, clicker)
-    local opening = self._holding_data
-    -- if currently opening, then return!
-    if opening then return end
-    -- create new opening
-    -- holder (player), total time (0sec)
-    self._holding_data = {holder = clicker, ttime = 0}
-    self._sound_locker_open = core.sound_play("tg_interactions_locker",
-    {
-        obj = self.object,
-        gain = 2,
-        pitch = math.random(85, 110)/100
-    })
-end
-
--- when player stops opening the locker
-local function locker_interact_failed(self, clicker, holddata, ttime, reason)
-    locker_stop_sound(self)
-end
-
-tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
-  shapes.centerd_box,
-  {
-    _popup_msg = "[ search locker ]",
-    _holding_functionality = 1, -- quicker to type than true!
-    _holding_time = 1.5, -- in seconds
-    player_held_success = function(self, clicker, holddata)
-      locker_stop_sound(self)
-        tg_dialog.dialog(clicker,"..this locker is empty",true)
-      --[[ local playing_sound = ]]
-      core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,   -- default
-        fade = 100.0, -- default
-        pitch = 1.8,  -- 1.0, -- default
-      })
-      if tg_main.dev_mode == false then
-        self.object:remove()
-        --else
-        -- core.log("after first interaction this will be removed in normal gameplay.")
-      end
-    end,
-    player_held_failed = locker_interact_failed,
-    -- interacting
-    on_rightclick = locker_interact,
-    on_punch = locker_interact
-  })
-tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
-  .centerd_box,
-  {
-    _popup_msg = "[ search locker ]",
-    _holding_functionality = 1,
-    _holding_time = 1.5, -- in seconds
-    player_held_success = function(self, clicker, ttime)
-      --[[ local playing_sound = ]]
-      core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,   -- default
-        fade = 100.0, -- default
-        pitch = 1.8,  -- 1.0, -- default
-      })
-      tg_dialog.dialog(clicker,"hmm, a radiation suit. i should slip this on.",true)
-      core.after(3, function()
-        tg_cut_scenes.run(clicker, { [[slipping into suit]] })
-      end)
-      if tg_main.dev_mode == false then
-        core.log("some zipper sounds should also be added to this. maybe even some skin slapping, because why not.")
-        self.object:remove()
-        --else
-        -- core.log("after first interaction this will be removed in normal gameplay.")
-      end
-    end,
-    player_held_failed = locker_interact_failed,
-    -- interacting
-    on_rightclick = locker_interact,
-    on_punch = locker_interact
-  })
-
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
   {
     _popup_msg = "[ pickup tape ]",
@@ -1953,3 +1866,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     -- core.add_entity(raycast_result.above, fields["object"], [staticdata])
   end
 end)
+
+-- run other files
+local modpath = core.get_modpath(mod_name)
+dofile(modpath.."/lockers.lua")
