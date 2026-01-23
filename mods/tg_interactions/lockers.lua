@@ -53,7 +53,6 @@ local errtext = "tg_interacts lockers: had an issue with generating an area."
 
 -- run functionality for locker loot areas
 tg_time.register_timed_from_worldcreate(4, function(time)
-    core.log("GEN LOCKERS "..time)
     for _,area in ipairs(areas) do
         local poss = area.positions
         -- looks for "tg_nodes:locker" between start and end, grouped `true` returns list
@@ -292,3 +291,30 @@ function(self, clicker, holddata)
         -- core.log("after first interaction this will be removed in normal gameplay.")
     end
 end)
+
+-- compatibility
+
+-- replace these with the new system
+core.register_entity("tg_interactions:locker_empty", {
+    on_activate = function(self, staticdata, dtime_s)
+        local obj = self.object
+        if obj then
+            core.add_entity(obj:get_pos(), "tg_interactions:locker_interactable")
+        end
+        obj:remove()
+    end
+})
+-- ditto
+core.register_entity("tg_interactions:locker_suit", {
+    on_activate = function(self, staticdata, dtime_s)
+        local obj = self.object
+        if obj then
+            local unique = core.add_entity(obj:get_pos(), "tg_interactions:locker_interactable")
+            unique = unique and unique:get_luaentity()
+            if unique then
+                unique.locker_function_id = "radiation_suit"
+            end
+        end
+        obj:remove()
+    end
+})
