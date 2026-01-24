@@ -10,8 +10,14 @@ local interactions = {}
 -- have an ID
 -- func will be ran with the same parameters as `player_held_success`
 function tg_interactions.register_unique_locker_interaction(name, func)
-    if type(name) ~= "string" then return end -- error
-    if type(func) ~= "function" then return end -- error
+    if type(name) ~= "string" then
+        error("tg_interactions.register_unique_locker_interaction: 'name' is not string, got type '"..type(name)..
+          "'. Error with mod '"..core.get_current_modname().."'")
+    end
+    if type(func) ~= "function" then
+        error("tg_interactions.register_unique_locker_interaction: provided 'func' is not a function! Got type '"..
+          type(func).."'. Error with mod '"..core.get_current_modname().."'")
+    end
     -- check if in list
     if interactions[name] then
         error("tg_interactions.register_unique_interaction: a locker 'function_id' named '"..
@@ -27,11 +33,20 @@ local areas = {}
 -- permit registering areas for generation (requires locker nodes)
 function tg_interactions.register_locker_area(def)
     -- do errors
-    if type(def) ~= "table" then return end
+    if type(def) ~= "table" then
+        error("tg_interactions.register_locker_area: provided 'def' is not a table, got type '"..
+          type(def).."'. Error with mod '"..core.get_current_modname().."'")
+    end
     -- needs function for starting
-    if type(def.generate) ~= "function" then return end
+    if type(def.generate) ~= "function" then
+        error("tg_interactions.register_locker_area: 'generate' function non-existent or invalid type in def, got type '"..
+          type(def.generate).."'. Error with mod '"..core.get_current_modname().."'")
+    end
     -- require a table of positions
-    if type(def.positions) ~= "table" then return end
+    if type(def.positions) ~= "table" then
+        error("tg_interactions.register_locker_area: 'positions' table non-existent or invalid type in def, got type '"..
+          type(def.positions).."' Error with mod '"..core.get_current_modname().."'")
+    end
     -- ensure positions are vectors
     local startp, endp = def.positions.start, def.positions.finish
     startp = not vector.check(startp) and (type(startp) == "table" and
@@ -39,7 +54,15 @@ function tg_interactions.register_locker_area(def)
       or startp
     endp = not vector.check(endp) and (type(endp) == "table" and
       vector.new(endp.x or endp[1], endp.y or endp[2], endp.z or endp[3])) or endp
-    if not (startp and endp) then return end -- oops!
+    -- errors!
+    if not startp then
+        error("tg_interactions.register_locker_area: positions.start vector malformed or not specified. Error with mod '"..
+          core.get_current_modname().."'")
+    end
+    if not endp then
+        error("tg_interactions.register_locker_area: positions.finish vector malformed or not specified. Error with mod '"..
+          core.get_current_modname().."'")
+    end
     -- ensure fixed
     def.positions.start = startp
     def.positions.finish = endp
