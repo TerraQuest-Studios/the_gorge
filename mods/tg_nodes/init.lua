@@ -45,6 +45,7 @@ local shapes = {
 	tiny_box = { -0.2, -0.5, -0.2, 0.2, -0.1, 0.2 },  -- small box touching the ground (plant / anything small)
 	slim_box = { -0.2, -0.5, -0.2, 0.2, 0.3, 0.2 },   -- same as tiny_box, just taller
 	double = { -0.5, -0.5, -0.5, 0.5, 1.5, 0.5 },     -- a like a locker or pillar
+	locker = { -0.5, -0.5, -0.31, 0.5, 1.5, 0.5 },     -- a like a locker or pillar
 	beam = { -0.2, -0.5, -0.2, 0.2, 0.5, 0.2 },       -- same as tiny_box, just taller
 	sheet = { -0.5, -0.5, -0.5, 0.5, -0.49, 0.5 },
 	panel = { -0.5, -0.5, -0.5, 0.5, -0.4, 0.5 },
@@ -627,8 +628,8 @@ tg_nodes.register_node_complex("dial_pad", {mesh="dial_pad.glb",
 
 -- misc;
 -- lockers
-tg_nodes.register_misc("locker", {shape="double", sounds=tg_sound.metal_defaults(),
-  tiles={ {name="tg_nodes_misc.png^[sheet:16x16:3,0"}, {name="tg_nodes_misc.png^[sheet:16x8:0,0"} },
+tg_nodes.register_misc("locker", {mesh="locker.glb",shape="locker", sounds=tg_sound.metal_defaults(),
+  tiles={ {name="tg_nodes_locker.png"} },
   selectable=true}, "Locker, LET ME IN!!")
 -- paper
 tg_nodes.register_paper("paper", {texture="misc.png^[sheet:16x16:0,3"})
