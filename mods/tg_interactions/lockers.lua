@@ -1,7 +1,7 @@
 -- handle all locker functionality
 
 ------------------------------------------------------------
--- `function_id` and generating acceptable lockers
+-- `locker_function_id` mechanics
 ------------------------------------------------------------
 
 -- list of functions that'll be ran when a locker has a corresponding "function_id" on successful activation
@@ -26,6 +26,12 @@ function tg_interactions.register_unique_locker_interaction(name, func)
     -- add to list
     interactions[name] = func
 end
+
+
+
+------------------------------------------------------------
+-- generating acceptable lockers
+------------------------------------------------------------
 
 -- stores each registered locker area to this
 local areas = {}
@@ -72,7 +78,25 @@ function tg_interactions.register_locker_area(def)
     table.insert(areas, def)
 end
 
-local errtext = "tg_interacts lockers: had an issue with generating an area."
+-- clear decimal from vector
+local function CDFV(vect)
+    vect = core.pos_to_string(vect) -- turn into string
+    -- remove any decimal places (e.g. 5.49985198 --> 5)
+    -- %. looks for the dot, %d+ looks for a number and any more numbers after that
+    vect = vect:gsub("%.%d+","")
+    -- convert back into vector for usage
+    return vector.from_string(vect)
+end
+
+-- number from 0 to 3
+local function get_facing(param2)
+    return param2 == 3 and "+X" or param2 == 1 and "-X" or
+      param2 == 2 and "+Z" or param2 == 0 and "-Z" or
+      "unknown"
+end
+
+-- Register Timed From WorldCreate error text
+local RTFWC_errtext = "tg_interacts lockers: had an issue with generating an area."
 
 -- run functionality for locker loot areas
 tg_time.register_timed_from_worldcreate(4, function(time)
@@ -87,7 +111,7 @@ tg_time.register_timed_from_worldcreate(4, function(time)
         -- get and check length of found nodes
         local len = #nodesraw
         if len == 0 then
-            error(errtext.." Could not find any 'tg_nodes:locker' nodes in area between ( "..
+            error(RTFWC_errtext.." Could not find any 'tg_nodes:locker' nodes in area between ( "..
               core.pos_to_string(poss.start).." - "..core.pos_to_string(poss.finish)..
               " ). You should check if there are locker nodes in this area before registering a locker area"..
               ". Error with mod '"..area.mod_origin.."'")
@@ -98,10 +122,7 @@ tg_time.register_timed_from_worldcreate(4, function(time)
         for ind,pos in ipairs(nodesraw) do -- index, position
             local node = core.get_node(pos)
             -- shouldn't be unknown, but we'll add it anyways
-            local facing = (
-                node.param2 == 3 and "+X" or node.param2 == 1 and "-X" or
-                node.param2 == 2 and "+Z" or node.param2 == 0 and "-Z" or "unknown"
-            )
+            local facing = get_facing(node.param2)
             -- entity position (for indicator)
             -- ensure infront of locker (use param2)
             local epos = pos:add(
@@ -115,21 +136,13 @@ tg_time.register_timed_from_worldcreate(4, function(time)
               )
             )
             -- check for conflicts
-            -- create a checkpos due to annoying rounding
-            local checkpos = epos:add(
-              vector.new(
-                -- X
-                facing=="+X" and 0.4 or facing=="-X" and -0.4 or 0,
-                -- Y (subtract 1 from entity)
-                -1,
-                -- Z
-                facing=="+Z" and 0.4 or facing=="-Z" and -0.4 or 0
-              )
-            )
+            -- remove decimals due to annoying rounding
+            local checkpos = CDFV(epos)
             local conflict = core.get_node(checkpos)
+            checkpos.y = checkpos.y - 1 -- go down 1 first
             -- ok, bottom area is ALRIGHT (not a locker)
             if conflict.name ~= "tg_nodes:locker" then
-                -- check above
+                -- check above now
                 checkpos.y = checkpos.y + 1
                 conflict = core.get_node(epos)
                 conflict = core.registered_nodes[conflict.name] or {name="ignore"}
@@ -143,7 +156,7 @@ tg_time.register_timed_from_worldcreate(4, function(time)
         -- check length again after filtering
         len = #nodes
         if len == 0 then
-            error(errtext.." Could not find valid lockers in area between ( "..
+            error(RTFWC_errtext.." Could not find valid lockers in area between ( "..
               core.pos_to_string(poss.start).." - "..core.pos_to_string(poss.finish)..
               " ). Please check that the node's param2 is correctly rotated and that there is not a non-air "..
               "node blocking, so that entity indicators can be appropriately placed. "..
@@ -256,6 +269,44 @@ tg_interactions.register_interactable("locker_interactable", "none", "", "tg_nod
         for name, value in pairs(data) do
             self[name] = value
         end
+        -- check if we don't have a `locker_node`
+        -- compatibility with old locker indicators
+        core.after(1.5, function()
+            if self.locker_node then return end -- already got one
+            local pos = self.object and self.object:get_pos()
+            if not pos then return end -- huh how
+            local npos = pos:new() -- node pos, copy object pos for checking
+            npos.y = npos.y - 1 -- because pos:subtract(vector.new(0,-1,0)) made it GO UP INSTEAD!!!! ARRRHAUAURHG
+            -- declare
+            local node
+            -- look around to find our damn LOCKER
+            for _,addby in ipairs({
+                -- checking 4 directions, too lazy to specify a stoopid ungrateful vector
+                {x=1}, {x=-1}, {z=1}, {z=-1}
+            }) do
+                local nnpos = npos:new() -- new node pos
+                -- lookie lookie here
+                if addby.x then
+                    nnpos.x = nnpos.x + addby.x
+                end
+                -- lookie lookie there
+                if addby.z then
+                    nnpos.z = nnpos.z + addby.z
+                end
+                node = core.get_node(nnpos)
+                -- OH MY GOD WE FOUND IT
+                if node.name == "tg_nodes:locker" then
+                    npos = nnpos -- yeah we're FIXING THIS
+                    break
+                end
+            end
+            -- oh hell nah we gave you so many chances, GOODBYE!
+            if node.name ~= "tg_nodes:locker" then
+                return self.object:remove()
+            end
+            -- I'm not even going to try to calculate the proper face direction (if param2 is wrong)
+            self.locker_node = {pos = npos, node = node, epos = pos, face = get_facing(node.param2)}
+        end)
     end,
     -- saving
     get_staticdata = function(self)
