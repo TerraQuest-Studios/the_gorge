@@ -1360,6 +1360,10 @@ for _, ename in ipairs({ -- for _, event name
     -- player looking at an interactable indicator
     "player_looking_at_interactable",
     "player_looking_at_interactable_stopped", -- for when player has stopped looking
+    -- player interacting with a held interactable
+    "player_held_interactable_step",
+    "player_held_interactable_failed", -- didn't complete
+    "player_held_interactable_success", -- succeeded
     -- events correlated to player's interactable indicator message hug
     "player_hud_message_typing",
     "player_hud_message_complete"
@@ -1683,21 +1687,33 @@ events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
     if not ent.player_held_success then return end
     -- alright, let's find our holding data functionality
     local hdata = ent._holding_data
-    if not hdata then return end -- oops! no one's home
-    if hdata.holder ~= plr then return end -- not us! not us!
-    local ctrl = plr:get_player_control()
-    -- if not holding any mouse button, destroy holding data and return
-    if not (ctrl.RMB or ctrl.LMB) then
-        ent._holding_data = nil
-        if ent.player_held_failed then
-            -- entity, player, self._holding_data, total time, reason
-            ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped action")
-        end
-        -- remove 60circle hud
+    -- oops! no one's home
+    if not hdata then
+        -- somehow circle60 still present ...
         if circle60 then
-            remove_circle60_hud(pdata)
+            hdata = {holder = plr, ttime = pdata.dtime} -- create a fake holddata
+            -- entity (self), player, holding data, player's data, focus hud stuff, icon hud stuff, circle60 hud ID
+            -- elapsed, reason
+            events.player_held_interactable_failed(ent, plr, hdata, pdata, focus, icon, circle60, hdata.ttime, "revoked")
         end
         return
+    end
+    if hdata.holder ~= plr then return end -- not us! not us!
+    -- told to stop
+    if hdata.stop then
+        -- entity (self), player, holding data, player's data, focus hud stuff,
+        -- icon hud stuff, circle60 hud ID, elapsed, reason
+        return events.player_held_interactable_failed(ent, plr, hdata, pdata, focus,
+          icon, circle60, hdata.ttime, "stopped")
+    end
+    -- if not holding any mouse button, destroy holding data and return
+    local hkeys = pdata.held_keys
+    if not (hkeys.RMB or hkeys.LMB) then
+        ent._holding_data = nil
+        -- entity (self), player, holding data, player's data, focus hud stuff,
+        -- icon hud stuff, circle60 hud ID, elapsed, reason
+        return events.player_held_interactable_failed(ent, plr, hdata, pdata,
+          focus, icon, circle60, hdata.ttime, "stopped action")
     end
     -- continue progress
     hdata.ttime = (hdata.ttime or 0) + pdata.dtime
@@ -1715,16 +1731,14 @@ events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
     plr:hud_change(circle60, "world_pos", icon.pos)--focus.mainpos:add(focus.addpos))
     -- completed!
     if hdata.ttime > rqtime then
-        ent.player_held_success(ent, plr, hdata)
-        -- clear!
-        if ent then
-            ent._holding_data = nil
-        end
-        -- delete circle60
-        remove_circle60_hud(pdata)
+        -- etntiy, player, holding data, player's data, focus hud table, icon hud table,
+        -- circle60 hud ID, total seconds taken
+        events.player_held_interactable_success(ent, plr, hdata, pdata, focus, icon, circle60, hdata.ttime)
     -- run on step
-    elseif ent.player_held_step then
-        ent.player_held_step(ent, plr, hdata, pdata.dtime)
+    else
+        -- entity, player, hold data, player's data, focus hud table, icon hud table, circle60 hud ID,
+        -- elapsed time, needed time
+        events.player_held_interactable_step(ent, plr, hdata, pdata, focus, icon, circle60, hdata.ttime, rqtime)
     end
 end)
 
@@ -1745,13 +1759,44 @@ events.player_looking_at_interactable_stopped.register(function(plr, pdata, focu
     -- alright, let's find our holding data functionality
     local hdata = ent._holding_data
     if not hdata then return end -- oops! no one's home
-    -- run entity function if exist
+    -- run event
+    events.player_held_interactable_failed(ent, plr, hdata, pdata, focus, icon, pdata.circle60, hdata.ttime, "stopped looking")
+end)
+
+-- run potential functions for interactables
+
+-- no "start" as that should be handled by the entity's builtin functionality
+
+-- entity, player, holding data, player's data, focus hud table, icon hud table, circle60 hud ID,
+-- elapsed time, required time
+events.player_held_interactable_step.register(function(ent, plr, holddata, pdata, focus, icon, circle60, elapsed, rqtime)
+    if ent.player_held_step then
+        ent.player_held_step(ent, plr, holddata, pdata.dtime, rqtime)
+    end
+end)
+-- success and failed have less parameters
+-- elapsed becomes "ttime" - total time
+events.player_held_interactable_success.register(function(ent, plr, holddata, pdata, focus, icon, circle60, ttime)
+    ent.player_held_success(ent, plr, holddata)
+    -- clear!
+    if ent then
+        ent._holding_data = nil
+    end
+    -- delete circle60
+    remove_circle60_hud(pdata)
+end)
+-- reason is for how it failed
+events.player_held_interactable_failed.register(function(ent, plr, holddata, pdata, focus, icon, circle60, elapsed, reason)
     if ent.player_held_failed then
         -- entity, player, self._holding_data, total time, reason
-        ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped looking")
+        ent.player_held_failed(ent, plr, holddata, holddata.ttime, reason)
     end
-    -- erase data
+    -- remove entity's holddata
     ent._holding_data = nil
+    -- remove 60circle hud
+    if circle60 then
+        remove_circle60_hud(pdata)
+    end
 end)
 
 
