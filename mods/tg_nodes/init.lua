@@ -249,7 +249,7 @@ function tg_nodes.register_misc(name, def, desc)
     -- basics prior to registration
     -- whether or not to show a selection box!
     -- if dev_mode, always true, if not dev_mode, resort to specified boolean (default false)
-    local selectable = tg_main.dev_mode == false or def.selectable == true
+    local selectable = tg_main.dev_mode == true or def.selectable == true
     def.selectable = nil -- remove!
     -- create a definition
     local shape -- will be filled out by create_node_def or will be box
@@ -629,7 +629,7 @@ tg_nodes.register_node_complex("dial_pad", {mesh="dial_pad.glb",
 -- lockers
 tg_nodes.register_misc("locker", {shape="double", sounds=tg_sound.metal_defaults(),
   tiles={ {name="tg_nodes_misc.png^[sheet:16x16:3,0"}, {name="tg_nodes_misc.png^[sheet:16x8:0,0"} },
-  }, "Locker, LET ME IN!!")
+  selectable=true}, "Locker, LET ME IN!!")
 -- paper
 tg_nodes.register_paper("paper", {texture="misc.png^[sheet:16x16:0,3"})
 tg_nodes.register_paper("paper_1", {texture="misc.png^[sheet:16x16:1,3"})
