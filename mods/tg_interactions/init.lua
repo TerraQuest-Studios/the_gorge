@@ -1779,7 +1779,7 @@ end)
 
 -- entity, player, holding data, player's data, focus hud table, icon hud table, circle60 hud ID,
 -- elapsed time, required time
-events.player_held_interactable_step.register(function(ent, plr, holddata, pdata, focus, icon, 
+events.player_held_interactable_step.register(function(ent, plr, holddata, pdata, focus, icon,
   circle60, elapsed, rqtime)
     if ent.player_held_step then
         ent.player_held_step(ent, plr, holddata, pdata.dtime, elapsed, rqtime)
