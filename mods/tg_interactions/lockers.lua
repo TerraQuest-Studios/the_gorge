@@ -1,5 +1,7 @@
 -- handle all locker functionality
 
+local modname = core.get_current_modname()
+
 ------------------------------------------------------------
 -- creating events correlated to lockers
 ------------------------------------------------------------
@@ -30,16 +32,16 @@ local lockerfuncs = {}
 -- func will be ran with the same parameters as `player_held_success`
 function tg_interactions.register_unique_locker_check(name, func)
     if type(name) ~= "string" then
-        error("tg_interactions.register_unique_locker_check: 'name' is not string, got type '"..type(name)..
+        error(modname..".register_unique_locker_check: 'name' is not string, got type '"..type(name)..
           "'. Error with mod '"..core.get_current_modname().."'")
     end
     if type(func) ~= "function" then
-        error("tg_interactions.register_unique_locker_check: provided 'func' is not a function! Got type '"..
+        error(modname..".register_unique_locker_check: provided 'func' is not a function! Got type '"..
           type(func).."'. Error with mod '"..core.get_current_modname().."'")
     end
     -- check if in list
     if lockerfuncs[name] then
-        error("tg_interactions.register_unique_locker_check: a locker 'function_id' named '"..
+        error(modname..".register_unique_locker_check: a locker 'function_id' named '"..
           name.."' already exists! Error with mod '"..core.get_current_modname().."'")
     end
     -- add to list
@@ -59,17 +61,17 @@ local areas = {}
 function tg_interactions.register_locker_area(def)
     -- do errors
     if type(def) ~= "table" then
-        error("tg_interactions.register_locker_area: provided 'def' is not a table, got type '"..
+        error(modname..".register_locker_area: provided 'def' is not a table, got type '"..
           type(def).."'. Error with mod '"..core.get_current_modname().."'")
     end
     -- needs function for starting
     if type(def.generate) ~= "function" then
-        error("tg_interactions.register_locker_area: 'generate' function non-existent or invalid type in def, got type '"..
+        error(modname..".register_locker_area: 'generate' function non-existent or invalid type in def, got type '"..
           type(def.generate).."'. Error with mod '"..core.get_current_modname().."'")
     end
     -- require a table of positions
     if type(def.positions) ~= "table" then
-        error("tg_interactions.register_locker_area: 'positions' table non-existent or invalid type in def, got type '"..
+        error(modname..".register_locker_area: 'positions' table non-existent or invalid type in def, got type '"..
           type(def.positions).."' Error with mod '"..core.get_current_modname().."'")
     end
     -- ensure positions are vectors
@@ -81,11 +83,11 @@ function tg_interactions.register_locker_area(def)
       vector.new(endp.x or endp[1], endp.y or endp[2], endp.z or endp[3])) or endp
     -- errors!
     if not startp then
-        error("tg_interactions.register_locker_area: positions.start vector malformed or not specified. Error with mod '"..
+        error(modname..".register_locker_area: positions.start vector malformed or not specified. Error with mod '"..
           core.get_current_modname().."'")
     end
     if not endp then
-        error("tg_interactions.register_locker_area: positions.finish vector malformed or not specified. Error with mod '"..
+        error(modname..".register_locker_area: positions.finish vector malformed or not specified. Error with mod '"..
           core.get_current_modname().."'")
     end
     -- ensure fixed
@@ -115,7 +117,7 @@ local function get_facing(param2)
 end
 
 -- Register Timed From WorldCreate error text
-local RTFWC_errtext = "tg_interacts lockers: had an issue with generating an area."
+local RTFWC_errtext = modname.." lockers: had an issue with generating an area."
 
 -- run functionality for locker loot areas
 tg_time.register_timed_from_worldcreate(4, function(time)
