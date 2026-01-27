@@ -80,6 +80,10 @@ for _, ename in ipairs({ -- for _, event name
     "change_lookdir",
     -- either player's eye pos or lookdir changed
     "change_eyepos_or_lookdir",
+    -- additional player movements
+    "crouch_success",
+    "prone_success",
+    "gotup"
 }) do
     -- name, automatic setup definition: add register function to `tg_interactions`
     -- return will be data of this event
@@ -264,10 +268,11 @@ events.keypress_step.register(function(plr, pdata, key, time)
     local IEH = pdata.proning and tg_player.eye_height_prone or
       tg_player.eye_height_sneak
     -- slowly transitioning down
-    if eheight ~= IEH then
+    -- value will not stay the same, check difference
+    if math.abs(eheight - IEH) > 0.001 then
         local dtimeperc = pdata.dtime/0.025 -- delta time percentage (every 25ms)
-        -- subtract by 0.06 per dtimeperc, clamp to IEH if below
-        props.eye_height = math.max(eheight - (0.06*dtimeperc), IEH)
+        -- subtract by 0.045 per dtimeperc, clamp to IEH if below
+        props.eye_height = math.max(eheight - (0.045*dtimeperc), IEH)
         -- update player properties
         plr:set_properties(props)
         -- gradually change proning player's look
@@ -275,8 +280,17 @@ events.keypress_step.register(function(plr, pdata, key, time)
             local clook = math.deg(plr:get_look_vertical()) -- current look
             if clook > 10 then
                 -- subtract by 6 per dtimeperc
-                clook = math.max(clook - (8*dtimeperc), 10) -- clamp above 10
+                clook = math.max(clook - (6*dtimeperc), 10) -- clamp above 10
                 plr:set_look_vertical(math.rad(clook))
+            end
+        end
+        -- check if equal now
+        if props.eye_height == IEH then
+            -- run callbacks
+            if pdata.proning then
+                events.prone_success(plr, pdata)
+            else
+                events.crouch_success(plr, pdata)
             end
         end
     end
@@ -330,17 +344,43 @@ events.step.register(function(plr, pdata)
         plr:set_properties(props)
     end
     -- completed!
-    if eheight == IEH then
+    if props.eye_height == IEH then
         pdata.getting_up = nil
+        events.gotup(plr, pdata)
     end
 end)
 
 -- ran each keypress step
 -- can't crouch if we're jumping!
 events.keypress_step.register(function(plr, pdata, key, time)
-    if key == "jump" then
-        pdata.sneaking = nil
-        pdata.proning = nil
-        pdata.getting_up = true
+    if key ~= "jump" then return end
+    -- only do stuff if proning or sneaking
+    if not (pdata.sneaking or pdata.proning) then return end
+    pdata.sneaking = nil
+    pdata.proning = nil
+    pdata.getting_up = true
+end)
+
+-- proning extras
+events.prone_success.register(function(plr, pdata)
+    -- hitting floor sound
+    core.sound_play("tg_player_prone", {
+        obj = plr,
+        pitch = math.random(95,120)/100
+    })
+    -- remove footstep sound
+    local props = pdata.props
+    if not props then return end
+    props.makes_footstep_sound = false
+    plr:set_properties(props)
+end)
+
+-- fix footstep sound
+events.gotup.register(function(plr, pdata)
+    local props = pdata.props
+    if not props then return end
+    if not props.makes_footstep_sound then
+        props.makes_footstep_sound = true
+        plr:set_properties(props)
     end
 end)
