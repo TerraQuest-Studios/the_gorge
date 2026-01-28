@@ -3,9 +3,11 @@ local mod_path = core.get_modpath(mod_name)
 
 tg_player = {}
 
-tg_player.eye_height = 1.625
-tg_player.eye_height_sneak = 1.3
-tg_player.eye_height_prone = 0.5
+tg_player.eye_height = {
+    stand = 1.625, -- up and about
+    sneak = 1.3, -- crouching
+    prone = 0.5 -- on the ground like a worm
+}
 
 dofile(mod_path .. "/scripts" .. "/helpers.lua")
 
@@ -38,9 +40,6 @@ core.register_on_joinplayer(function(player, last_login)
 	-- if tg_main.dev_mode == true then
 	-- else
 	-- end
-	local props = player:get_properties()
-	props.textures = { "player.png" }
-	player:set_properties(props)
 	player:set_lighting({
 		shadows = { intensity = 0.33 },
 		volumetric_light = { strength = 0.45 },
@@ -93,15 +92,58 @@ end
 
 -- array of data of players
 local pdatas = {}
+
+-- player data related functions
+
+--- function for returning data on select player
+--- @param plr userdata select player
+function tg_player.get_data(plr)
+    -- iterate over player datas to compare object
+    for ind,pdata in ipairs(pdatas) do
+        -- permit the return of an index (ind) as 2nd return
+        -- (index should NOT be used by external mods nor stored due to dynamicism)
+        if plr == pdata.obj then
+            return pdata, ind
+        end
+    end
+end
+
+--- function for changing player's eye height alongside their collision box
+--- @param plr userdata player to change eye_height of
+--- @param eye_height number
+--- @param pdata? table data on current player, does not need to be specified
+function tg_player.change_eye_height(plr, eye_height, pdata)
+    if type(eye_height) ~= "number" then return end -- not a number
+    pdata = pdata or tg_player.get_data(plr)
+    if not pdata then return end -- how??? what did you do???
+    pdata.props = pdata.props or plr:get_properties()
+    local props = pdata.props
+    -- now to change collisionbox
+    local colbox = pdata.props.collisionbox
+    -- colbox[2] SHOULD BE 0, but JUST in case, let's use it here!
+    -- add bit of our head to the eye_height as well (0.145)
+    colbox[5] = colbox[2] + (eye_height + 0.145)
+    -- now set changed eye height
+    props.eye_height = eye_height
+    -- set
+    plr:set_properties(pdata.props)
+end
+
+
 -- create data
 core.register_on_joinplayer(function(plr)
     local pdata = {
         obj = plr,
+        props = plr:get_properties(),
         name = plr:get_player_name(),
         time = 0, -- total time
         held_keys = {} -- data on each key pressed (time)
     }
     pdatas[#pdatas + 1] = pdata
+    -- change texture
+    pdata.props.textures = { "player.png" }
+    -- changes eye height + sets properties
+    tg_player.change_eye_height(plr, tg_player.eye_height.stand, pdata)
     -- event
     events.join(plr, pdata)
 end)
@@ -114,11 +156,10 @@ local function on_leave(plr, pdata, index)
 end
 -- player leaving
 core.register_on_leaveplayer(function(plr)
-    for ind,pdata in ipairs(pdatas) do
-        -- found! remove
-        if pdata.obj == plr then
-            return on_leave(plr, pdata, ind)
-        end
+    local pdata, ind = tg_player.get_data(plr)
+    -- found! remove
+    if pdata then
+        return on_leave(plr, pdata, ind)
     end
 end)
 -- server shutdown
@@ -265,16 +306,16 @@ events.keypress_step.register(function(plr, pdata, key, time)
     local props = pdata.props -- player's properties
     local eheight = props.eye_height
     -- ideal eye height
-    local IEH = pdata.proning and tg_player.eye_height_prone or
-      tg_player.eye_height_sneak
+    local IEH = pdata.proning and tg_player.eye_height.prone or
+      tg_player.eye_height.sneak
     -- slowly transitioning down
     -- value will not stay the same, check difference
     if math.abs(eheight - IEH) > 0.001 then
         local dtimeperc = pdata.dtime/0.025 -- delta time percentage (every 25ms)
         -- subtract by 0.045 per dtimeperc, clamp to IEH if below
-        props.eye_height = math.max(eheight - (0.045*dtimeperc), IEH)
-        -- update player properties
-        plr:set_properties(props)
+        eheight = math.max(eheight - (0.045*dtimeperc), IEH)
+        -- update player eye_height + set properties
+        tg_player.change_eye_height(plr, eheight, pdata)
         -- gradually change proning player's look
         if pdata.proning then
             local clook = math.deg(plr:get_look_vertical()) -- current look
@@ -335,13 +376,13 @@ events.step.register(function(plr, pdata)
     local props = pdata.props -- player properties
     local eheight = props.eye_height
     -- ideal eye height
-    local IEH = tg_player.eye_height
+    local IEH = tg_player.eye_height.stand
     -- transitioning back up
     if eheight ~= IEH then
         -- add by 0.15, clamp to IEH if above
-        props.eye_height = math.min(eheight + 0.15, IEH)
+        eheight = math.min(eheight + 0.15, IEH)
         -- update player properties
-        plr:set_properties(props)
+        tg_player.change_eye_height(plr, eheight, pdata)
     end
     -- completed!
     if props.eye_height == IEH then
