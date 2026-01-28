@@ -384,3 +384,67 @@ events.gotup.register(function(plr, pdata)
         plr:set_properties(props)
     end
 end)
+
+-- prone movement sounds
+-- create pronesound
+events.prone_success.register(function(plr, pdata)
+    pdata.prone_sound = {poscheck = 0} -- start at 0 to prevent sound until moving
+end)
+
+-- update poscheck
+events.change_pos.register(function(plr, pdata, pos, oldpos)
+    local pronesound = pdata.prone_sound
+    if not pronesound then return end -- no point!
+    if pos.y ~= oldpos.y then return end -- falling or jumping!
+    -- reset pos check
+    pronesound.poscheck = 0.2
+end)
+
+-- play or stop proning sounds
+events.step.register(function(plr, pdata)
+    local pronesound = pdata.prone_sound
+    local sound = pronesound and pronesound.id -- return of `core.sound_play`
+    -- no longer proning
+    if not pdata.proning then
+        if sound then
+            core.sound_fade(sound, 2, 0)
+            pdata.prone_sound = nil -- erase
+        end
+        return
+    end
+    if not pronesound then return end -- can't do anything, man!
+    -- don't play any sound if poscheck is 0
+    if pronesound.poscheck == 0 then
+        if sound then
+            core.sound_fade(sound, 0.4, 0)
+            --pdata.prone_sound = nil -- erase
+        end
+        return
+    end
+    -- get dtime, total time, length of sound
+    local dtime = pdata.dtime or 0
+    local ttime = pdata.time
+    local len = pdata.playlength or 0.8
+    -- and count down
+    -- clamp above 0
+    pronesound.poscheck = math.max(pronesound.poscheck - dtime, 0)
+    -- check if should play sound again
+    local lastplayed = pronesound.playedat
+    -- no playedat means haven't played, or time since is greater than playlength
+    if not lastplayed or (ttime - lastplayed) > len then
+        if sound then
+            core.sound_fade(sound, 2, 0)
+        end
+        local pitch = math.random(60, 110)/100
+        pronesound.id = core.sound_play("tg_player_prone_move", {
+            --obj = plr,
+            pos = pdata.pos,
+            pitch = pitch,
+            gain = math.random(5,10)/100
+        })
+        -- set timing
+        pronesound.playedat = ttime
+        -- expected length divided by pitch
+        pronesound.playlength = 1.6/pitch
+    end
+end)
