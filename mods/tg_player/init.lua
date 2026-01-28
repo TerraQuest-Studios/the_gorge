@@ -302,6 +302,7 @@ end)
 events.keypress_step.register(function(plr, pdata, key, time)
     if key ~= "sneak" then return end -- not pressing sneak
     if pdata.held_keys.jump then return end -- JUMPING, AAAH!!!
+    if pdata.getting_up then return end -- can't crouch if getting up
     -- sneaky time
     local props = pdata.props -- player's properties
     local eheight = props.eye_height
@@ -373,6 +374,11 @@ end)
 -- handle getting up from sneaking/proning
 events.step.register(function(plr, pdata)
     if not pdata.getting_up then return end
+    -- probably not healthy running this check each step player is trying to get up, but eh
+    -- add 1.5 +Y to check node above
+    local anode = core.get_node(pdata.pos:add(vector.new(0, 1.5, 0) ) )
+    anode = core.registered_nodes[anode.name]
+    if anode and anode.walkable then return end -- can't crouch up from here
     local props = pdata.props -- player properties
     local eheight = props.eye_height
     -- ideal eye height
@@ -397,6 +403,11 @@ events.keypress_step.register(function(plr, pdata, key, time)
     if key ~= "jump" then return end
     -- only do stuff if proning or sneaking
     if not (pdata.sneaking or pdata.proning) then return end
+    -- probably not healthy checking this each jump step, but eh
+    -- add 1.5 +Y to check node above
+    local anode = core.get_node(pdata.pos:add(vector.new(0, 1.5, 0) ) )
+    anode = core.registered_nodes[anode.name]
+    if anode and anode.walkable then return end -- can't crouch up from here
     pdata.sneaking = nil
     pdata.proning = nil
     pdata.getting_up = true
