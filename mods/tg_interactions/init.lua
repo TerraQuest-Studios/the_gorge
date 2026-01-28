@@ -1020,93 +1020,6 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
     end,
   })
 
-
-local function locker_stop_sound(self)
-    -- uses saved id to stop sound, remove
-    local id = self._sound_locker_open
-    if id then
-        core.sound_fade(id, 5, 0)
-        self._sound_locker_open = nil
-    end
-end
-
--- when locker is clicked on
-local function locker_interact(self, clicker)
-    local opening = self._holding_data
-    -- if currently opening, then return!
-    if opening then return end
-    -- create new opening
-    -- holder (player), total time (0sec)
-    self._holding_data = {holder = clicker, ttime = 0}
-    self._sound_locker_open = core.sound_play("tg_interactions_locker",
-    {
-        obj = self.object,
-        gain = 2,
-        pitch = math.random(85, 110)/100
-    })
-end
-
--- when player stops opening the locker
-local function locker_interact_failed(self, clicker, holddata, ttime, reason)
-    locker_stop_sound(self)
-end
-
-tg_interactions.register_interactable("locker_empty", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
-  shapes.centerd_box,
-  {
-    _popup_msg = "[ search locker ]",
-    _holding_functionality = 1, -- quicker to type than true!
-    _holding_time = 1.5, -- in seconds
-    player_held_success = function(self, clicker, holddata)
-      locker_stop_sound(self)
-        tg_dialog.dialog(clicker,"..this locker is empty",true)
-      --[[ local playing_sound = ]]
-      core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,   -- default
-        fade = 100.0, -- default
-        pitch = 1.8,  -- 1.0, -- default
-      })
-      if tg_main.dev_mode == false then
-        self.object:remove()
-        --else
-        -- core.log("after first interaction this will be removed in normal gameplay.")
-      end
-    end,
-    player_held_failed = locker_interact_failed,
-    -- interacting
-    on_rightclick = locker_interact,
-    on_punch = locker_interact
-  })
-tg_interactions.register_interactable("locker_suit", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
-  .centerd_box,
-  {
-    _popup_msg = "[ search locker ]",
-    _holding_functionality = 1,
-    _holding_time = 1.5, -- in seconds
-    player_held_success = function(self, clicker, ttime)
-      --[[ local playing_sound = ]]
-      core.sound_play({ name = "tg_paper_footstep" }, {
-        gain = 1.0,   -- default
-        fade = 100.0, -- default
-        pitch = 1.8,  -- 1.0, -- default
-      })
-      tg_dialog.dialog(clicker,"hmm, a radiation suit. i should slip this on.",true)
-      core.after(3, function()
-        tg_cut_scenes.run(clicker, { [[slipping into suit]] })
-      end)
-      if tg_main.dev_mode == false then
-        core.log("some zipper sounds should also be added to this. maybe even some skin slapping, because why not.")
-        self.object:remove()
-        --else
-        -- core.log("after first interaction this will be removed in normal gameplay.")
-      end
-    end,
-    player_held_failed = locker_interact_failed,
-    -- interacting
-    on_rightclick = locker_interact,
-    on_punch = locker_interact
-  })
-
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
   {
     _popup_msg = "[ pickup tape ]",
@@ -1447,6 +1360,10 @@ for _, ename in ipairs({ -- for _, event name
     -- player looking at an interactable indicator
     "player_looking_at_interactable",
     "player_looking_at_interactable_stopped", -- for when player has stopped looking
+    -- player interacting with a held interactable
+    "player_held_interactable_step",
+    "player_held_interactable_failed", -- didn't complete
+    "player_held_interactable_success", -- succeeded
     -- events correlated to player's interactable indicator message hug
     "player_hud_message_typing",
     "player_hud_message_complete"
@@ -1770,26 +1687,45 @@ events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
     if not ent.player_held_success then return end
     -- alright, let's find our holding data functionality
     local hdata = ent._holding_data
-    if not hdata then return end -- oops! no one's home
-    if hdata.holder ~= plr then return end -- not us! not us!
-    local ctrl = plr:get_player_control()
-    -- if not holding any mouse button, destroy holding data and return
-    if not (ctrl.RMB or ctrl.LMB) then
-        ent._holding_data = nil
-        if ent.player_held_failed then
-            -- entity, player, self._holding_data, total time, reason
-            ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped action")
-        end
-        -- remove 60circle hud
+    -- get required time
+    -- default to 1 second on failure to retrieve
+    local rqtime = hdata and hdata.required_time or
+      ent._holding_time or 1
+    -- set it!
+    if hdata and not hdata.required_time then
+        hdata.required_time = rqtime
+    end
+    -- oops! no one's home
+    if not hdata then
+        -- somehow circle60 still present ...
         if circle60 then
-            remove_circle60_hud(pdata)
+            hdata = {holder = plr, ttime = pdata.dtime} -- create a fake holddata
+            -- entity (self), player, holding data, player's data, focus hud stuff, icon hud stuff, circle60 hud ID
+            -- elapsed, required time, reason
+            events.player_held_interactable_failed(ent, plr, hdata, pdata, focus, icon, circle60,
+              hdata.ttime, rqtime, "revoked")
         end
         return
     end
+    if hdata.holder ~= plr then return end -- not us! not us!
+    -- told to stop
+    if hdata.stop then
+        -- entity (self), player, holding data, player's data, focus hud stuff,
+        -- icon hud stuff, circle60 hud ID, elapsed, required time, reason
+        return events.player_held_interactable_failed(ent, plr, hdata, pdata, focus,
+          icon, circle60, hdata.ttime, rqtime, "stopped")
+    end
+    -- if not holding any mouse button, destroy holding data and return
+    local hkeys = pdata.held_keys
+    if not (hkeys.RMB or hkeys.LMB) then
+        ent._holding_data = nil
+        -- entity (self), player, holding data, player's data, focus hud stuff,
+        -- icon hud stuff, circle60 hud ID, elapsed, required time, reason
+        return events.player_held_interactable_failed(ent, plr, hdata, pdata,
+          focus, icon, circle60, hdata.ttime, rqtime, "stopped action")
+    end
     -- continue progress
     hdata.ttime = (hdata.ttime or 0) + pdata.dtime
-    -- if reached required time (rqtime), run success function
-    local rqtime = ent._holding_time or 1 -- default to 1 second on failure to retrieve
     -- creating or updating 60 circle
     local circle60tex = create_60circle_texture(hdata.ttime / rqtime)
     if not circle60 then
@@ -1802,16 +1738,14 @@ events.player_looking_at_interactable.register(function(plr, pdata, focus, icon)
     plr:hud_change(circle60, "world_pos", icon.pos)--focus.mainpos:add(focus.addpos))
     -- completed!
     if hdata.ttime > rqtime then
-        ent.player_held_success(ent, plr, hdata)
-        -- clear!
-        if ent then
-            ent._holding_data = nil
-        end
-        -- delete circle60
-        remove_circle60_hud(pdata)
+        -- etntiy, player, holding data, player's data, focus hud table, icon hud table,
+        -- circle60 hud ID, total seconds taken
+        events.player_held_interactable_success(ent, plr, hdata, pdata, focus, icon, circle60, hdata.ttime)
     -- run on step
-    elseif ent.player_held_step then
-        ent.player_held_step(ent, plr, hdata, pdata.dtime)
+    else
+        -- entity, player, hold data, player's data, focus hud table, icon hud table, circle60 hud ID,
+        -- elapsed time, needed time
+        events.player_held_interactable_step(ent, plr, hdata, pdata, focus, icon, circle60, hdata.ttime, rqtime)
     end
 end)
 
@@ -1832,13 +1766,49 @@ events.player_looking_at_interactable_stopped.register(function(plr, pdata, focu
     -- alright, let's find our holding data functionality
     local hdata = ent._holding_data
     if not hdata then return end -- oops! no one's home
-    -- run entity function if exist
+    -- run event
+    -- entity, player, hold data, player's data, focus hud table, icon hud table, circle60 hud ID,
+    -- elapsed time, needed (required) time, reason
+    events.player_held_interactable_failed(ent, plr, hdata, pdata, focus, icon, pdata.circle60,
+      hdata.ttime, hdata.required_time, "stopped looking")
+end)
+
+-- run potential functions for interactables
+
+-- no "start" as that should be handled by the entity's builtin functionality
+
+-- entity, player, holding data, player's data, focus hud table, icon hud table, circle60 hud ID,
+-- elapsed time, required time
+events.player_held_interactable_step.register(function(ent, plr, holddata, pdata, focus, icon,
+  circle60, elapsed, rqtime)
+    if ent.player_held_step then
+        ent.player_held_step(ent, plr, holddata, pdata.dtime, elapsed, rqtime)
+    end
+end)
+-- success and failed have less parameters
+-- elapsed becomes "ttime" - total time
+events.player_held_interactable_success.register(function(ent, plr, holddata, pdata, focus, icon, circle60, ttime)
+    ent.player_held_success(ent, plr, holddata)
+    -- clear!
+    if ent then
+        ent._holding_data = nil
+    end
+    -- delete circle60
+    remove_circle60_hud(pdata)
+end)
+-- reason is for how it failed
+events.player_held_interactable_failed.register(function(ent, plr, holddata, pdata, focus, icon, circle60,
+  elapsed, rqtime, reason)
     if ent.player_held_failed then
         -- entity, player, self._holding_data, total time, reason
-        ent.player_held_failed(ent, plr, hdata, hdata.ttime, "stopped looking")
+        ent.player_held_failed(ent, plr, holddata, holddata.ttime, rqtime, reason)
     end
-    -- erase data
+    -- remove entity's holddata
     ent._holding_data = nil
+    -- remove 60circle hud
+    if circle60 then
+        remove_circle60_hud(pdata)
+    end
 end)
 
 
@@ -1953,3 +1923,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     -- core.add_entity(raycast_result.above, fields["object"], [staticdata])
   end
 end)
+
+-- run other files
+local modpath = core.get_modpath(mod_name)
+dofile(modpath.."/lockers.lua")
