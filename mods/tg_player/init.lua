@@ -70,8 +70,6 @@ for _, ename in ipairs({ -- for _, event name
     "keypress_start",
     "keypress_step", -- step is ran on start as well, however will have a time of 0
     "keypress_end",
-    -- wielded item (ran if item name changed or index changed)
-    "wieldchange",
     -- individual stats
     -- player's pos changed
     "change_pos",
@@ -243,14 +241,6 @@ events.step.register(function(plr, pdata)
     -- lookdir
     local oldlookdir = pdata.lookdir
     pdata.lookdir = plr:get_look_dir()
-    -- player's wielded item
-    local oldwield = pdata.wielded
-    local wielded = plr:get_wielded_item()
-    wielded = {stack = wielded, index = plr:get_wield_index(),
-      def = wielded:get_definition() or
-      -- create a "ghost" definition in failure
-      {name = wielded:get_name()} }
-    pdata.wielded = wielded
     -- events!!!
     -- run pos change event
     if oldpos == nil or not vector.equals(pos, oldpos) then
@@ -264,18 +254,10 @@ events.step.register(function(plr, pdata)
         -- ditto to pos change
         events.change_lookdir(plr, pdata, pdata.lookdir, oldlookdir or pdata.lookdir)
     end
-    -- run wielded item change
-    -- "wielded change reason"
-    local WCR = oldwield and oldwield.def and (
-        oldwield.def.name ~= wielded.def.name and "name change" or
-          oldwield.index ~= wielded.index and "index changed" or
-          "unknown"
-    ) or "null"
-    if not (oldwield and oldwield.def) or
-      (oldwield.def.name ~= wielded.name or oldwield.index ~= wielded.index) then
-        events.wieldchange(plr, pdata, wielded.stack, wielded.def, WCR)
-    end
 end)
+
+-- run wielded events
+dofile(mod_path .. "/scripts" .. "/wield.lua")
 
 -- RUN `player_change_eyepos_or_lookdir` EVENT!
 -- ran each pos change
