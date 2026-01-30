@@ -128,12 +128,12 @@ core.register_node(torchname, {
   end,
   -- wielded item callbacks
   -- turn off when unequipped
-  wield_unequipped = function(plr, itemstack, def, reason, pdata)
+  wield_unequipped = function(plr, itemstack, def, index, reason, pdata)
       if not pdata.torch_data then return end -- no torch data, already off
       -- turn off proper
       toggle_torch(plr, pdata, def)
   end,
-  wield_equipped = function(plr, itemstack, def, reason, pdata)
+  wield_equipped = function(plr, itemstack, def, index, reason, pdata)
       if not pdata.torch_data then return end -- wasn't on
       -- run update!
       if def.flashlight_update then
