@@ -1,23 +1,284 @@
 local mod_name = core.get_current_modname()
 
---luacheck: ignore
-tg_torch = {}
+-- NEW
 
--- NOTE: this needs its own toggle_on/off sound
+local torchname = mod_name..":torch"
 
--- a lot happened with this ~mod.
--- when the player has the **torch** on, a "few" rays get shot
--- if the node that is hit is air or spot_light
--- then it gets add to the "now" var
--- every new tick recent becomes now and now get reset and new points are gotten
--- if the points are new then a new spot_light needs to be added in that new location
--- if any points in recent are not in now, then the spot_lights in that point get removed
--- the spot_lights also have a timer that checks if flash_active is false, if it is false they will remove themselves.
+-- table of litspots indexed by position hash
+local litspots = {}
 
-local now = {}
-local recent = {}
+-- destroy light spots correlated to a player data's torch_data
+local function destroy_lit_spots(pdata)
+    local tdata = pdata.torch_data
+    local lit_tags = tdata and tdata.lit_tags
+    -- has no light tags, can't destroy any subsequently
+    if not lit_tags then return end
+    -- value will be a position hash, can grab position from indexing litspots table
+    for _,tag in ipairs(tdata.lit_tags) do
+        local pos = litspots[tag]
+        -- DESTROY!
+        if pos then
+            core.remove_node(pos)
+            litspots[tag] = nil
+        end
+    end
+    -- delete table
+    tdata.lit_tags = nil
+end
 
-local torch_active = false
+-- handle whether or not torch should be on (show lighting)
+-- pdata and def are optional
+local function toggle_torch(plr, pdata, def)
+    pdata = pdata or tg_player.get_data(plr)
+    -- if we're on or not
+    local tdata = pdata.torch_data
+    -- get definition
+    local wielded = pdata.wielded
+    def = def or wielded and wielded.def
+    -- turn off!
+    if tdata then
+        -- run sound
+        local sound = def and def.sounds and def.sounds.wield_toggle_off
+        if sound then
+            core.sound_play(sound, {obj=plr})
+        end
+        -- destroy
+        destroy_lit_spots(pdata)
+        pdata.torch_data = nil
+        return
+    end
+    -- get necessary data
+    local eyepos, lookpos = pdata.eyepos, pdata.lookpos
+    -- do not do anything if can't
+    if not (wielded and eyepos and lookpos) then return end
+    -- can't update
+    if not (def and def.flashlight_update) then return end
+    -- let's turn on!
+    -- play sound
+    local sound = def.sounds and def.sounds.wield_toggle_on
+    if sound then
+        core.sound_play(sound, {obj=plr})
+    end
+    -- run our wielded update function (4th parameter is a new table for "torch data"
+    def.flashlight_update(plr, pdata, wielded, {})
+end
+
+-- used by flashlight to light up a room
+core.register_node(mod_name .. ":" .. "torch_lit_spot", {
+  description = "lit_spot, will remove it's self.",
+  groups = { dig_immediate = 3, light_node = 1 },
+  tiles = { "blank.png" }, -- well now i know i can have no texture
+  use_texture_alpha = "blend",
+  paramtype = "light",
+  pointable = false,
+  drawtype = "glasslike",
+  light_source = 7,
+  walkable = false,
+  sunlight_propagates = true,
+  on_construct = function(pos)
+      core.get_node_timer(pos):start(20) -- do checks every 20 seconds
+  end,
+  -- the CHECK, will delete node if can't find in table
+  on_timer = function(pos, elapsed, node, timeout)
+    local hash = core.hash_node_position(pos)
+    -- not in activity, destroy
+    if not litspots[hash] then
+        core.remove_node(pos)
+    end
+    -- keep GOING
+    return true
+  end
+})
+
+-- torch (flashlight)
+core.register_node(torchname, {
+  description = "torch, i can see in the dark with this.",
+  groups = { dig_immediate = 3, flashlight = 1 },
+  drawtype = "mesh",
+  mesh = "torch.glb",
+  tiles = { { name = "torch.png" } },
+  visual_size = { x = 10, y = 10, z = 10 },
+  visual_scale = 18.0,
+  wield_scale = { x = 18, y = 18, z = 18 },
+  node_placement_prediction = "",
+  stack_max = 1, -- can only have 1 torch
+  sounds = {
+      wield_toggle_on = {
+          name = "tg_paper_footstep",
+          gain = 1,
+          pitch = 1.8
+      },
+      wield_toggle_off = {
+          name = "tg_dirt_footstep",
+          gain = 0.6,
+          pitch = 0.6
+      }
+  },
+  on_secondary_use = function(itemstack, user, pointed_thing)
+      toggle_torch(user)
+  end,
+  -- on_use = function(itemstack, user, pointed_thing)
+  --   -- return -- lets just prevent breaking stuff with this
+  --   toggleFlash(user:get_pos())
+  -- end,
+
+  on_place = function(itemstack, placer, pointed_thing)
+      toggle_torch(placer)
+      return
+  end,
+  -- wielded item callbacks
+  -- turn off when unequipped
+  wield_unequipped = function(plr, itemstack, def, reason, pdata)
+      if not pdata.torch_data then return end -- no torch data, already off
+      -- turn off proper
+      toggle_torch(plr, pdata, def)
+  end,
+  wield_equipped = function(plr, itemstack, def, reason, pdata)
+      if not pdata.torch_data then return end -- wasn't on
+      -- run update!
+      if def.flashlight_update then
+          def.flashlight_update(plr, pdata, pdata.wielded)
+      end
+  end,
+  -- flashlight functionality
+  --flashlight_range = 40, can be customized to be shorter
+  -- update flashlight information
+  flashlight_update = function(plr, pdata, wielded, tdata)
+      tdata = tdata or pdata.torch_data -- grab if unspecified
+      if not tdata then return end -- huh, how did this happen?
+      -- get important variables
+      local eyepos, lookpos, lookdir = pdata.eyepos, pdata.lookpos, pdata.lookdir
+      if not lookpos then return end -- hmmmmmmmmmm how
+      -- ok rest of stuff now!
+      local range = tdata.range or wielded.def.flashlight_range or 40 -- default to 40
+      -- update our variable
+      if not tdata.range then
+          tdata.range = range
+      end
+      -- iterate over any lit positions (to destroy)
+      if tdata.lit_tags then
+          destroy_lit_spots(pdata)
+      end
+      -- create new lit_tags data
+      local lit_tagsraw = {
+          {lookpos:round()} -- provide light on top of player
+      }
+      -- get lookat
+      local lookatpos = lookdir:multiply(range):add(lookpos)
+      local raycast_result = core.raycast(eyepos, lookatpos, true, false)
+      -- looking at dis bs
+      local looktarget = {type="null"}
+      -- iterate over raycast stuff
+      for thing in raycast_result do
+          if thing then
+              -- hit an object that can be indexed
+              if thing.type == "object" then
+                  local props = thing.ref and thing.ref:get_properties()
+                  if props and props.physical then
+                      looktarget = thing
+                      break
+                  end
+              -- hit a node
+              elseif thing.type == "node" then
+                  looktarget = thing
+                  break
+              end
+          end
+      end
+      -- calculating further stuff now
+      -- figure out list of positions to check
+      -- convert into table for list
+      local targetpos = looktarget.type == "node" and
+        -- get position in front of node (above)
+        {looktarget.above, looktarget.under} or
+        -- entity position (get position of object and round it)
+        looktarget.type == "object" and {looktarget.ref:get_pos():round()} or
+        -- default to lookatpos if too far
+        looktarget.type == "null" and {lookatpos}
+      -- add to list
+      if targetpos then
+          table.insert(lit_tagsraw, targetpos)
+      end
+      -- check and add lights, as well as replace with hash
+      local endpoint -- figure out where we're ending
+      local lit_tags = {}
+      for ind,list in ipairs(lit_tagsraw) do
+          for _,pos in ipairs(list) do
+              local node = core.get_node(pos)
+              node = core.registered_nodes[node.name]
+              if node and node.name == "air" then
+                  local tag = core.hash_node_position(pos) -- get hash
+                  litspots[tag] = pos -- add to litspots
+                  table.insert(lit_tags, tag) -- add to lit_tags table
+                  -- set endpoint if not starting position
+                  if not vector.equals(lookpos, pos) then
+                      endpoint = pos
+                  end
+                  core.add_node(pos, {name = mod_name..":torch_lit_spot"})
+                  break -- break list loop
+              end
+          end
+      end
+      -- figure out light in between start to end
+      if endpoint then
+          local amt = lookpos:distance(endpoint)
+          amt = amt/4 -- produce a light node every 3 distances
+          -- only do these calculations if we're producing an extra
+          if amt > 1 then
+              local startpos = lookpos
+              for i=1, math.ceil(amt) do -- ceil to produce a light node closer to the end
+                  startpos = lookdir:multiply(7):add(startpos) -- go forwards 7
+                  -- round it
+                  startpos = startpos:round()
+                  -- node check
+                  local node = core.get_node(startpos)
+                  node = core.registered_nodes[node.name]
+                  -- acceptable, add to list and create
+                  if node and node.name == "air" then
+                      local tag = core.hash_node_position(startpos) -- get hash
+                      litspots[tag] = startpos -- add to litspots
+                      table.insert(lit_tags, tag) -- add to lit_tags table
+                      core.add_node(startpos, {name = mod_name..":torch_lit_spot"})
+                  end
+              end
+          end
+      end
+      -- don't do anything else if we don't have any lit positions
+      if #lit_tags == 0 then return end
+      -- set lit positions
+      tdata.lit_tags = lit_tags
+      -- add torch data if not added already
+      if not pdata.torch_data then
+          pdata.torch_data = tdata
+      end
+  end,
+})
+
+-- update flashlight every time player moves or turns
+tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, lookdir)
+    local wielded = pdata.wielded
+    local def = wielded and wielded.def
+    -- not da flashlight
+    if not (def and def.name == torchname) then return end
+    -- IS the flashlight! :O
+    -- only update flashlight if on
+    local tdata = pdata.torch_data
+    if not tdata then return end -- not on
+    -- update the flashloot
+    if def.flashlight_update then
+        def.flashlight_update(plr, pdata, wielded, tdata)
+    end
+end)
+
+-- delete light nodes on player leave
+tg_player.register_on_leave(function(plr, pdata)
+    local lit_tags = pdata.torch_data
+    lit_tags = lit_tags and lit_tags.lit_tags
+    -- only do stuff if there's lit nodes
+    if not lit_tags then return end
+    -- delete!!!
+    destroy_lit_spots(pdata)
+end)
 
 core.register_entity(mod_name .. ":flash", {
   initial_properties = {
@@ -42,196 +303,3 @@ core.register_entity(mod_name .. ":flash", {
     end
   end,
 })
-
-core.register_node(mod_name .. ":" .. "torch_lit_spot", {
-  description = "lit_spot, will remove it's self.",
-  groups = { dig_immediate = 3 },
-  tiles = { { name = "[fill:1x1:#fff^[opacity:0" }, }, -- well now i know i can have no texture
-  use_texture_alpha = "blend",
-  paramtype = "light",
-  pointable = false,
-  drawtype = "glasslike",
-  light_source = 7,
-  walkable = false,
-  sunlight_propagates = true,
-  on_construct = function(pos)
-    core.get_node_timer(pos):start(0.5)
-  end,
-  on_timer = function(pos, elapsed, node, timeout)
-    -- node = node or core.get_node(pos)
-    if torch_active == false then
-      -- if recent[vector.to_string(pos)] ~= true then
-        -- core.log("should remove")
-        core.remove_node(pos)
-      -- end
-    end
-    core.get_node_timer(pos):start(0.5)
-  end,
-})
-
-local function toggleTorch(pos)
-  core.sound_play({ name = "tg_paper_footstep" }, {
-    gain = 1.0,   -- default
-    fade = 100.0, -- default
-    pitch = 1.8,  -- 1.0, -- default
-    pos = { x = pos.x, y = pos.y, z = pos.z },
-  })
-  torch_active = not torch_active
-  if torch_active == false then
-    -- for index, value in pairs(recent) do
-    --   if core.get_node(vector.from_string(index)).name == mod_name..":flashlight_lit_spot" then
-    --     core.remove_node(vector.from_string(index))
-    --     core.log("should remove")
-    --   end
-    -- end
-    recent = {}
-  end
-end
-
-core.register_node(mod_name .. ":" .. "torch", {
-  description = "torch, i can see in the dark with this.",
-  -- inventory_image = "flashlight.png",
-  groups = { dig_immediate = 3 },
-  drawtype = "mesh",
-  mesh = "torch.glb",
-  tiles = { { name = "torch.png" } },
-  -- use_texture_alpha = "blend",
-  visual_size = { x = 10, y = 10, z = 10 },
-  visual_scale = 18.0,
-  wield_scale = { x = 18, y = 18, z = 18 },
-  node_placement_prediction = "",
-  on_secondary_use = function(itemstack, user, pointed_thing)
-    toggleTorch(user:get_pos())
-  end,
-  -- on_use = function(itemstack, user, pointed_thing)
-  --   -- return -- lets just prevent breaking stuff with this
-  --   toggleFlash(user:get_pos())
-  -- end,
-
-  on_place = function(itemstack, placer, pointed_thing)
-    toggleTorch(placer:get_pos())
-    return
-  end,
-  -- short_description = "",
-})
-
-core.register_globalstep(function(dtime)
-  if not torch_active then return end
-  local players = core.get_connected_players()
-  if #players < 0 then return end -- don't do anything below until there's a player
-  for _, player in ipairs(players) do
-    if player:get_wielded_item() == nil then return end
-    local item_name = player:get_wielded_item():get_name()
-    -- core.log("holding: "..dump(item_name))
-    if item_name ~= mod_name .. ":torch" then
-      return
-      -- core.log("mf is holding a damn flashlight")
-    end
-    local pos = player:get_pos()
-    local eye_height = player:get_properties().eye_height
-    pos.y = pos.y + eye_height -- add eye height
-    -- looking direction
-    local player_look_dir = player:get_look_dir()
-    local lookpos = pos:add(player_look_dir) -- forwards our view
-    -- core.log("what is this? "..dump(player:get_look_dir()))
-    local node_at_player = core.get_node(lookpos)
-    if node_at_player and node_at_player.name == "air" then
-      -- core.log("we have air")
-      core.set_node(lookpos, { name = mod_name .. ":torch_lit_spot" })
-
-      -- core.log("node: ",dump(node))
-    end
-    local to_cast = {
-      player_look_dir:add(vector.new(0.1, 0, 0)),
-      player_look_dir:add(vector.new(0.05, 0, 0)),
-      player_look_dir,
-      player_look_dir:add(vector.new(-0.05, 0, 0)),
-      player_look_dir:add(vector.new(-0.1, 0, 0)),
-
-      player_look_dir:add(vector.new(0.1, 0.05, 0)),
-      player_look_dir:add(vector.new(0.05, 0.05, 0)),
-      player_look_dir:add(vector.new(0, 0.05, 0)),
-      player_look_dir:add(vector.new(-0.05, 0.05, 0)),
-      player_look_dir:add(vector.new(-0.1, 0.05, 0)),
-
-      player_look_dir:add(vector.new(0.1, -0.05, 0)),
-      player_look_dir:add(vector.new(0.05, -0.05, 0)),
-      player_look_dir:add(vector.new(0, -0.05, 0)),
-      player_look_dir:add(vector.new(-0.05, -0.05, 0)),
-      player_look_dir:add(vector.new(-0.1, -0.05, 0)),
-      -- vector.new(-6.5, 0, 0),
-      -- vector.new(6.5, 0, 0),
-    }
-    for index, value in ipairs(to_cast) do
-      -- what position we're looking at plus our wielded range
-      -- local lookatpos = player_look_dir:multiply(40):add(lookpos)
-      local lookatpos = value:multiply(40):add(lookpos)
-      local raycast_result = core.raycast(pos, lookatpos, true, false)
-      -- no raycast, no point!
-      if raycast_result then
-        -- iterate through raycast and find an interactable
-        for thing in raycast_result do
-          -- an entity!
-          -- if thing and thing.type == "object" then
-          --   ent = thing.ref:get_luaentity()
-          --   -- found a proper entity with a popup message, break loop!
-          --   if ent and ent._popup_msg then break end
-          -- end
-          if thing and thing.type == "node" then
-            -- core.log("this: "..dump(thing))
-            local pointed_under = thing.under
-            local node_under = core.get_node(pointed_under)
-            -- if node_under and node_under.name == mod_name .. ":flashlight_lit_spot" then
-            --   return
-            -- end
-            local pointed = thing.above
-            local node = core.get_node(pointed)
-            if node and node.name == "air" then
-              -- core.log("we have air")
-              -- core.set_node(pointed, { name = mod_name .. ":flashlight_lit_spot" })
-              -- table.insert(now,pointed)
-              -- core.log("node: ",dump(node))
-            end
-            now[vector.to_string(pointed)] = true
-          end
-        end
-      end
-    end
-    -- get now
-    -- check if recent contains now
-    -- if recent does not contain now then add a flash.
-    -- clear recent and set recent to now
-    local temp = {}
-    for key, value in pairs(recent) do
-      temp[key] = value
-    end
-    recent = {}
-    for this_pos, value in pairs(now) do
-      local this_pos_pos = vector.from_string(this_pos)
-      if temp[this_pos] == true then
-        -- core.log("lets do nothing")
-      else
-        -- core.log("need to add a NODE")
-        local this_node = core.get_node(this_pos_pos)
-        if this_node and this_node.name == "air" then
-          core.set_node(this_pos_pos, { name = mod_name .. ":torch_lit_spot" })
-        end
-      end
-      recent[this_pos] = true -- they need to be added to it no matter what
-    end
-    for key, value in pairs(temp) do
-      if recent[key] == true then
-        -- nothing
-      else
-        local found_node = core.get_node(vector.from_string(key))
-        if found_node and found_node.name == mod_name..":torch_lit_spot" then
-          core.remove_node(vector.from_string(key))
-          -- core.log("this needs to be removed")
-        else
-          -- core.log("yes but lets not remove it")
-        end
-      end
-    end
-    now = {}
-  end
-end)
