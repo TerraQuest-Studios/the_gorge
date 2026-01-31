@@ -14,6 +14,9 @@ local all_objects = {
       x = -15.2,
       y = 3,
       z = -24.2,
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -52,6 +55,9 @@ local all_objects = {
       x = -2.28,
       y = 3,
       z = -32.32,
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -63,6 +69,9 @@ local all_objects = {
     },
     rot = {
       y = -3.1415926535897931
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -71,6 +80,9 @@ local all_objects = {
       x = -8.7,
       y = 2,
       z = -35.98,
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -79,6 +91,9 @@ local all_objects = {
       x = -7.91,
       y = 2,
       z = -36.8,
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -87,6 +102,9 @@ local all_objects = {
       x = -8.64,
       y = 2,
       z = -34.83,
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -95,6 +113,9 @@ local all_objects = {
       x = -4.31,
       y = 3,
       z = -31.71,
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -111,6 +132,9 @@ local all_objects = {
       x = 8.64,
       y = 2,
       z = -46.17,
+    },
+    rot = {
+      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
