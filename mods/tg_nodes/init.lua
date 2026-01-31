@@ -553,9 +553,13 @@ function tg_nodes.register_and_shape_node(name, def)
     -- register our lil others
     local rshapes = {"stairs", "slab", "panel", "rails"} -- register shapes
     for _,shape in ipairs(rshapes) do
-        local ndef = table.copy(def) -- new definition
+        local ndef = {}
+        for key, value in pairs(def) do
+            ndef[key] = value
+        end
         -- new name
         ndef.name = ndef.name .. "_" ..shape
+        ndef.description = ndef.name .."_".. shape
         -- erase some stuff
         ndef.drawtype = "nodebox" -- and force this too
         ndef.node_box = nil
