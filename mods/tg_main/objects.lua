@@ -69,9 +69,6 @@ local all_objects = {
     },
     rot = {
       y = -3.1415926535897931
-    },
-    rot = {
-      y = math.rad(math.random(0,360)) -- randomize rotation
     }
 	},
 	{
@@ -269,11 +266,11 @@ core.register_chatcommand("logobjects", {
                 -- specify variables for easier typing
                 local obj, ent = data.obj, data.ent
                 -- if not supposed to be logged (if saving to file), then don't log!
-                if not (param[1] and ent._no_log) then
+                if not (param[1] and ent._not_loggable) then
                     -- rounds to the first 2 decimal places
                     local pos = tg_main.vector_round(obj:get_pos())
-                    -- rounds to the first 6 decimal places (don't round rotation)
-                    --local rot = tg_main.vector_round(obj:get_rotation(), 6)
+                    -- get rotation
+                    local rot = obj:get_rotation()
                     -- if param[1], then print into a format that can be copied and pasted
                     local result = param[1] and {"\t{\n", "\t\tname = '", cname,"',\n\t\tpos = ", dump(pos)} or
                     -- doing regular print
