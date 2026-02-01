@@ -1,6 +1,3 @@
-local mod_name = core.get_current_modname()
-local mod_path = core.get_modpath(mod_name)
-
 ------
 -- all the objects that should be in world
 ------
@@ -165,7 +162,6 @@ local function dospawn()
     -- iterate over list
     for _, data in ipairs(all_objects) do
         local obj = core.add_entity(data.pos, data.name)
-        local ent -- only get this if we're going to do memory mechanics
         -- additional stuff if successful
         if obj then
             -- rotation
@@ -176,7 +172,7 @@ local function dospawn()
             end
             -- load in memory
             if data.memory then
-                ent = ent or obj:get_luaentity()
+                local ent = obj:get_luaentity()
                 -- set the memory
                 ent.memory = data.memory
             end
@@ -226,7 +222,7 @@ core.register_chatcommand("logobjects", {
         param = param:lower()
         param = param:split(" ") or {} -- split param string up
         -- saveforfile
-        param[1] = (param[1] == "y" or param[1] == "true") and true or false
+        local sff = (param[1] == "y" or param[1] == "true") and true or false
 
         core.log("logging entities")
         -- create 'count' for logging purposes
@@ -255,29 +251,29 @@ core.register_chatcommand("logobjects", {
         end
         core.log("got "..count.." entities!")
         -- now to print out
-        local allprint = param[1] and {}
+        local allprint = sff and {}
         for cname, cdata in pairs(reformed) do -- category name, category data
             local clen = #cdata -- category length
             for ind, data in ipairs(cdata) do
                 -- don't get in our way!
-                if not param[1] then
+                if not sff then
                     core.log("printing "..ind.."/"..clen.." of "..cname)
                 end
                 -- specify variables for easier typing
                 local obj, ent = data.obj, data.ent
                 -- if not supposed to be logged (if saving to file), then don't log!
-                if not (param[1] and ent._not_loggable) then
+                if not (sff and ent._not_loggable) then
                     -- rounds to the first 2 decimal places
                     local pos = tg_main.vector_round(obj:get_pos())
                     -- get rotation
                     local rot = obj:get_rotation()
-                    -- if param[1], then print into a format that can be copied and pasted
-                    local result = param[1] and {"\t{\n", "\t\tname = '", cname,"',\n\t\tpos = ", dump(pos)} or
+                    -- if sff, then print into a format that can be copied and pasted
+                    local result = sff and {"\t{\n", "\t\tname = '", cname,"',\n\t\tpos = ", dump(pos)} or
                     -- doing regular print
                     {dump(obj), " | pos:", core.pos_to_string(pos)}
                     -- jot rotation down if not empty
                     if not emptyvec:equals(rot) then
-                        if param[1] then
+                        if sff then
                             result[#result + 1] = ",\n\t\trot = "
                             result[#result + 1] = dump(rot)
                         -- regular chill print
@@ -288,7 +284,7 @@ core.register_chatcommand("logobjects", {
                     end
                     -- jot memory if it exists and has stuff in it
                     if ent.memory and next(ent.memory) then
-                        if param[1] then
+                        if sff then
                             result[#result + 1] = ",\n\t\tmemory = "
                             result[#result + 1] = dump(ent.memory)
                         else
@@ -304,13 +300,13 @@ core.register_chatcommand("logobjects", {
                         end
                     end
                     -- close
-                    if param[1] then
+                    if sff then
                         result[#result + 1] = "\n\t},\n"
                     end
                     -- convert into string
                     result = table.concat(result)
                     -- store to a big table to print
-                    if param[1] then
+                    if sff then
                         allprint[#allprint + 1] = result
                     -- and print!
                     else
@@ -319,8 +315,8 @@ core.register_chatcommand("logobjects", {
                 end
             end
         end
-        -- if param[1] then do a BIG print
-        if param[1] then
+        -- if sff then do a BIG print
+        if sff then
             core.log(table.concat(allprint))
         end
         core.log("successfully logged all objects")
