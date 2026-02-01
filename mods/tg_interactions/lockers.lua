@@ -258,6 +258,7 @@ end
 tg_interactions.register_interactable("locker_interactable", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
 {
+    _not_loggable = true,
     _popup_msg = "[ search locker ]",
     _holding_functionality = 1, -- quicker to type than true!
     _holding_time = 1.5, -- in seconds

@@ -35,3 +35,60 @@ function tg_main.lerp(startPos, endPos, s)
     z = startPos.z + (endPos.z - startPos.z) * s
   }
 end
+
+--- rounding with saving decimal options
+--- @param num number number to be special-case rounded (saving decimal places)
+--- @param decimal number integer > 0, determining how many decimal places to save (1 = 5.141 --> 5.1)
+function tg_main.round(num, decimal)
+    if type(num) ~= "number" then return end -- oopsie daisy
+    -- purify decimal parameter (must be integer)
+    if type(decimal) == "number" then
+        -- clamp to 0 if below
+        decimal = math.max( math.ceil(decimal), 0) -- and ceil to make sure it's not double
+    else
+        decimal = 2 -- default to saving 2 decimal places
+    end
+    -- why, why did you call this function?
+    if decimal == 0 then
+        return math.round(num)
+    end
+    -- exponent'ify the decimal for easier calculation
+    decimal = 10 ^ decimal
+    -- multiply num by exponent'ified decimal, to save the number of specified decimal places for later division
+    num = num * decimal
+    -- round that number the old way
+    -- add a half as if it's underneath 0.5, it'll floor to the number below, otherwise be the
+    -- greater number
+    num = math.floor(num + .5)
+    -- now to divide and return, preserving the wanting decimal places
+    return (num / decimal)
+end
+
+--- rounding a vector with saving decimal options
+--- @param vec vector3 vector to be special-case rounded (saving decimal places)
+--- @param decimal number integer > 0, determining how many decimal places to save (1 = 5.141 --> 5.1)
+function tg_main.vector_round(vec, decimal)
+    -- clone vector!
+    if vector.check(vec) then
+        vec = vec:new()
+    -- create new vector!
+    else
+        -- create a vector!
+        if type(vec) == "table" then
+            if #vec > 0 then
+                vec = {x=vec[1], y=vec[2], z=vec[3]}
+            end
+            -- empty spaces be 0
+            vec = vector.new(vec.x or 0, vec.y or 0, vec.z or 0)
+        -- failed to create vector
+        else
+            return
+        end
+    end
+    -- now for the actual goodies
+    for coord, num in pairs(vec) do
+        vec[coord] = tg_main.round(num, decimal)
+    end
+    -- return purified vector
+    return vec
+end
