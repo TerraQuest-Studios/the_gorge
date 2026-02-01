@@ -219,10 +219,10 @@ core.register_chatcommand("logobjects", {
         local plr = core.get_player_by_name(name)
         if not plr then return end -- huh how?
         -- lowercase!
-        param = param:lower()
-        param = param:split(" ") or {} -- split param string up
+        local params = param:lower()
+        params = params:split(" ") or {} -- split param string up
         -- saveforfile
-        local sff = (param[1] == "y" or param[1] == "true") and true or false
+        local sff = (params[1] == "y" or params[1] == "true") and true or false
 
         core.log("logging entities")
         -- create 'count' for logging purposes
