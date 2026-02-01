@@ -237,13 +237,13 @@ core.register_chatcommand("logobjects", {
                 local ent = obj:get_luaentity()
                 -- need entity for name
                 if ent then
-                    local name = ent.name
+                    local ename = ent.name
                     -- create table to add ourselves to
-                    if not reformed[name] then
-                        reformed[name] = {}
+                    if not reformed[ename] then
+                        reformed[ename] = {}
                     end
                     -- add ourselves to that table with extras
-                    table.insert(reformed[name], {obj = obj, ent = obj:get_luaentity()})
+                    table.insert(reformed[ename], {obj = obj, ent = obj:get_luaentity()})
                     -- increase count
                     count = count + 1
                 end
