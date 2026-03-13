@@ -17,6 +17,7 @@ globals = {
     "mtt",
     "mtzip",
 	"events_api",
+    "allseer",
 
     --mod provided
 }
