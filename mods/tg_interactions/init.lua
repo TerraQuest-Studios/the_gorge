@@ -629,7 +629,7 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
               core.chat_send_all(message)
               for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
                 if obj:is_player() then
-                  tg_dialog.dialog(obj, message)
+                  tg_dialog.dialog(obj, message,true)
                 end
               end
             end
