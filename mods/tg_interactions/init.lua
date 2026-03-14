@@ -1002,14 +1002,18 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
           local opposite = not self.object:get_luaentity()._opposite
           self.object:get_luaentity()._opposite = opposite
           if opposite == true then
-            core.log("will detect when power is ON")
-          else
             core.log("will detect when power is OFF")
+          else
+            core.log("will detect when power is ON")
           end
         else
           core.log("[buildmode]: sneak click to switch activation state")
         end
       end
+      local chain = {}
+      local pos = self.object:get_pos()
+      local signal = 1
+      sendSignal(pos, chain, 1.2,signal)
     end,
   })
 
