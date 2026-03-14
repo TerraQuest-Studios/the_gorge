@@ -549,7 +549,7 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
 ---@param chain any
 ---@param distance any
 ---@param signal number|nil
-local function sendSignal(pos, chain, distance, signal,prev_pos)
+local function sendSignal(pos, chain, distance, signal, prev_pos)
   prev_pos = prev_pos or pos
   local near_by = core.get_objects_inside_radius(pos, distance)
   for index, value in pairs(near_by) do
@@ -564,7 +564,7 @@ local function sendSignal(pos, chain, distance, signal,prev_pos)
           -- core.log("already searched")
         else
           if core.is_creative_enabled() then
-            tg_main.debug_particle(value:get_pos(),"#fff",0.5,vector.subtract(obj_pos,pos),1)
+            tg_main.debug_particle(value:get_pos(), "#fff", 0.5, vector.subtract(obj_pos, pos), 1)
           end
 
           chain[vector.to_string(obj_pos)] = true
@@ -576,15 +576,15 @@ local function sendSignal(pos, chain, distance, signal,prev_pos)
               signal = 1
             end
             if core.is_creative_enabled() then
-              tg_main.debug_particle(value:get_pos(),"#fc4614",0.5,vector.subtract(obj_pos,pos),1)
+              tg_main.debug_particle(value:get_pos(), "#fc4614", 0.5, vector.subtract(obj_pos, pos), 1)
             end
-            sendSignal(obj_pos, chain, distance, signal,prev_pos)
+            sendSignal(obj_pos, chain, distance, signal, prev_pos)
           elseif string.find(value:get_luaentity().name, "relay") then
             -- core.log("relay")
-            sendSignal(obj_pos, chain, distance, signal,prev_pos)
+            sendSignal(obj_pos, chain, distance, signal, prev_pos)
           elseif string.find(value:get_luaentity().name, "bit_bridge") then
             if value:get_luaentity()._state == 1 then
-              sendSignal(obj_pos, chain, distance, signal,prev_pos)
+              sendSignal(obj_pos, chain, distance, signal, prev_pos)
             else
               -- do nothing
             end
@@ -605,10 +605,32 @@ local function sendSignal(pos, chain, distance, signal,prev_pos)
                   end
                   chain[vector.to_string(bit_pos)] = true
                   if string.find(v:get_luaentity().name, "bit_bridge") then
-                    v:get_luaentity()._toggle_state(v,signal)
+                    v:get_luaentity()._toggle_state(v, signal)
                   end
                 end
                 -- end
+              end
+            end
+          elseif string.find(value:get_luaentity().name, "sensor_id_cartridge") then
+            local found = false
+            if players_collections ~= nil then
+              for i, v in ipairs(players_collections) do
+                for _, coll in ipairs(v.collection) do
+                  if string.find(coll.name, "id_cartridge") then
+                    found = true
+                    sendSignal(obj_pos, chain, distance, signal, prev_pos)
+                  end
+                  -- core.log(dump(coll.name))
+                end
+              end
+            end
+            if found == false then
+              local message = "I need and ID to get this open"
+              core.chat_send_all(message)
+              for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
+                if obj:is_player() then
+                  tg_dialog.dialog(obj, message)
+                end
               end
             end
           elseif string.find(value:get_luaentity().name, "sensor_power") then
@@ -782,6 +804,15 @@ tg_interactions.register_interactable("sensor_disclaimer", "none", "", "tg_nodes
         end
       end
     end,
+  }
+)
+tg_interactions.register_interactable("sensor_id_cartridge", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.centerd_box,
+  {
+    _popup_msg = "[ sensor id cartridge ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:2,7^[resize:42x42",
+    _popup_hidden = true,
+    pointable = false,
   }
 )
 
@@ -1015,7 +1046,7 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
       local chain = {}
       local pos = self.object:get_pos()
       local signal = 1
-      sendSignal(pos, chain, 1.2,signal)
+      sendSignal(pos, chain, 1.2, signal)
     end,
   })
 
@@ -1089,7 +1120,7 @@ tg_interactions.register_interactable("bit_bridge", "none", "", "tg_nodes_misc.p
     on_activate = function(self, staticdata, dtime_s)
       on_activate(self, staticdata, dtime_s)
     end,
-    _toggle_state = function(self,state)
+    _toggle_state = function(self, state)
       if state == nil then
         state = self:get_luaentity()._state
         state = (state + 1) % 2
@@ -1148,7 +1179,7 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
       --[[ local playing_sound = ]]
       local message = "this should come in handy."
       core.chat_send_all(message)
-      tg_dialog.dialog(clicker,message)
+      tg_dialog.dialog(clicker, message)
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
@@ -1164,13 +1195,14 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
   })
 
 
-tg_interactions.register_interactable("id_cartridge", "mesh", "id_cartridge.glb", "id_cartridge.png", shapes.medium_object,
+tg_interactions.register_interactable("id_cartridge", "mesh", "id_cartridge.glb", "id_cartridge.png",
+  shapes.medium_object,
   {
     _popup_msg = "[ pick up id cartridge ]",
     on_rightclick = function(self, clicker)
       local message = "i should be able to enter the secuirty room with this"
       core.chat_send_all(message)
-      tg_dialog.dialog(clicker,message)
+      tg_dialog.dialog(clicker, message)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -2002,6 +2034,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "sensor_disclaimer"] = true,
       [mod_name .. ":" .. "cave_passage_dialog"] = true,
       [mod_name .. ":" .. "sensor_power"] = true,
+      [mod_name .. ":" .. "sensor_id_cartridge"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
     },
@@ -2036,19 +2069,19 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       local of_mod = {}
       for value, _ in pairs(all_objects) do
         if string.find(value, mod_name) then
-          table.insert(of_mod,value)
+          table.insert(of_mod, value)
         end
       end
       table.sort(of_mod)
       for i, value in pairs(of_mod) do
-          table.insert(to_list,
-            string.format("button[%s,%s;%s,%s;object;%s]", pos_x, pos_y, size.x, size.z,
-              string.gsub(value, mod_name .. ":", "")))
-          pos_x = pos_x + size.x
-          if pos_x >= (max_items * size.z) then
-            pos_y = pos_y + size.z
-            pos_x = 0
-          end
+        table.insert(to_list,
+          string.format("button[%s,%s;%s,%s;object;%s]", pos_x, pos_y, size.x, size.z,
+            string.gsub(value, mod_name .. ":", "")))
+        pos_x = pos_x + size.x
+        if pos_x >= (max_items * size.z) then
+          pos_y = pos_y + size.z
+          pos_x = 0
+        end
       end
       -- core.log("so what do we have?"..dump(to_list))
       core.show_formspec(placer:get_player_name(), "tg_interactions_menu", table.concat({
