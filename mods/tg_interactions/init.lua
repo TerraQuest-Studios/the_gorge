@@ -572,9 +572,11 @@ local function sendSignal(pos, chain, distance, signal,prev_pos)
             -- core.log("n relay found")
             if signal == 1 then
               signal = 0
-              if core.is_creative_enabled() then
-                tg_main.debug_particle(value:get_pos(),"#fc4614",0.5,vector.subtract(obj_pos,pos),1)
-              end
+            else
+              signal = 1
+            end
+            if core.is_creative_enabled() then
+              tg_main.debug_particle(value:get_pos(),"#fc4614",0.5,vector.subtract(obj_pos,pos),1)
             end
             sendSignal(obj_pos, chain, distance, signal,prev_pos)
           elseif string.find(value:get_luaentity().name, "relay") then
