@@ -1543,7 +1543,7 @@ tg_player.register_on_step(function(plr, pdata)
   local finteractables = {} -- found interactables
   for _, obj in ipairs(within_radius) do
     local ent = not core.is_player(obj) and obj:get_luaentity()
-    if ent and ent._interactable then -- if interactable (was == 1)
+    if ent and ent._interactable == 1 then -- if interactable (was == 1)
       -- add popup if holding wrench or if popup isn't hidden
       if pdata.wielded.def.name == PWN or ent._popup_hidden ~= true then
         finteractables[#finteractables + 1] = ent
