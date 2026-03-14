@@ -49,6 +49,7 @@ local shapes = {
 	beam = { -0.2, -0.5, -0.2, 0.2, 0.5, 0.2 },       -- same as tiny_box, just taller
 	sheet = { -0.5, -0.5, -0.5, 0.5, -0.49, 0.5 },
 	panel = { -0.5, -0.5, -0.5, 0.5, -0.4, 0.5 },
+	pane = { -0.5, -0.5, -0.5, 0.5, -0.4, 0.5 },
 	rails = {
 		{ -0.4, -0.5, -0.5, -0.2, -0.4, 0.5 },
 		{ 0.2,  -0.5, -0.5, 0.4,  -0.4, 0.5 },
@@ -624,6 +625,9 @@ tg_nodes.register_piping("tubes_down", {mesh="tubes_down.glb", shape="half_slab"
 -- these two nodes need more work
 tg_nodes.register_node("crate", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
 tg_nodes.register_node("crate2", {sounds=tg_sound.woodplank_defaults()}, "crate, looks heavy")
+
+tg_nodes.register_node("glass", {sounds=tg_sound.node_defaults(),use_texture_alpha = true,backface_culling = true,drawtype="glasslike",sunlight_propagates=true,paramtype = "light"}, "glass")
+
 -- misc accessories
 tg_nodes.register_node_complex("radio", {mesh="radio.glb",
   raw_texture="radio.png", shape="tiny_box"}, "Radio, nice tunes.")
