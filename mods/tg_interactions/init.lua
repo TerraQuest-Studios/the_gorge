@@ -1143,7 +1143,7 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
 
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
   {
-    _popup_msg = "[ pickup tape ]",
+    _popup_msg = "[ pick up tape ]",
     on_rightclick = function(self, clicker)
       core.chat_send_all("this should come in handy.")
       --[[ local playing_sound = ]]
@@ -1157,6 +1157,27 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
         --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
+    end,
+  })
+
+tg_interactions.register_interactable("torch", "mesh", "torch.glb", "torch.png", shapes.medium_object,
+  {
+    _popup_msg = "[ pick up torch ]",
+    on_rightclick = function(self, clicker)
+      core.chat_send_all("darkness be gone")
+      --[[ local playing_sound = ]]
+      core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
+      })
+      if tg_main.dev_mode == false then
+        self.object:remove()
+        --else
+        -- core.log("after first interaction this will be removed in normal gameplay.")
+      end
+      addToPlayerCollection(clicker:get_player_name(), self.name)
+      core.log("collections: "..dump(players_collections))
     end,
   })
 
