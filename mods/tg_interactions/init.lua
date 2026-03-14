@@ -536,9 +536,9 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
       })
       tg_power.togglePower()
       if tg_power.power == true then
-        self.object:get_luaentity()._popup_msg = "[ switch on power ]"
-      else
         self.object:get_luaentity()._popup_msg = "[ switch off power ]"
+      else
+        self.object:get_luaentity()._popup_msg = "[ switch on power ]"
       end
     end,
   }
