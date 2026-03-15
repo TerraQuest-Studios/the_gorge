@@ -586,6 +586,13 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
             if value:get_luaentity()._state == 1 then
               sendSignal(obj_pos, chain, distance, signal, prev_pos)
             else
+              local message = "This wont work without power"
+              -- core.chat_send_all(message)
+              for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
+                if obj:is_player() then
+                  tg_dialog.dialog(obj, message, true)
+                end
+              end
               -- do nothing
             end
             -- core.log("relay")
@@ -629,7 +636,7 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
               core.chat_send_all(message)
               for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
                 if obj:is_player() then
-                  tg_dialog.dialog(obj, message,true)
+                  tg_dialog.dialog(obj, message, true)
                 end
               end
             end
@@ -836,6 +843,35 @@ tg_interactions.register_interactable("cave_passage_dialog", "none", "", "tg_nod
             tg_dialog.dialog(player, "Hmm, That looks like an elevator.")
             tg_dialog.dialog(player,
               "That could be my way out of here! just need to find a way around.")
+          end
+        end
+      end
+    end,
+  }
+)
+
+--TODO: dialog needs to be part of some global thing, and needs to be persistant
+local crwaling_of_boarding = false
+tg_interactions.register_interactable("crawling_off_boarding", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.centerd_box,
+  {
+    pointable = false,
+    _popup_msg = "[ crawling ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:0,7^[resize:42x42",
+    _popup_hidden = true,
+    on_step = function(self, dtime, moveresult)
+      local cur_pos = self.object:get_pos()
+      local max_distance = 4
+      local near_by = core.get_objects_inside_radius(cur_pos, max_distance)
+      if crwaling_of_boarding == false then
+        for index, player in ipairs(near_by) do
+          if player:is_player() then
+            crwaling_of_boarding = true
+            core.chat_send_all(table.concat({
+              core.colorize("#f4e85f", "CRAWL; while crouching look down and walk backwards to start crawling\n"),
+              core.colorize("#4392f9","Reaching things may require crawling.\n"),
+            }))
+            tg_dialog.dialog(player, "Maybe I can [CRAWL] through this hole")
           end
         end
       end
@@ -2035,6 +2071,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "cave_passage_dialog"] = true,
       [mod_name .. ":" .. "sensor_power"] = true,
       [mod_name .. ":" .. "sensor_id_cartridge"] = true,
+      [mod_name .. ":" .. "crawling_off_boarding"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
       -- ["group:ghosty"] = true,       -- (an armor group)
     },
