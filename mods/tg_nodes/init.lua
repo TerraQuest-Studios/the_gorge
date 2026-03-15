@@ -65,6 +65,26 @@ local shapes = {
     { -0.38, -0.5, -0.07, 0.38, 0.25, 0.48 },
     -- { -0.3, -0.5, -0.45, 0.3, -0.4, -0.08 },
   },
+  vent = {
+    { -0.5, -0.5, -0.5, 0.5, -0.45, 0.5 },
+    { -0.5, 0.5, -0.5, 0.5, 0.45, 0.5 },
+    { -0.5, -0.45, -0.5, -0.45, 0.45, 0.5 },
+    { 0.5, -0.45, 0.5, 0.45, 0.45, -0.5 },
+  },
+  vent_open = {
+    { -0.5, -0.5, -0.5, 0.5, -0.45, 0.5 },
+    { -0.5, 0.5, -0.5, 0.5, 0.45, 0.5 },
+    { -0.5, -0.45, -0.5, -0.45, 0.45, 0.5 },
+    { 0.5, -0.45, 0.5, 0.45, 0.45, -0.5 },
+    { -0.5, -0.5, -1.56, 0.5, -0.45, -0.5 },
+  },
+  vent_closed = {
+    { -0.5, -0.5, -0.5, 0.5, -0.45, 0.5 },
+    { -0.5, 0.5, -0.5, 0.5, 0.45, 0.5 },
+    { -0.5, -0.45, -0.5, -0.45, 0.45, 0.5 },
+    { 0.5, -0.45, 0.5, 0.45, 0.45, -0.5 },
+    { -0.5, -0.5, -0.56, 0.5, 0.5, -0.5 },
+  },
 }
 
 tg_nodes.shapes = shapes
@@ -660,6 +680,43 @@ tg_nodes.register_node_complex("dial_pad", {
   raw_texture = "dial_pad.png",
   shape = "panel"
 }, "dial pad, nice tunes")
+
+tg_nodes.register_node_complex("vent", {
+  mesh = "vent.glb",
+  raw_texture = "vent.png",
+  shape = "vent",
+  use_texture_alpha = true,
+}, "Vent")
+
+tg_nodes.register_node_complex("vent_closed", {
+  mesh = "vent_closed.glb",
+  raw_texture = "vent.png",
+  shape = "vent_closed",
+  use_texture_alpha = true,
+  on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
+    core.swap_node(pos, {name = "tg_nodes:vent_open",param1=node.param1,param2=node.param2})
+    core.sound_play("tg_paper_footstep", { gain = 0.15, pitch = math.random(60, 85) / 100, pos = pos })
+    local dialog_chance = math.random(10) %3
+    if dialog_chance == 0 then
+      tg_dialog.dialog(clicker,"Sliced my finger open..",true)
+    end
+  end,
+}, "Vent closed")
+
+tg_nodes.register_node_complex("vent_open", {
+  mesh = "vent_open.glb",
+  raw_texture = "vent.png",
+  shape = "vent_open",
+  use_texture_alpha = true,
+  on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
+    core.swap_node(pos, {name = "tg_nodes:vent_closed",param1=node.param1,param2=node.param2})
+    core.sound_play("tg_paper_footstep", { gain = 0.15, pitch = math.random(60, 85) / 100, pos = pos })
+    local dialog_chance = math.random(10) %3
+    if dialog_chance == 0 then
+      tg_dialog.dialog(clicker,"Glad I saved those screws..",true)
+    end
+  end,
+}, "Vent open")
 
 tg_nodes.register_node_complex("computer", {
   mesh = "computer.glb",
