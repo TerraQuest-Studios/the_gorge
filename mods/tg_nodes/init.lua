@@ -61,6 +61,10 @@ local shapes = {
   -- 	{ -0.5, -0.2, -0.5, 0.5, 0.2, 0.5 }
   -- },
   wiring = { -0.5, -0.2, -0.2, 0.5, 0.2, 0.2 },
+  computer = {
+    { -0.38, -0.5, -0.07, 0.38, 0.25, 0.48 },
+    -- { -0.3, -0.5, -0.45, 0.3, -0.4, -0.08 },
+  },
 }
 
 tg_nodes.shapes = shapes
@@ -657,6 +661,18 @@ tg_nodes.register_node_complex("dial_pad", {
   shape = "panel"
 }, "dial pad, nice tunes")
 
+tg_nodes.register_node_complex("computer", {
+  mesh = "computer.glb",
+  raw_texture = "computer.png",
+  shape = "computer"
+}, "Computer")
+
+tg_nodes.register_node_complex("monitor", {
+  mesh = "monitor.glb",
+  raw_texture = "computer.png",
+  shape = "computer"
+}, "Monitor")
+
 -- misc;
 -- lockers
 tg_nodes.register_misc("locker", {
@@ -728,5 +744,6 @@ tg_nodes.register_wall_light_powered("led", nil, "led, blinding", 13)
 
 -- nodes and shaped variants;
 tg_nodes.register_and_shape_node("steel_enclosure", { sounds = tg_sound.metal_defaults() })
+tg_nodes.register_and_shape_node("encased_electronics", { sounds = tg_sound.metal_defaults() })
 tg_nodes.register_and_shape_node("concrete_tiled")
 ------
