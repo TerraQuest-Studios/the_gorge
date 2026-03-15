@@ -673,6 +673,12 @@ tg_nodes.register_node_complex("monitor", {
   shape = "computer"
 }, "Monitor")
 
+tg_nodes.register_node_complex("corpse", {
+  mesh = "corpse.glb",
+  raw_texture = "tg_nodes_corpse.png",
+  shape = "tiny_box"
+}, "Corpse")
+
 -- misc;
 -- lockers
 tg_nodes.register_misc("locker", {
