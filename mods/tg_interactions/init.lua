@@ -869,7 +869,7 @@ tg_interactions.register_interactable("crawling_off_boarding", "none", "", "tg_n
             crwaling_of_boarding = true
             core.chat_send_all(table.concat({
               core.colorize("#f4e85f", "CRAWL; while crouching look down and walk backwards to start crawling\n"),
-              core.colorize("#4392f9","Reaching things may require crawling.\n"),
+              core.colorize("#4392f9", "Reaching things may require crawling.\n"),
             }))
             tg_dialog.dialog(player, "Maybe I can [CRAWL] through this hole")
           end
@@ -1202,11 +1202,62 @@ tg_interactions.register_interactable("bit_toggler", "none", "", "tg_nodes_misc.
 tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
   .centerd_box,
   {
-    _popup_msg = "[ note ]",
+    _popup_msg = "[ sticky note ]",
     on_rightclick = function(self, clicker)
-      core.chat_send_all("NOTE READS: \"took me a few attemps to get this note up here..\"")
+      local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"),
+        "\"took me a few attemps to get this note up here..\"")
+      core.chat_send_all(message)
+      tg_dialog.dialog(clicker, message, true)
     end,
   })
+
+tg_interactions.register_interactable("random_note_rocks", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .centerd_box,
+  {
+    _popup_msg = "[ sticky note ]",
+    on_rightclick = function(self, clicker)
+      local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"),
+        "\"What is the purpose of this room..\"")
+      core.chat_send_all(message)
+      tg_dialog.dialog(clicker, message, true)
+    end,
+  })
+
+tg_interactions.register_interactable("random_note_rocks_2", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .centerd_box,
+  {
+    _popup_msg = "[ sticky note ]",
+    on_rightclick = function(self, clicker)
+      local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"), "\"I count 39827 rocks..\"")
+      core.chat_send_all(message)
+      tg_dialog.dialog(clicker, message, true)
+    end,
+  })
+
+tg_interactions.register_interactable("random_note_rocks_3", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .centerd_box,
+  {
+    _popup_msg = "[ sticky note ]",
+    on_rightclick = function(self, clicker)
+      local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"), "\"They wont let me leave..\"")
+      core.chat_send_all(message)
+      tg_dialog.dialog(clicker, message, true)
+    end,
+  })
+
+
+tg_interactions.register_interactable("random_note_rocks_4", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes
+  .centerd_box,
+  {
+    _popup_msg = "[ sticky note ]",
+    on_rightclick = function(self, clicker)
+      local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"),
+        "\"sharp rocks, doll rocks, crumbly rocks, cracky rocks, snappy rocks, fleshy rocks... rocks..\"")
+      core.chat_send_all(message)
+      tg_dialog.dialog(clicker, message, true)
+    end,
+  })
+
 
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
   {
