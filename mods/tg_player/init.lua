@@ -143,6 +143,13 @@ core.register_on_joinplayer(function(plr)
   tg_player.change_eye_height(plr, tg_player.eye_height.stand, pdata)
   -- disabled the builtin sneak
   plr:set_physics_override({ sneak = false, })
+
+  -- have the player start off on the floor (to prevent clipping)
+  pdata.start_on_floor = true
+  pdata.crawling = true      -- we're sneaking, we're sneaking!
+  pdata.getting_up = nil     -- stop trying to get up
+  tg_player.change_eye_height(plr, tg_player.eye_height.crawl, pdata)
+
   -- event
   events.join(plr, pdata)
 end)
@@ -200,6 +207,15 @@ events.step.register(function(plr, pdata)
       -- still pressing, increase time
       if pressed then
         okey.time = okey.time + dtime
+        -- once the player starts moving unchain them from the floor
+        for _, value in ipairs({"left","right","up","down"}) do
+          if key == value then
+            if pdata.start_on_floor == true then
+            pdata.start_on_floor = false
+            pdata.try_getting_up = true
+            end
+          end
+        end
         -- no longer pressing, add to list of keys no longer pressing
       else
         SPK = SPK or {}
@@ -286,6 +302,12 @@ events.keypress_step.register(function(plr, pdata, key, time)
   if key ~= "sneak" then return end       -- not pressing sneak
   if pdata.held_keys.jump then return end -- JUMPING, AAAH!!!
   if pdata.getting_up then return end     -- can't crouch if getting up
+  -- start on floor to prevent clipping through nodes
+  if pdata.start_on_floor == false then
+    if key ~= "sneak" then return end         -- not pressing sneak
+    if pdata.held_keys.jump then return end   -- JUMPING, AAAH!!!
+    if pdata.getting_up then return end       -- can't crouch if getting up
+  end
   -- sneaky time
   local props = pdata.props               -- player's properties
   local eheight = props.eye_height
@@ -320,7 +342,7 @@ events.keypress_step.register(function(plr, pdata, key, time)
     end
   end
   -- set boolean
-  if not pdata.sneaking then
+  if not pdata.sneaking and not pdata.start_on_floor then
     -- sneak is active!
     pdata.sneaking = true  -- we're sneaking, we're sneaking!
     pdata.getting_up = nil -- stop trying to get up
