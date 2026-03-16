@@ -868,8 +868,7 @@ tg_interactions.register_interactable("crawling_off_boarding", "none", "", "tg_n
           if player:is_player() then
             crwaling_of_boarding = true
             core.chat_send_all(table.concat({
-              core.colorize("#f4e85f", "CRAWL MODE; while crouching look down and walk backwards to start crawling.\n"),
-              core.colorize("#f4985f", "EXIT CRAWL MODE; To exit crawl mode simply press jump.\n"),
+              core.colorize("#f4e85f", "CRAWL; while crouching look down and walk backwards to start crawling\n"),
               core.colorize("#4392f9", "Reaching things may require crawling.\n"),
             }))
             tg_dialog.dialog(player, "Maybe I can [CRAWL] through this hole")
@@ -1709,35 +1708,70 @@ end
 -- ran each player globalstep
 -- handles creating interactable indicator HUDs (`pdata.hud_interactables`)
 tg_player.register_on_step(function(plr, pdata)
+  ---@class interactable
+  ---@field pos vector3
+  ---@field interactable_pos vector3
+  ---@field popup_texture string
+  ---@field ent nil|table
+
+  local finteractables = {} -- found interactables
+
   -- interactable entities within radius (will include player)
   local within_radius = core.get_objects_inside_radius(pdata.pos, tg_interactions.popup_radius)
   -- player will be 1, odd if there is 0 but let's check for that
-  if #within_radius < 2 then return clear_interactable_indicators(pdata) end
-  local finteractables = {} -- found interactables
+  -- if #within_radius < 2 then return clear_interactable_indicators(pdata) end
   for _, obj in ipairs(within_radius) do
     local ent = not core.is_player(obj) and obj:get_luaentity()
     if ent and ent._interactable == 1 then -- if interactable (was == 1)
       -- add popup if holding wrench or if popup isn't hidden
       if pdata.wielded.def.name == PWN or ent._popup_hidden ~= true then
-        finteractables[#finteractables + 1] = ent
+        ---@type interactable
+        local popup = {
+          pos = ent.object:get_pos(),
+          interactable_pos = ent._interactable_pos,
+          popup_texture = ent._popup_texture,
+          ent = ent,
+        }
+        finteractables[#finteractables + 1] = popup
       end
     end
+  end
+
+  -- interactable nodes
+  local distance_vec = vector.new(tg_interactions.popup_radius - 1, tg_interactions.popup_radius - 1,
+    tg_interactions.popup_radius - 1)
+  local nodes_within_radius = core.find_nodes_in_area(pdata.pos:subtract(distance_vec), pdata.pos:add(distance_vec),
+    { "group:interactable" })
+  for _, pos in ipairs(nodes_within_radius) do
+    ---@type interactable
+    local popup = {
+      pos = pos,
+      interactable_pos = pos,
+      popup_texture = "",
+      ent = nil,
+    }
+    finteractables[#finteractables + 1] = popup
   end
   -- do not continue if no interactables found
   if #finteractables == 0 then return clear_interactable_indicators(pdata) end
   -- refresh interactables
   clear_interactable_indicators(pdata)
   pdata.hud_interactables = {}
-  for _, ent in ipairs(finteractables) do -- ent is equal to found interactable entity
+  for _, popup in ipairs(finteractables) do -- ent is equal to found interactable entity
     -- set up interactable data (entity, icon, position)
-    local idata = { ent = ent, icon = table.copy(huds.indicator), pos = ent.object:get_pos() }
+    local idata = { ent = popup.ent, icon = table.copy(huds.indicator), pos = popup.pos }
     local icon = idata.icon
     icon.world_pos = idata.pos
     -- permit custom popup textures or else default
-    icon.text = ent._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
+    if popup.ent ~= nil then
+      icon.text = popup.ent._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
+    else
+      icon.text = popup._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
+    end
+    -- icon.text = popup._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
     -- permit custom addition to position
-    if ent._interactable_pos then
-      local addpos = vector.from_string(ent._interactable_pos)
+    if popup._interactable_pos then
+      local addpos = popup._interactable_pos
       if addpos then
         idata.pos = idata.pos:add(addpos)
       end

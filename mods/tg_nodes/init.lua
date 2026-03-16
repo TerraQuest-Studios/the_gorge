@@ -715,6 +715,7 @@ tg_nodes.register_node_complex("vent_closed", {
       tg_dialog.dialog(clicker, "Sliced my finger open..", true)
     end
   end,
+  groups = { interactable = 1 },
 }, "Vent closed")
 
 tg_nodes.register_node_complex("vent_open", {
@@ -730,6 +731,7 @@ tg_nodes.register_node_complex("vent_open", {
       tg_dialog.dialog(clicker, "Glad I saved those screws..", true)
     end
   end,
+  groups = { interactable = 1 },
 }, "Vent open")
 
 tg_nodes.register_node_complex("computer", {
