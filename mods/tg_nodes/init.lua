@@ -66,24 +66,24 @@ local shapes = {
     -- { -0.3, -0.5, -0.45, 0.3, -0.4, -0.08 },
   },
   vent = {
-    { -0.5, -0.5, -0.5, 0.5, -0.45, 0.5 },
-    { -0.5, 0.5, -0.5, 0.5, 0.45, 0.5 },
-    { -0.5, -0.45, -0.5, -0.45, 0.45, 0.5 },
-    { 0.5, -0.45, 0.5, 0.45, 0.45, -0.5 },
+    { -0.5, -0.5,  -0.5, 0.5,   -0.45, 0.5 },
+    { -0.5, 0.5,   -0.5, 0.5,   0.45,  0.5 },
+    { -0.5, -0.45, -0.5, -0.45, 0.45,  0.5 },
+    { 0.5,  -0.45, 0.5,  0.45,  0.45,  -0.5 },
   },
   vent_open = {
-    { -0.5, -0.5, -0.5, 0.5, -0.45, 0.5 },
-    { -0.5, 0.5, -0.5, 0.5, 0.45, 0.5 },
-    { -0.5, -0.45, -0.5, -0.45, 0.45, 0.5 },
-    { 0.5, -0.45, 0.5, 0.45, 0.45, -0.5 },
-    { -0.5, -0.5, -1.56, 0.5, -0.45, -0.5 },
+    { -0.5, -0.5,  -0.5,  0.5,   -0.45, 0.5 },
+    { -0.5, 0.5,   -0.5,  0.5,   0.45,  0.5 },
+    { -0.5, -0.45, -0.5,  -0.45, 0.45,  0.5 },
+    { 0.5,  -0.45, 0.5,   0.45,  0.45,  -0.5 },
+    { -0.5, -0.5,  -1.56, 0.5,   -0.45, -0.5 },
   },
   vent_closed = {
-    { -0.5, -0.5, -0.5, 0.5, -0.45, 0.5 },
-    { -0.5, 0.5, -0.5, 0.5, 0.45, 0.5 },
-    { -0.5, -0.45, -0.5, -0.45, 0.45, 0.5 },
-    { 0.5, -0.45, 0.5, 0.45, 0.45, -0.5 },
-    { -0.5, -0.5, -0.56, 0.5, 0.5, -0.5 },
+    { -0.5, -0.5,  -0.5,  0.5,   -0.45, 0.5 },
+    { -0.5, 0.5,   -0.5,  0.5,   0.45,  0.5 },
+    { -0.5, -0.45, -0.5,  -0.45, 0.45,  0.5 },
+    { 0.5,  -0.45, 0.5,   0.45,  0.45,  -0.5 },
+    { -0.5, -0.5,  -0.56, 0.5,   0.5,   -0.5 },
   },
 }
 
@@ -658,6 +658,20 @@ tg_nodes.register_piping("tubes_down", { mesh = "tubes_down.glb", shape = "half_
 tg_nodes.register_node("crate", { sounds = tg_sound.woodplank_defaults() }, "crate, looks heavy")
 tg_nodes.register_node("crate2", { sounds = tg_sound.woodplank_defaults() }, "crate, looks heavy")
 
+tg_nodes.register_node("barrier", {
+  sounds = tg_sound.node_defaults(),
+  tiles = { "[fill:16x16:0,0:#fff^[opacity:0" },
+  sunlight_propagates = false,
+  paramtype = "light",
+  use_texture_alpha = true,
+  pointable = false,
+  pointabilities = {
+    nodes = {
+      [mod_name .. ":" .. "barrier"] = true,
+    },
+  }
+}, "barrier, unseen collision")
+
 tg_nodes.register_node("glass",
   {
     sounds = tg_sound.node_defaults(),
@@ -694,11 +708,11 @@ tg_nodes.register_node_complex("vent_closed", {
   shape = "vent_closed",
   use_texture_alpha = true,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
-    core.swap_node(pos, {name = "tg_nodes:vent_open",param1=node.param1,param2=node.param2})
+    core.swap_node(pos, { name = "tg_nodes:vent_open", param1 = node.param1, param2 = node.param2 })
     core.sound_play("tg_paper_footstep", { gain = 0.15, pitch = math.random(60, 85) / 100, pos = pos })
-    local dialog_chance = math.random(10) %3
+    local dialog_chance = math.random(10) % 3
     if dialog_chance == 0 then
-      tg_dialog.dialog(clicker,"Sliced my finger open..",true)
+      tg_dialog.dialog(clicker, "Sliced my finger open..", true)
     end
   end,
 }, "Vent closed")
@@ -709,11 +723,11 @@ tg_nodes.register_node_complex("vent_open", {
   shape = "vent_open",
   use_texture_alpha = true,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
-    core.swap_node(pos, {name = "tg_nodes:vent_closed",param1=node.param1,param2=node.param2})
+    core.swap_node(pos, { name = "tg_nodes:vent_closed", param1 = node.param1, param2 = node.param2 })
     core.sound_play("tg_paper_footstep", { gain = 0.15, pitch = math.random(60, 85) / 100, pos = pos })
-    local dialog_chance = math.random(10) %3
+    local dialog_chance = math.random(10) % 3
     if dialog_chance == 0 then
-      tg_dialog.dialog(clicker,"Glad I saved those screws..",true)
+      tg_dialog.dialog(clicker, "Glad I saved those screws..", true)
     end
   end,
 }, "Vent open")
@@ -750,13 +764,13 @@ tg_nodes.register_paper("paper", { texture = "misc.png^[sheet:16x16:0,3" })
 tg_nodes.register_paper("paper_1", { texture = "misc.png^[sheet:16x16:1,3" })
 -- sticky notes
 tg_nodes.register_paper("stick_notes", { texture = "misc.png^[sheet:16x16:0,4" },
-  "Sticky Note; one of these had gotta have something important on it.")
+  "Sticky Note")
 tg_nodes.register_paper("stick_notes_1", { texture = "misc.png^[sheet:16x16:1,4" },
-  "Sticky Note; one of these had gotta have something important on it.")
+  "Sticky Note")
 tg_nodes.register_paper("stick_notes_2", { texture = "misc.png^[sheet:16x16:2,4" },
-  "Sticky Note; one of these had gotta have something important on it.")
+  "Sticky Note")
 tg_nodes.register_paper("stick_notes_3", { texture = "misc.png^[sheet:16x16:3,4" },
-  "Sticky Note; one of these had gotta have something important on it.")
+  "Sticky Note")
 
 -- flora;
 -- plants
