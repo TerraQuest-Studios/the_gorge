@@ -868,7 +868,8 @@ tg_interactions.register_interactable("crawling_off_boarding", "none", "", "tg_n
           if player:is_player() then
             crwaling_of_boarding = true
             core.chat_send_all(table.concat({
-              core.colorize("#f4e85f", "CRAWL; while crouching look down and walk backwards to start crawling\n"),
+              core.colorize("#f4e85f", "CRAWL MODE; while crouching look down and walk backwards to start crawling.\n"),
+              core.colorize("#f4985f", "EXIT CRAWL MODE; To exit crawl mode simply press jump.\n"),
               core.colorize("#4392f9", "Reaching things may require crawling.\n"),
             }))
             tg_dialog.dialog(player, "Maybe I can [CRAWL] through this hole")
