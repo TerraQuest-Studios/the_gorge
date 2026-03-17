@@ -1420,7 +1420,7 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
 
       -- fix door collison; this is not a good fix
       local attached = self.object:get_attach()
-      if attached == nil then return end     -- skip the rest
+      if attached == nil then return end -- skip the rest
       local yaw = attached:get_yaw()
       yaw = math.rad(math.floor((math.deg(yaw) + 90) % 360))
       if math.deg(yaw) % 180 == 0 then
@@ -1432,7 +1432,6 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
       else
         self.object:set_properties({ collisionbox = shapes.door, selectionbox = shapes.door })
       end
-
     end,
 
     on_rightclick = function(self, clicker)
@@ -1869,9 +1868,11 @@ tg_interactions.register_on_player_hud_interactables(function(plr, pdata, intera
         -- verify if it's an interactable we can look at
         for _, interactable in ipairs(interactables) do
           -- we GOT EM!
-          if ent.object == interactable.ent.object then
-            found = { icon = interactable, ent = ent }
-            break
+          if interactable.ent ~= nil then
+            if ent.object == interactable.ent.object then
+              found = { icon = interactable, ent = ent }
+              break
+            end
           end
         end
         -- break loop through pointed thing upon finding a found
