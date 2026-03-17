@@ -210,10 +210,20 @@ events.step.register(function(plr, pdata)
         okey.time = okey.time + dtime
         -- once the player starts moving unchain them from the floor
         for _, value in ipairs({"left","right","up","down","jump"}) do
-          if key == value then
-            if pdata.start_on_floor == true then
-            pdata.start_on_floor = false
-            pdata.try_getting_up = true
+          -- if the node below a player is the node "climbable_node" set them to crawl mode
+          local pos_below = plr:get_pos()
+          if string.find(core.get_node(pos_below).name,"climbable_node") then
+            core.log("the node is in fact climbable_node")
+            pdata.start_on_floor = true
+            pdata.crawling = true      -- we're sneaking, we're sneaking!
+            pdata.getting_up = nil     -- stop trying to get up
+            -- tg_player.change_eye_height(plr, tg_player.eye_height.crawl, pdata)
+          else
+            if key == value then
+              if pdata.start_on_floor == true then
+              pdata.start_on_floor = false
+              pdata.try_getting_up = true
+              end
             end
           end
         end
@@ -300,9 +310,6 @@ end)
 -- ran each keypress step
 -- handle player crouching + crawling (and gradual decreasing of eye height)
 events.keypress_step.register(function(plr, pdata, key, time)
-  if key ~= "sneak" then return end       -- not pressing sneak
-  if pdata.held_keys.jump then return end -- JUMPING, AAAH!!!
-  if pdata.getting_up then return end     -- can't crouch if getting up
   -- start on floor to prevent clipping through nodes
   if pdata.start_on_floor == false then
     if key ~= "sneak" then return end         -- not pressing sneak
@@ -421,6 +428,7 @@ end)
 -- ran each keypress step
 -- can't crouch if we're jumping!
 events.keypress_step.register(function(plr, pdata, key, time)
+  if pdata.start_on_floor then return end
   if key ~= "jump" then return end
   -- only do stuff if crawling or sneaking
   if not (pdata.sneaking or pdata.crawling) then return end

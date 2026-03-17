@@ -92,3 +92,10 @@ function tg_main.vector_round(vec, decimal)
     -- return purified vector
     return vec
 end
+
+-- number from 0 to 3
+function tg_main.get_facing(param2)
+    return param2 == 3 and "+X" or param2 == 1 and "-X" or
+      param2 == 2 and "+Z" or param2 == 0 and "-Z" or
+      "unknown"
+end
