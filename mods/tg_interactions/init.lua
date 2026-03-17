@@ -528,7 +528,6 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
   {
     _popup_msg = "[ switch on power ]",
     on_rightclick = function(self, clicker)
-      --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
@@ -539,6 +538,11 @@ tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc
         self.object:get_luaentity()._popup_msg = "[ switch off power ]"
       else
         self.object:get_luaentity()._popup_msg = "[ switch on power ]"
+      end
+      if tg_power.power_core == false then
+        tg_dialog.dialog(clicker, "hmm..", true) -- clear dialog
+        tg_dialog.dialog(clicker, "the generator seems to be missing a power core")
+        tg_dialog.dialog(clicker, "wont be able to power this place up without one")
       end
     end,
   }
@@ -584,9 +588,11 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
             sendSignal(obj_pos, chain, distance, signal, prev_pos)
           elseif string.find(value:get_luaentity().name, "bit_bridge") then
             if value:get_luaentity()._state == 1 then
+              core.sound_play(tg_sound.wield_toggle_off, { pos = obj_pos })
               sendSignal(obj_pos, chain, distance, signal, prev_pos)
             else
-              local message = "This wont work without power"
+              core.sound_play(tg_sound.wield_toggle_on, { pos = obj_pos })
+              local message = "this wont work without power"
               -- core.chat_send_all(message)
               for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
                 if obj:is_player() then
@@ -633,9 +639,9 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
             end
             if found == false then
               local message = "I need and ID to get this open"
-              core.chat_send_all(message)
               for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
                 if obj:is_player() then
+                  core.chat_send_player(obj:get_player_name(), message)
                   tg_dialog.dialog(obj, message, true)
                 end
               end
@@ -712,11 +718,6 @@ tg_interactions.register_interactable("button", "none", "", "tg_nodes_misc.png^[
       })
       local chain = {}
       local pos = self.object:get_pos()
-      -- if tg_power.power == true then
-      --   self.object:get_luaentity()._popup_msg = "[ switch on power ]"
-      -- else
-      --   self.object:get_luaentity()._popup_msg = "[ switch off power ]"
-      -- end
       chain[vector.to_string(pos)] = true
       -- if tg_main.dev_mode == true then
       --   core.log("button pressed")
@@ -757,11 +758,6 @@ tg_interactions.register_interactable("switch", "none", "", "tg_nodes_misc.png^[
       })
       local chain = {}
       local pos = self.object:get_pos()
-      -- if tg_power.power == true then
-      --   self.object:get_luaentity()._popup_msg = "[ switch on power ]"
-      -- else
-      --   self.object:get_luaentity()._popup_msg = "[ switch off power ]"
-      -- end
       chain[vector.to_string(pos)] = true
       if tg_main.dev_mode == true then
         core.log("switch pressed")
@@ -884,9 +880,9 @@ tg_interactions.register_interactable("gorge_corpse_dialog", "none", "", "tg_nod
   {
     _popup_msg = "[ corpse ]",
     on_rightclick = function(self, clicker)
-      tg_dialog.dialog(clicker, "Looks like this guy had a pretty bad fall.")
+      tg_dialog.dialog(clicker, "looks like this guy had a pretty bad fall.")
       tg_dialog.dialog(clicker, "...let's not do as he did.")
-      tg_dialog.dialog(clicker, "There has got to be another way out of here.")
+      tg_dialog.dialog(clicker, "there has to be another way out of here.")
       if tg_main.dev_mode == false then
         self.object:remove()
         --else
@@ -1206,7 +1202,7 @@ tg_interactions.register_interactable("random_note", "none", "", "tg_nodes_misc.
     on_rightclick = function(self, clicker)
       local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"),
         "\"took me a few attemps to get this note up here..\"")
-      core.chat_send_all(message)
+      core.chat_send_player(clicker:get_player_name(), message)
       tg_dialog.dialog(clicker, message, true)
     end,
   })
@@ -1218,7 +1214,7 @@ tg_interactions.register_interactable("random_note_rocks", "none", "", "tg_nodes
     on_rightclick = function(self, clicker)
       local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"),
         "\"What is the purpose of this room..\"")
-      core.chat_send_all(message)
+      core.chat_send_player(clicker:get_player_name(), message)
       tg_dialog.dialog(clicker, message, true)
     end,
   })
@@ -1229,7 +1225,7 @@ tg_interactions.register_interactable("random_note_rocks_2", "none", "", "tg_nod
     _popup_msg = "[ sticky note ]",
     on_rightclick = function(self, clicker)
       local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"), "\"I count 39827 rocks..\"")
-      core.chat_send_all(message)
+      core.chat_send_player(clicker:get_player_name(), message)
       tg_dialog.dialog(clicker, message, true)
     end,
   })
@@ -1240,7 +1236,7 @@ tg_interactions.register_interactable("random_note_rocks_3", "none", "", "tg_nod
     _popup_msg = "[ sticky note ]",
     on_rightclick = function(self, clicker)
       local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"), "\"They wont let me leave..\"")
-      core.chat_send_all(message)
+      core.chat_send_player(clicker:get_player_name(), message)
       tg_dialog.dialog(clicker, message, true)
     end,
   })
@@ -1253,7 +1249,7 @@ tg_interactions.register_interactable("random_note_rocks_4", "none", "", "tg_nod
     on_rightclick = function(self, clicker)
       local message = string.format("%s %s", core.colorize("#bab675", "NOTE READS:"),
         "\"sharp rocks, doll rocks, crumbly rocks, cracky rocks, snappy rocks, fleshy rocks... rocks..\"")
-      core.chat_send_all(message)
+      core.chat_send_player(clicker:get_player_name(), message)
       tg_dialog.dialog(clicker, message, true)
     end,
   })
@@ -1265,7 +1261,7 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
     on_rightclick = function(self, clicker)
       --[[ local playing_sound = ]]
       local message = "this should come in handy."
-      core.chat_send_all(message)
+      core.chat_send_player(clicker:get_player_name(), message)
       tg_dialog.dialog(clicker, message)
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
@@ -1288,7 +1284,7 @@ tg_interactions.register_interactable("id_cartridge", "mesh", "id_cartridge.glb"
     _popup_msg = "[ pick up id cartridge ]",
     on_rightclick = function(self, clicker)
       local message = "i should be able to enter the secuirty room with this"
-      core.chat_send_all(message)
+      core.chat_send_player(clicker:get_player_name(), message)
       tg_dialog.dialog(clicker, message)
       --[[ local playing_sound = ]]
       core.sound_play({ name = "tg_paper_footstep" }, {
@@ -1309,8 +1305,10 @@ tg_interactions.register_interactable("torch", "mesh", "torch.glb", "torch.png",
   {
     _popup_msg = "[ pick up torch ]",
     on_rightclick = function(self, clicker)
-      core.chat_send_all("darkness be gone")
-      --[[ local playing_sound = ]]
+      core.chat_send_player(clicker:get_player_name(), "darkness be gone")
+      tg_dialog.dialog(clicker, "I've heard that these torches can sometimes leak radiation")
+      tg_dialog.dialog(clicker, "but I rather be able to see while im here, so..")
+      tg_dialog.dialog(clicker, "...")
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
@@ -1318,8 +1316,6 @@ tg_interactions.register_interactable("torch", "mesh", "torch.glb", "torch.png",
       })
       if tg_main.dev_mode == false then
         self.object:remove()
-        --else
-        -- core.log("after first interaction this will be removed in normal gameplay.")
       end
       addToPlayerCollection(clicker:get_player_name(), self.name)
       -- core.log("collections: "..dump(players_collections))
@@ -1331,7 +1327,6 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     _interactable = 0,
     _toggleable = 0, -- default state 0
     _state = 0,      -- default state 0
-    -- _collision_flipped = 0,
     -- _popup_msg = "[ open door ]",
     -- pointable = false,
 
@@ -1589,7 +1584,7 @@ tg_interactions.register_interactable("door_hinge", "mesh", "radio.glb", "tg_nod
     end,
   })
 
-tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.box,
+tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.tiny_box,
   {
     _interactable = 1,
     -- _popup_msg = "[ open door ]",
@@ -1787,11 +1782,13 @@ tg_player.register_on_step(function(plr, pdata)
       icon.text = popup._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
     end
     -- icon.text = popup._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
-    -- permit custom addition to position
-    if popup._interactable_pos then
-      local addpos = popup._interactable_pos
-      if addpos then
-        idata.pos = idata.pos:add(addpos)
+    if popup.ent ~= nil then -- entity only
+      -- permit custom addition to position
+      if popup.ent._interactable_pos then
+        local addpos = popup.ent._interactable_pos
+        if addpos then
+          idata.pos = idata.pos:add(vector.from_string(addpos))
+        end
       end
     end
     -- finalize

@@ -613,7 +613,13 @@ tg_nodes.register_node("fog", {
   use_texture_alpha = "blend",
   paramtype = "light",
   drawtype = "glasslike",
-  pointable = false
+  pointable = false,
+  pointabilities = {
+    nodes = {
+      [mod_name .. ":" .. "fog"] = true,
+      
+    }
+  }
   -- sunlight propagates nor walkable need to be specified
 }, "Fog, hard to look past.")
 -- stone
@@ -661,7 +667,7 @@ tg_nodes.register_node("crate2", { sounds = tg_sound.woodplank_defaults() }, "cr
 tg_nodes.register_node("barrier", {
   sounds = tg_sound.node_defaults(),
   tiles = { "[fill:16x16:0,0:#fff^[opacity:0" },
-  sunlight_propagates = false,
+  sunlight_propagates = true,
   paramtype = "light",
   use_texture_alpha = true,
   pointable = false,

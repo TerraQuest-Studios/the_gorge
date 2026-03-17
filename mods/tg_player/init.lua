@@ -149,6 +149,7 @@ core.register_on_joinplayer(function(plr)
   pdata.crawling = true      -- we're sneaking, we're sneaking!
   pdata.getting_up = nil     -- stop trying to get up
   tg_player.change_eye_height(plr, tg_player.eye_height.crawl, pdata)
+  plr:set_look_vertical(math.rad(40))
 
   -- event
   events.join(plr, pdata)
@@ -208,7 +209,7 @@ events.step.register(function(plr, pdata)
       if pressed then
         okey.time = okey.time + dtime
         -- once the player starts moving unchain them from the floor
-        for _, value in ipairs({"left","right","up","down"}) do
+        for _, value in ipairs({"left","right","up","down","jump"}) do
           if key == value then
             if pdata.start_on_floor == true then
             pdata.start_on_floor = false
