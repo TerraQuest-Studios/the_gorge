@@ -523,6 +523,9 @@ tg_interactions.register_draggable("chair", "node", "tg_furniture:oak_chair", "t
 tg_interactions.register_draggable("pipes", "mesh", "tubes.glb", "tubes.png", shapes.medium_object, 4)
 tg_interactions.register_draggable("power_core", "mesh", "power_core.glb", "power_core.png", shapes.medium_object, 4)
 
+tg_interactions.register_draggable("crate", "node", "tg_nodes:crate", "tg_ndoes_create.png",
+  shapes.box, 2)
+
 tg_interactions.register_interactable("power_switch", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.centerd_box,
   {
