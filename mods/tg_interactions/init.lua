@@ -1331,12 +1331,14 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
     _interactable = 0,
     _toggleable = 0, -- default state 0
     _state = 0,      -- default state 0
+    -- _collision_flipped = 0,
     -- _popup_msg = "[ open door ]",
     -- pointable = false,
 
     _the_static_data = {
       "_toggleable",
-      "_state"
+      "_state",
+      -- "_collision_flipped",
     },
     get_staticdata = function(self)
       return get_staticdata(self)
@@ -1344,6 +1346,7 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
 
     on_activate = function(self, staticdata, dtime_s)
       on_activate(self, staticdata, dtime_s)
+
       -- core.log("static: "..dump(staticdata))
       -- to make sure the door gets centered
 
@@ -1414,6 +1417,22 @@ tg_interactions.register_interactable("door", "mesh", "door.glb", "door.png", sh
           self.object:remove()
         end
       end)
+
+      -- fix door collison; this is not a good fix
+      local attached = self.object:get_attach()
+      if attached == nil then return end     -- skip the rest
+      local yaw = attached:get_yaw()
+      yaw = math.rad(math.floor((math.deg(yaw) + 90) % 360))
+      if math.deg(yaw) % 180 == 0 then
+        self.object:set_properties({
+          collisionbox = shapes.door_flipped,
+          selectionbox = tg_nodes
+              ["shapes"].door_flipped
+        })
+      else
+        self.object:set_properties({ collisionbox = shapes.door, selectionbox = shapes.door })
+      end
+
     end,
 
     on_rightclick = function(self, clicker)
