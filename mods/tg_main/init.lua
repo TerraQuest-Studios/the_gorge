@@ -27,15 +27,16 @@ end
 
 core.override_item("", {
   range = tg_main.reach,
-  wield_image = "player.png^[sheet:16x13:4,8",
+  wield_image = "player.png^[sheet:16x13:4,8^[opacity:0",
   wield_scale = {x = 0.5, y = 0.5, z = 0.5},
+  use_texture_alpha = true,
   -- color = "#fcdca4",
 })
 
 -- core.register_chatcommand(mod_name .. ":" .. "resetobjects", {
 core.register_chatcommand("basepower", {
-  params = "resetobjects <privilege>",
-  description = "reset's all objects",
+  params = "basepower <privilege>",
+  description = "toggle the power on/off",
   privs = { privs = true }, -- Require the "privs" privilege to run
   func = function(name, param)
     tg_power.togglePower()
