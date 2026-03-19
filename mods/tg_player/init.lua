@@ -27,7 +27,41 @@ function tg_player.pi(player)
   return pi
 end
 
+core.register_on_player_receive_fields(function(player, formname, fields)
+  -- core.log("formname: "..dump(formname))
+  -- core.log("fields: "..dump(fields))
+  if formname == "" then
+    for key, label in pairs(fields) do
+      -- core.log("key: "..dump(key))
+      if key == "torch" then
+
+        local has_torch = false
+        for index,value in ipairs(tg_interactions.getPlayerCollection(player:get_player_name()).collection) do
+          -- core.log(dump(value.name))
+          if value.name == "tg_interactions:torch" then
+            has_torch = true
+          end
+        end
+        if has_torch == true then
+          tg_torch.toggle_torch_light(player)
+        end
+      end
+    end
+  end
+end)
+
 core.register_on_joinplayer(function(player, last_login)
+  player:set_inventory_formspec(
+    table.concat({
+      "formspec_version[10]",
+      "size[20,8]",
+      "no_prepend[]",
+      "position[1,1]",
+      "anchor[1,1]",
+      "button[2,2;2,2;howdy;the_button]",
+      "button[8,2;2,2;torch;toggle torch]",
+    })
+  )
   player:set_sky({
     base_color = "#777",
     -- base_color = "#681c0e",

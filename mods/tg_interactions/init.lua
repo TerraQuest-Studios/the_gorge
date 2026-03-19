@@ -145,7 +145,7 @@ local players_collections
 ---comment
 ---@param player_name string
 ---@return player_collection
-local function getPlayerCollection(player_name)
+function tg_interactions.getPlayerCollection(player_name)
   ---@type player_collection
   local p_c
 
@@ -172,7 +172,7 @@ end
 ---@param player_name string
 ---@param item_name table
 local function addToPlayerCollection(player_name, item_name)
-  local player_c = getPlayerCollection(player_name)
+  local player_c = tg_interactions.getPlayerCollection(player_name)
   table.insert(player_c.collection, { name = item_name })
   --[[ for key, value in ipairs(players_collections) do
     if value.player_name == player_c.player_name then
@@ -188,13 +188,18 @@ local function removeFromPlayerCollection(player_name, item_name)
   -- ---@type collection
   -- local new_collection = { name = item_name.name, id = 10 }
 
-  local player_c = getPlayerCollection(player_name)
+  local player_c = tg_interactions.getPlayerCollection(player_name)
   for index, value in ipairs(player_c.collection) do
     if value.name == item_name then
       -- if value.id == collection.id then
       table.remove(player_c.collection, index)
       -- end
     end
+    core.chat_send_all(table.concat({
+      core.colorize("#f4e85f", "TORCH; open your iventory to toggle your torch\n"),
+      core.colorize("#4392f9", "your torch will turn off if other light sources are detected.\n"),
+    }))
+    tg_dialog.dialog(clicker, "[ open inv & toggle torch ]")
   end
   --[[ for key, value in ipairs(players_collections) do
     if value.player_name == player_c.player_name then
@@ -211,6 +216,11 @@ local function playerHasCollection(player_name, name_of_collection)
   -- local new_collection = { name = name_of_collection.name, id = 10 }
   -- local player_c = getPlayerCollection(player_name)
   if players_collections == nil or #players_collections <= 0 then
+    core.chat_send_all(table.concat({
+      core.colorize("#f4e85f", "TORCH; open your iventory to toggle your torch\n"),
+      core.colorize("#4392f9", "your torch will turn off if other light sources are detected.\n"),
+    }))
+    tg_dialog.dialog(clicker, "[ open inv & toggle torch ]")
     return
   end
   ---@param player_c player_collection
@@ -1312,6 +1322,11 @@ tg_interactions.register_interactable("torch", "mesh", "torch.glb", "torch.png",
       tg_dialog.dialog(clicker, "I've heard that these torches can sometimes leak radiation")
       tg_dialog.dialog(clicker, "but I rather be able to see while im here, so..")
       tg_dialog.dialog(clicker, "...")
+      core.chat_send_all(table.concat({
+        core.colorize("#f4e85f", "TORCH; open your iventory to toggle your torch\n"),
+        core.colorize("#4392f9", "your torch will turn off if other light sources are detected.\n"),
+      }))
+      tg_dialog.dialog(clicker, "[ open inv & toggle torch ]")
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
