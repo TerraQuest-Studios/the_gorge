@@ -34,14 +34,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     for key, label in pairs(fields) do
       -- core.log("key: "..dump(key))
       if key == "torch" then
-
-        local has_torch = false
-        for index,value in ipairs(tg_interactions.getPlayerCollection(player:get_player_name()).collection) do
-          -- core.log(dump(value.name))
-          if value.name == "tg_interactions:torch" then
-            has_torch = true
-          end
-        end
+        local has_torch = tg_interactions.playerHasCollection(player:get_player_name(),"tg_interactions:torch")
         if has_torch == true then
           tg_torch.toggle_torch_light(player)
         end

@@ -80,6 +80,7 @@ core.register_node(mod_name .. ":" .. "torch_lit_spot", {
   light_source = 7,
   walkable = false,
   sunlight_propagates = true,
+  buildable_to = true,
   on_construct = function(pos)
     core.get_node_timer(pos):start(20) -- do checks every 20 seconds
   end,
@@ -308,7 +309,7 @@ function tg_torch.toggle_torch_light(player)
 
   pdata.using_torch = not pdata.using_torch
   if pdata.using_torch == false then
-      core.sound_play(torch.sounds.wield_toggle_off, { obj = player })
+    core.sound_play(torch.sounds.wield_toggle_off, { obj = player })
     -- core.log("turn it all off!!")
     for pos, _ in pairs(active_lights) do
       core.remove_node(vector.from_string(pos))
@@ -326,8 +327,6 @@ tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, look
     -- get lookat
     local lookatpos = lookdir:multiply(range):add(pdata.lookpos)
     local raycast_result = core.raycast(eyepos, lookatpos, true, false)
-    -- looking at dis bs
-    local looktarget = { type = "null" }
 
     -- TODO:
     -- get new lights
@@ -341,7 +340,10 @@ tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, look
     end
     local new_lit_spot = {}
     -- player's pos
-    new_lit_spot[plr:get_pos():round():to_string()] = true
+    local player_pos = plr:get_pos():round():add(vector.new(0, 1, 0))
+    if core.get_node(player_pos).name == "air" then
+      new_lit_spot[player_pos:to_string()] = true
+    end
 
     -- iterate over raycast stuff
     for thing in raycast_result do
@@ -357,6 +359,9 @@ tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, look
         local light_passes = false
 
         if node.name == mod_name .. ":torch_lit_spot" then
+          light_passes = false -- no reason for this to be here other than luacheck freaking out
+        elseif core.registered_nodes[node.name].walkable == false and node.name ~= "air" then
+          light_passes = true
           -- pass through glass and things alike
         elseif core.registered_nodes[node.name].sunlight_propagates
             or string.find(node.name, "rail")
@@ -388,7 +393,10 @@ tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, look
     for pos, value in pairs(active_lights) do
       if value == false then
         -- core.log("removed")
-        core.remove_node(vector.from_string(pos))
+        local light_pos = vector.from_string(pos)
+        if core.get_node(light_pos).name == mod_name .. ":torch_lit_spot" then
+          core.remove_node(light_pos)
+        end
       end
     end
     -- reset and add new pos

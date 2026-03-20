@@ -83,8 +83,8 @@ local shapes = {
     { -0.5, 0.5,   -0.5,  0.5,   0.45,  0.5 },
     { -0.5, -0.45, -0.5,  -0.45, 0.45,  0.5 },
     { 0.5,  -0.45, 0.5,   0.45,  0.45,  -0.5 },
-    { -0.5, 0.5,  -1.0, 0.5,   0.45, -0.5 },
-    { -0.5, -0.5,  -0.56, 0.5,   -1.5,   -0.5 },
+    { -0.5, 0.5,   -1.0,  0.5,   0.45,  -0.5 },
+    { -0.5, -0.5,  -0.56, 0.5,   -1.5,  -0.5 },
   },
   vent_closed = {
     { -0.5, -0.5,  -0.5,  0.5,   -0.45, 0.5 },
@@ -625,7 +625,7 @@ tg_nodes.register_node("fog", {
   pointabilities = {
     nodes = {
       [mod_name .. ":" .. "fog"] = true,
-      
+
     }
   }
   -- sunlight propagates nor walkable need to be specified
@@ -725,19 +725,19 @@ tg_nodes.register_node_complex("vent_closed", {
     local facing = tg_main.get_facing(node.param2)
     local pos_below = pos:add(
       vector.new(
-        -- X
-        facing=="+X" and 0.8 or facing=="-X" and -0.8 or 0,
+      -- X
+        facing == "+X" and 0.8 or facing == "-X" and -0.8 or 0,
         -- Y
         -1,
         -- Z
-        facing=="+Z" and 0.8 or facing=="-Z" and -0.8 or 0
+        facing == "+Z" and 0.8 or facing == "-Z" and -0.8 or 0
       )
     )
     local node_below = core.get_node(pos_below)
     -- core.log("node: "..node_below.name)
     if core.registered_nodes[node_below.name].walkable == false then
       core.swap_node(pos, { name = "tg_nodes:vent_open_wide", param1 = node.param1, param2 = node.param2 })
-      core.set_node(pos_below, { name = "tg_nodes:climbable_node"})
+      core.set_node(pos_below, { name = "tg_nodes:climbable_node" })
     else
       core.swap_node(pos, { name = "tg_nodes:vent_open", param1 = node.param1, param2 = node.param2 })
     end
@@ -776,17 +776,17 @@ tg_nodes.register_node_complex("vent_open_wide", {
     local facing = tg_main.get_facing(node.param2)
     local pos_below = pos:add(
       vector.new(
-        -- X
-        facing=="+X" and 0.8 or facing=="-X" and -0.8 or 0,
+      -- X
+        facing == "+X" and 0.8 or facing == "-X" and -0.8 or 0,
         -- Y
         -1,
         -- Z
-        facing=="+Z" and 0.8 or facing=="-Z" and -0.8 or 0
+        facing == "+Z" and 0.8 or facing == "-Z" and -0.8 or 0
       )
     )
-    local node_below = core.get_node(pos_below)
+    -- local node_below = core.get_node(pos_below)
     -- core.log("node: "..node_below.name)
-    if core.get_node(pos_below).name == mod_name..":climbable_node" then
+    if core.get_node(pos_below).name == mod_name .. ":climbable_node" then
       core.remove_node(pos_below)
     end
     core.swap_node(pos, { name = "tg_nodes:vent_closed", param1 = node.param1, param2 = node.param2 })
@@ -800,7 +800,7 @@ tg_nodes.register_node_complex("vent_open_wide", {
   groups = { interactable = 1 },
 }, "Vent open wide")
 
-tg_nodes.register_node("climbable_node",{
+tg_nodes.register_node("climbable_node", {
   tiles = { "[fill:16x16:0,0:#fff^[opacity:0" },
   use_texture_alpha = true,
   sunlight_propagates = true,
@@ -813,7 +813,7 @@ tg_nodes.register_node("climbable_node",{
       [mod_name .. ":" .. "climbable_node"] = true,
     },
   }
-},"climbable Node")
+}, "climbable Node")
 
 tg_nodes.register_node_complex("computer", {
   mesh = "computer.glb",

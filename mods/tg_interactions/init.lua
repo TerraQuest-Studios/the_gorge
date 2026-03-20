@@ -195,11 +195,12 @@ local function removeFromPlayerCollection(player_name, item_name)
       table.remove(player_c.collection, index)
       -- end
     end
-    core.chat_send_all(table.concat({
-      core.colorize("#f4e85f", "TORCH; open your iventory to toggle your torch\n"),
-      core.colorize("#4392f9", "your torch will turn off if other light sources are detected.\n"),
-    }))
-    tg_dialog.dialog(clicker, "[ open inv & toggle torch ]")
+
+    -- core.chat_send_all(table.concat({
+    --   core.colorize("#f4e85f", "TORCH; open your iventory to toggle your torch\n"),
+    --   core.colorize("#4392f9", "your torch will turn off if other light sources are detected.\n"),
+    -- }))
+    -- tg_dialog.dialog(core.get_player_by_name(player_name), "[ open inv & toggle torch ]")
   end
   --[[ for key, value in ipairs(players_collections) do
     if value.player_name == player_c.player_name then
@@ -211,17 +212,22 @@ end
 ---comment
 ---@param player_name string
 ---@param name_of_collection string
-local function playerHasCollection(player_name, name_of_collection)
+function tg_interactions.playerHasCollection(player_name, name_of_collection)
   ---@type collection
   -- local new_collection = { name = name_of_collection.name, id = 10 }
   -- local player_c = getPlayerCollection(player_name)
-  if players_collections == nil or #players_collections <= 0 then
-    core.chat_send_all(table.concat({
-      core.colorize("#f4e85f", "TORCH; open your iventory to toggle your torch\n"),
-      core.colorize("#4392f9", "your torch will turn off if other light sources are detected.\n"),
-    }))
-    tg_dialog.dialog(clicker, "[ open inv & toggle torch ]")
-    return
+
+  -- if players_collections == nil or #players_collections <= 0 then
+  --   core.chat_send_all(table.concat({
+  --     core.colorize("#f4e85f", "TORCH; open your iventory to toggle your torch\n"),
+  --     core.colorize("#4392f9", "your torch will turn off if other light sources are detected.\n"),
+  --   }))
+  --   tg_dialog.dialog(core.get_player_by_name(player_name), "[ open inv & toggle torch ]")
+  --   return
+  -- end
+
+  if players_collections == nil then
+    return false
   end
   ---@param player_c player_collection
   for key, player_c in ipairs(players_collections) do
@@ -1615,7 +1621,7 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
       for index, value in ipairs(near_by) do
         if value:is_player() then
           local player_name = value:get_player_name()
-          local has_power_source = playerHasCollection(player_name, mod_name .. ":draggable_power_core")
+          local has_power_source = tg_interactions.playerHasCollection(player_name, mod_name .. ":draggable_power_core")
           -- core.log("has source? " .. dump(has_power_source))
           if has_power_source == true then
             self.object:get_luaentity()._popup_msg = "[ insert power core ]"
@@ -1639,7 +1645,7 @@ tg_interactions.register_interactable("power_gen", "none", "", "tg_nodes_misc.pn
     on_rightclick = function(self, clicker)
       local item_name = mod_name .. ":draggable_power_core"
       local player_name = clicker:get_player_name()
-      local has_power_source = playerHasCollection(player_name, item_name)
+      local has_power_source = tg_interactions.playerHasCollection(player_name, item_name)
       if has_power_source == true then
         removeFromPlayerCollection(player_name, item_name)
         local cur_pos = self.object:get_pos()
