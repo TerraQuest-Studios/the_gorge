@@ -1769,6 +1769,7 @@ tg_player.register_on_step(function(plr, pdata)
           popup_texture = ent._popup_texture,
           ent = ent,
         }
+        -- core.log("int_pos: "..dump(ent._interactable_pos))
         finteractables[#finteractables + 1] = popup
       end
     end
@@ -1781,12 +1782,20 @@ tg_player.register_on_step(function(plr, pdata)
     { "group:interactable" })
   for _, pos in ipairs(nodes_within_radius) do
     ---@type interactable
+    local meta = core.get_meta(pos)
+    local inte_pos = meta:get_string("_interactable_pos")
+    if inte_pos ~= nil then
+      if inte_pos == "" then
+        inte_pos = nil
+      end
+    end
     local popup = {
       pos = pos,
-      interactable_pos = pos,
+      interactable_pos = inte_pos,
       popup_texture = "",
       ent = nil,
     }
+    -- core.log("node meta pos"..dump(popup.interactable_pos))
     finteractables[#finteractables + 1] = popup
   end
   -- do not continue if no interactables found
@@ -1806,15 +1815,16 @@ tg_player.register_on_step(function(plr, pdata)
       icon.text = popup._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
     end
     -- icon.text = popup._popup_texture or "tg_nodes_misc.png^[sheet:16x16:0,5"
-    if popup.ent ~= nil then -- entity only
-      -- permit custom addition to position
-      if popup.ent._interactable_pos then
-        local addpos = popup.ent._interactable_pos
-        if addpos then
-          idata.pos = idata.pos:add(vector.from_string(addpos))
-        end
-      end
+    -- if popup.ent ~= nil then -- entity only
+    -- permit custom addition to position
+    -- if popup.ent._interactable_pos then
+    local addpos = popup.interactable_pos
+
+    if addpos then
+      idata.pos = idata.pos:add(vector.from_string(addpos))
     end
+    -- end
+    -- end
     -- finalize
     idata.icon.world_pos = idata.pos
     idata.icon = plr:hud_add(idata.icon)
@@ -1899,6 +1909,12 @@ tg_interactions.register_on_player_hud_interactables(function(plr, pdata, intera
         -- break loop through pointed thing upon finding a found
         if found then break end
       end
+    -- elseif thing and thing.type == "node" then
+    --   local node_pos =thing.under
+    --   local node_meta = core.get_meta(node_pos)
+    --   if node_meta:get_string("_popup_msg") ~= "" then
+    --     found = { icon = interactable, ent = ent }
+    --   end
     end
   end
   -- oh no we're not looking at anything

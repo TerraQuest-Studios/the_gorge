@@ -721,6 +721,22 @@ tg_nodes.register_node_complex("vent_closed", {
   raw_texture = "vent.png",
   shape = "vent_closed",
   use_texture_alpha = true,
+  on_construct = function(pos)
+    local facing = tg_main.get_facing(core.get_node(pos).param2)
+    local pos_front =
+      vector.new(
+      -- X
+        facing == "+X" and 0.7 or facing == "-X" and -0.7 or 0,
+        -- Y
+        -0,
+        -- Z
+        facing == "+Z" and 0.7 or facing == "-Z" and -0.7 or 0
+      )
+    -- tg_main.debug_particle(pos_front,"#fff")
+    local meta = core.get_meta(pos)
+    meta:set_string("_interactable_pos",pos_front:to_string())
+    meta:set_string("_popup_msg","[ open vent ]")
+  end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
     local facing = tg_main.get_facing(node.param2)
     local pos_below = pos:add(
@@ -736,10 +752,10 @@ tg_nodes.register_node_complex("vent_closed", {
     local node_below = core.get_node(pos_below)
     -- core.log("node: "..node_below.name)
     if core.registered_nodes[node_below.name].walkable == false then
-      core.swap_node(pos, { name = "tg_nodes:vent_open_wide", param1 = node.param1, param2 = node.param2 })
+      core.set_node(pos, { name = "tg_nodes:vent_open_wide", param1 = node.param1, param2 = node.param2 })
       core.set_node(pos_below, { name = "tg_nodes:climbable_node" })
     else
-      core.swap_node(pos, { name = "tg_nodes:vent_open", param1 = node.param1, param2 = node.param2 })
+      core.set_node(pos, { name = "tg_nodes:vent_open", param1 = node.param1, param2 = node.param2 })
     end
     core.sound_play("tg_paper_footstep", { gain = 0.15, pitch = math.random(60, 85) / 100, pos = pos })
     local dialog_chance = math.random(10) % 3
@@ -755,8 +771,23 @@ tg_nodes.register_node_complex("vent_open", {
   raw_texture = "vent.png",
   shape = "vent_open",
   use_texture_alpha = true,
+  on_construct = function(pos)
+    local facing = tg_main.get_facing(core.get_node(pos).param2)
+    local pos_front =
+      vector.new(
+      -- X
+        facing == "+X" and 1.0 or facing == "-X" and -1.0 or 0,
+        -- Y
+        -0.4,
+        -- Z
+        facing == "+Z" and 1.0 or facing == "-Z" and -1.0 or 0
+      )
+    -- tg_main.debug_particle(pos_front,"#fff")
+    local meta = core.get_meta(pos)
+    meta:set_string("_interactable_pos",pos_front:to_string())
+  end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
-    core.swap_node(pos, { name = "tg_nodes:vent_closed", param1 = node.param1, param2 = node.param2 })
+    core.set_node(pos, { name = "tg_nodes:vent_closed", param1 = node.param1, param2 = node.param2 })
     core.sound_play("tg_paper_footstep", { gain = 0.15, pitch = math.random(60, 85) / 100, pos = pos })
     local dialog_chance = math.random(10) % 3
     if dialog_chance == 0 then
@@ -772,6 +803,21 @@ tg_nodes.register_node_complex("vent_open_wide", {
   shape = "vent_open_wide",
   use_texture_alpha = true,
   climbable = true,
+  on_construct = function(pos)
+    local facing = tg_main.get_facing(core.get_node(pos).param2)
+    local pos_front = 
+      vector.new(
+      -- X
+        facing == "+X" and 0.7 or facing == "-X" and -0.7 or 0,
+        -- Y
+        -1.0,
+        -- Z
+        facing == "+Z" and 0.7 or facing == "-Z" and -0.7 or 0
+      )
+    -- tg_main.debug_particle(pos_front,"#fff")
+    local meta = core.get_meta(pos)
+    meta:set_string("_interactable_pos",pos_front:to_string())
+  end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
     local facing = tg_main.get_facing(node.param2)
     local pos_below = pos:add(
@@ -789,7 +835,7 @@ tg_nodes.register_node_complex("vent_open_wide", {
     if core.get_node(pos_below).name == mod_name .. ":climbable_node" then
       core.remove_node(pos_below)
     end
-    core.swap_node(pos, { name = "tg_nodes:vent_closed", param1 = node.param1, param2 = node.param2 })
+    core.set_node(pos, { name = "tg_nodes:vent_closed", param1 = node.param1, param2 = node.param2 })
     core.sound_play("tg_paper_footstep", { gain = 0.15, pitch = math.random(60, 85) / 100, pos = pos })
     local dialog_chance = math.random(10) % 3
     if dialog_chance == 0 then

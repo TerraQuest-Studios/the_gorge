@@ -240,7 +240,7 @@ events.step.register(function(plr, pdata)
           -- if the node below a player is the node "climbable_node" set them to crawl mode
           local pos_below = plr:get_pos()
           if string.find(core.get_node(pos_below).name,"climbable_node") then
-            core.log("the node is in fact climbable_node")
+            -- core.log("the node is in fact climbable_node")
             pdata.start_on_floor = true
             pdata.crawling = true      -- we're sneaking, we're sneaking!
             pdata.getting_up = nil     -- stop trying to get up
