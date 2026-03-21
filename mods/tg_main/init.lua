@@ -25,6 +25,13 @@ if core.is_creative_enabled() == true then
   tg_main.reach = 5.0
 end
 
+-- fog colors
+tg_main.fog_color = {
+  white = "#ffffff",
+  gray = "#111111",
+  black = "#000000",
+}
+
 core.override_item("", {
   range = tg_main.reach,
   wield_image = "player.png^[sheet:16x13:4,8^[opacity:0",

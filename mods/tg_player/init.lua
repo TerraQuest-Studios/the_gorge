@@ -56,7 +56,9 @@ core.register_on_joinplayer(function(player, last_login)
     })
   )
   player:set_sky({
-    base_color = "#777",
+    base_color = tg_main.fog_color.white,
+    -- base_color = "#111",
+    -- base_color = "#000",
     -- base_color = "#681c0e",
     type = "plain",
     clouds = false,

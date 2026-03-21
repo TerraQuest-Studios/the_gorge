@@ -304,6 +304,13 @@ function tg_torch.toggle_torch_light(player)
     pdata.using_torch = true
     core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
     -- core.log("right")
+    player:set_sky({
+      base_color = "#111",
+      -- base_color = "#681c0e",
+      -- base_color = "#000",
+      type = "plain",
+      clouds = false,
+    })
     return
   end
 
@@ -311,10 +318,24 @@ function tg_torch.toggle_torch_light(player)
   if pdata.using_torch == false then
     core.sound_play(torch.sounds.wield_toggle_off, { obj = player })
     -- core.log("turn it all off!!")
+    player:set_sky({
+      -- base_color = "#777",
+      -- base_color = "#681c0e",
+      base_color = "#000",
+      type = "plain",
+      clouds = false,
+    })
     for pos, _ in pairs(active_lights) do
       core.remove_node(vector.from_string(pos))
     end
   else
+    player:set_sky({
+      base_color = "#111",
+      -- base_color = "#681c0e",
+      -- base_color = "#000",
+      type = "plain",
+      clouds = false,
+    })
     core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
   end
   -- core.log("here: " .. dump(pdata.using_torch))
