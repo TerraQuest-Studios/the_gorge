@@ -49,6 +49,11 @@ local shapes = {
   beam = { -0.2, -0.5, -0.2, 0.2, 0.5, 0.2 },        -- same as tiny_box, just taller
   sheet = { -0.5, -0.5, -0.5, 0.5, -0.49, 0.5 },
   panel = { -0.5, -0.5, -0.5, 0.5, -0.4, 0.5 },
+  railing = { -0.5, -0.5, 0.5, 0.5, 0.75, 0.4 },
+  railing_d = {
+    { -0.5, -0.5, 0.5, 0.5,  0.25, 0.4 },
+    { 0.0,  0.25, 0.5, -0.5, 0.75, 0.4 },
+  },
   pane = { -0.5, -0.5, -0.5, 0.5, -0.4, 0.5 },
   rails = {
     { -0.4, -0.5, -0.5, -0.2, -0.4, 0.5 },
@@ -724,18 +729,18 @@ tg_nodes.register_node_complex("vent_closed", {
   on_construct = function(pos)
     local facing = tg_main.get_facing(core.get_node(pos).param2)
     local pos_front =
-      vector.new(
-      -- X
-        facing == "+X" and 0.7 or facing == "-X" and -0.7 or 0,
-        -- Y
-        -0,
-        -- Z
-        facing == "+Z" and 0.7 or facing == "-Z" and -0.7 or 0
-      )
+        vector.new(
+        -- X
+          facing == "+X" and 0.7 or facing == "-X" and -0.7 or 0,
+          -- Y
+          -0,
+          -- Z
+          facing == "+Z" and 0.7 or facing == "-Z" and -0.7 or 0
+        )
     -- tg_main.debug_particle(pos_front,"#fff")
     local meta = core.get_meta(pos)
-    meta:set_string("_interactable_pos",pos_front:to_string())
-    meta:set_string("_popup_msg","[ open vent ]")
+    meta:set_string("_interactable_pos", pos_front:to_string())
+    meta:set_string("_popup_msg", "[ open vent ]")
   end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
     local facing = tg_main.get_facing(node.param2)
@@ -774,17 +779,17 @@ tg_nodes.register_node_complex("vent_open", {
   on_construct = function(pos)
     local facing = tg_main.get_facing(core.get_node(pos).param2)
     local pos_front =
-      vector.new(
-      -- X
-        facing == "+X" and 1.0 or facing == "-X" and -1.0 or 0,
-        -- Y
-        -0.4,
-        -- Z
-        facing == "+Z" and 1.0 or facing == "-Z" and -1.0 or 0
-      )
+        vector.new(
+        -- X
+          facing == "+X" and 1.0 or facing == "-X" and -1.0 or 0,
+          -- Y
+          -0.4,
+          -- Z
+          facing == "+Z" and 1.0 or facing == "-Z" and -1.0 or 0
+        )
     -- tg_main.debug_particle(pos_front,"#fff")
     local meta = core.get_meta(pos)
-    meta:set_string("_interactable_pos",pos_front:to_string())
+    meta:set_string("_interactable_pos", pos_front:to_string())
   end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
     core.set_node(pos, { name = "tg_nodes:vent_closed", param1 = node.param1, param2 = node.param2 })
@@ -805,18 +810,18 @@ tg_nodes.register_node_complex("vent_open_wide", {
   climbable = true,
   on_construct = function(pos)
     local facing = tg_main.get_facing(core.get_node(pos).param2)
-    local pos_front = 
-      vector.new(
-      -- X
-        facing == "+X" and 0.7 or facing == "-X" and -0.7 or 0,
-        -- Y
-        -1.0,
-        -- Z
-        facing == "+Z" and 0.7 or facing == "-Z" and -0.7 or 0
-      )
+    local pos_front =
+        vector.new(
+        -- X
+          facing == "+X" and 0.7 or facing == "-X" and -0.7 or 0,
+          -- Y
+          -1.0,
+          -- Z
+          facing == "+Z" and 0.7 or facing == "-Z" and -0.7 or 0
+        )
     -- tg_main.debug_particle(pos_front,"#fff")
     local meta = core.get_meta(pos)
-    meta:set_string("_interactable_pos",pos_front:to_string())
+    meta:set_string("_interactable_pos", pos_front:to_string())
   end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
     local facing = tg_main.get_facing(node.param2)
@@ -878,6 +883,18 @@ tg_nodes.register_node_complex("corpse", {
   raw_texture = "tg_nodes_corpse.png",
   shape = "tiny_box"
 }, "Corpse")
+
+tg_nodes.register_node_complex("railing", {
+  mesh = "railing.glb",
+  raw_texture = "tg_nodes_railing.png",
+  shape = "railing"
+}, "Railing")
+
+tg_nodes.register_node_complex("railing_2", {
+  mesh = "railing_2.glb",
+  raw_texture = "tg_nodes_railing_2.png",
+  shape = "railing_d"
+}, "Railing diagnal")
 
 -- misc;
 -- lockers
