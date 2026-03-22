@@ -650,6 +650,11 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
                 for _, coll in ipairs(v.collection) do
                   if string.find(coll.name, "id_cartridge") then
                     found = true
+                    core.sound_play({ name = "tg_sensor" }, {
+                      gain = 0.7,   -- default
+                      fade = 100.0, -- default
+                      pitch = 1.0,  -- 1.0, -- default
+                    })
                     sendSignal(obj_pos, chain, distance, signal, prev_pos)
                   end
                   -- core.log(dump(coll.name))
@@ -660,6 +665,11 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
               local message = "I need and ID to get this open"
               for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
                 if obj:is_player() then
+                  core.sound_play({ name = "tg_sensor" }, {
+                    gain = 0.7,   -- default
+                    fade = 100.0, -- default
+                    pitch = 0.5,  -- 1.0, -- default
+                  })
                   core.chat_send_player(obj:get_player_name(), message)
                   tg_dialog.dialog(obj, message, true)
                 end
