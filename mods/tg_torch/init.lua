@@ -311,7 +311,7 @@ function tg_torch.toggle_torch_light(player)
       type = "plain",
       clouds = false,
     })
-    return
+    return true
   end
 
   pdata.using_torch = not pdata.using_torch
@@ -328,6 +328,7 @@ function tg_torch.toggle_torch_light(player)
     for pos, _ in pairs(active_lights) do
       core.remove_node(vector.from_string(pos))
     end
+    return false
   else
     player:set_sky({
       base_color = "#111",
@@ -337,6 +338,7 @@ function tg_torch.toggle_torch_light(player)
       clouds = false,
     })
     core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
+    return true
   end
   -- core.log("here: " .. dump(pdata.using_torch))
 end
@@ -427,3 +429,19 @@ tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, look
     end
   end
 end)
+
+core.register_chatcommand("toggletorch", {
+  params = "toggletorch <privilege>",
+  description = "toggle torch on/off",
+  privs = { privs = true }, -- Require the "privs" privilege to run
+  func = function(name, param)
+    local value = tg_torch.toggle_torch_light(core.get_player_by_name(name))
+    local state = ""
+    if value == true then
+      state = "ON"
+    else
+      state = "OFF"
+    end
+    core.chat_send_player(name,"torch "..state)
+  end,
+})
