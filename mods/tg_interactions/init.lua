@@ -729,6 +729,11 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
                 end
               end
             end
+          elseif string.find(value:get_luaentity().name, "signal_delay") then
+            local delay = value:get_luaentity()._delay or 1
+            core.after(delay, function()
+              sendSignal(obj_pos, chain, distance, signal, prev_pos)
+            end)
           else
             -- core.log("wrong: " .. value:get_luaentity().name)
           end
@@ -1175,6 +1180,64 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     for index, value in ipairs(near) do
       if not value:is_player() then
         value:get_luaentity()._link_id = tonumber(link_id)
+      end
+    end
+  end
+end)
+
+
+tg_interactions.register_interactable("signal_delay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.wiring,
+  {
+    _popup_msg = "[ signal_delay ]",
+    -- _toggleable = 0, -- default state 0
+    -- _state = 0,      -- default state 0
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:4,7^[resize:42x42",
+    _popup_hidden = true,
+    pointable = false,
+    _delay = 1,
+    _the_static_data = {
+      "_delay",
+    },
+    get_staticdata = function(self)
+      return get_staticdata(self)
+    end,
+    on_activate = function(self, staticdata, dtime_s)
+      on_activate(self, staticdata, dtime_s)
+    end,
+    on_rightclick = function(self, clicker)
+      local delay = 1
+      if self._delay ~= nil then
+        delay = self._delay
+      end
+      local form = table.concat({
+        "formspec_version[10]",
+        "size[20,10]",
+        "position[0,0]",
+        "anchor[0,0]",
+        string.format("field[%s;value;%s]", "pos:" .. self.object:get_pos():to_string(),delay),
+      })
+      core.show_formspec(clicker:get_player_name(), mod_name .. ":signal_delay", form)
+    end,
+  }
+)
+
+core.register_on_player_receive_fields(function(player, formname, fields)
+  if formname ~= mod_name .. ":signal_delay" then return end
+  local obj_pos = nil
+  local delay = 0
+  for key, value in pairs(fields) do
+    if string.find(key, "pos") then
+      local index = string.find(key, ":") + 1
+      obj_pos = vector.from_string(string.sub(key, index, #key))
+      delay = value
+      break
+    end
+  end
+  if obj_pos ~= nil then
+    local near = core.get_objects_inside_radius(obj_pos, 0)
+    for index, value in ipairs(near) do
+      if not value:is_player() then
+        value:get_luaentity()._delay = tonumber(delay)
       end
     end
   end
@@ -2340,6 +2403,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "cave_passage_dialog"] = true,
       [mod_name .. ":" .. "sensor_power"] = true,
       [mod_name .. ":" .. "linked_remote"] = true,
+      [mod_name .. ":" .. "signal_delay"] = true,
       [mod_name .. ":" .. "sensor_id_cartridge"] = true,
       [mod_name .. ":" .. "crawling_off_boarding"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
