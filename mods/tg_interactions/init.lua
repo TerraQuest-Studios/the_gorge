@@ -713,6 +713,19 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
                 end
               end
             end
+          elseif string.find(value:get_luaentity().name, "linked_remote") then
+            local near = core.get_objects_inside_radius(obj_pos, 64) -- is 64?
+            for i, v in pairs(near) do
+              if v ~= value then
+                if not v:is_player() then
+                  if string.find(v:get_luaentity().name, "linked_remote") then
+                    if v:get_luaentity()._link_id == value:get_luaentity()._link_id then
+                      sendSignal(v:get_pos(), chain, distance, signal, prev_pos)
+                    end
+                  end
+                end
+              end
+            end
           else
             -- core.log("wrong: " .. value:get_luaentity().name)
           end
@@ -1110,6 +1123,59 @@ tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc
       sendSignal(pos, chain, 1.2, signal)
     end,
   })
+
+tg_interactions.register_interactable("linked_remote", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.wiring,
+  {
+    _popup_msg = "[ linked_remote ]",
+    -- _toggleable = 0, -- default state 0
+    -- _state = 0,      -- default state 0
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:5,7^[resize:42x42",
+    _popup_hidden = true,
+    pointable = false,
+    _link_id = 0,
+    _the_static_data = {
+      "_link_id",
+    },
+    get_staticdata = function(self)
+      return get_staticdata(self)
+    end,
+    on_activate = function(self, staticdata, dtime_s)
+      on_activate(self, staticdata, dtime_s)
+    end,
+    on_rightclick = function(self, clicker)
+      local form = table.concat({
+        "formspec_version[10]",
+        "size[20,10]",
+        "position[0,0]",
+        "anchor[0,0]",
+        string.format("field[%s;value;0]", "pos:" .. self.object:get_pos():to_string()),
+      })
+      core.show_formspec(clicker:get_player_name(), mod_name .. ":linked_remote", form)
+    end,
+  }
+)
+
+core.register_on_player_receive_fields(function(player, formname, fields)
+  if formname ~= mod_name .. ":linked_remote" then return end
+  local obj_pos = nil
+  local link_id = 0
+  for key, value in pairs(fields) do
+    if string.find(key, "pos") then
+      local index = string.find(key, ":") + 1
+      obj_pos = vector.from_string(string.sub(key, index, #key))
+      link_id = value
+      break
+    end
+  end
+  if obj_pos ~= nil then
+    local near = core.get_objects_inside_radius(obj_pos, 1) -- is 64?
+    for index, value in ipairs(near) do
+      if not value:is_player() then
+        value:get_luaentity()._link_id = tonumber(link_id)
+      end
+    end
+  end
+end)
 
 tg_interactions.register_interactable("relay", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6", shapes.wiring,
   {
@@ -1919,12 +1985,12 @@ tg_interactions.register_on_player_hud_interactables(function(plr, pdata, intera
         -- break loop through pointed thing upon finding a found
         if found then break end
       end
-    -- elseif thing and thing.type == "node" then
-    --   local node_pos =thing.under
-    --   local node_meta = core.get_meta(node_pos)
-    --   if node_meta:get_string("_popup_msg") ~= "" then
-    --     found = { icon = interactable, ent = ent }
-    --   end
+      -- elseif thing and thing.type == "node" then
+      --   local node_pos =thing.under
+      --   local node_meta = core.get_meta(node_pos)
+      --   if node_meta:get_string("_popup_msg") ~= "" then
+      --     found = { icon = interactable, ent = ent }
+      --   end
     end
   end
   -- oh no we're not looking at anything
@@ -2223,6 +2289,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "sensor_disclaimer"] = true,
       [mod_name .. ":" .. "cave_passage_dialog"] = true,
       [mod_name .. ":" .. "sensor_power"] = true,
+      [mod_name .. ":" .. "linked_remote"] = true,
       [mod_name .. ":" .. "sensor_id_cartridge"] = true,
       [mod_name .. ":" .. "crawling_off_boarding"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
