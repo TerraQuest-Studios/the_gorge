@@ -392,9 +392,9 @@ function tg_torch.toggle_torch_light(player)
     core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
     -- core.log("right")
     player:set_sky({
-      base_color = "#111",
       -- base_color = "#681c0e",
       -- base_color = "#000",
+      base_color = tg_main.fog_color.gray,
       type = "plain",
       clouds = false,
     })
@@ -410,7 +410,7 @@ function tg_torch.toggle_torch_light(player)
     player:set_sky({
       -- base_color = "#777",
       -- base_color = "#681c0e",
-      base_color = "#000",
+      base_color = tg_main.fog_color.black,
       type = "plain",
       clouds = false,
     })
@@ -421,9 +421,7 @@ function tg_torch.toggle_torch_light(player)
     return false
   else
     player:set_sky({
-      base_color = "#111",
-      -- base_color = "#681c0e",
-      -- base_color = "#000",
+      base_color = tg_main.fog_color.gray,
       type = "plain",
       clouds = false,
     })

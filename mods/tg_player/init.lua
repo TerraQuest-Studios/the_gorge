@@ -60,6 +60,9 @@ core.register_on_joinplayer(function(player, last_login)
     -- base_color = "#111",
     -- base_color = "#000",
     -- base_color = "#681c0e",
+    fog = {
+      fog_distance = 70,
+    },
     type = "plain",
     clouds = false,
   })

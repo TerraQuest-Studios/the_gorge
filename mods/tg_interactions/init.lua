@@ -998,6 +998,78 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
 )
 
 
+
+tg_interactions.register_interactable("sensor_fog_changer", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.wiring,
+  {
+    pointable = false,
+    _popup_msg = "[ sensor_fog_changer ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:4,5^[resize:42x42",
+    _popup_hidden = true,
+    _player_within = "false",
+    _color = "black",
+    get_staticdata = function(self)
+      return get_staticdata(self)
+    end,
+    on_activate = function(self, staticdata, dtime_s)
+      on_activate(self, staticdata, dtime_s)
+    end,
+    _the_static_data = {
+      "_color",
+    },
+    on_step = function(self, dtime, moveresult)
+      local pos = self.object:get_pos()
+      local chain = {}
+      local max_distance = 3.5
+      local near_by = core.get_objects_inside_radius(pos, max_distance)
+      for index, player in ipairs(near_by) do
+        if player:is_player() then
+          player:set_sky({
+            base_color = tg_main.fog_color[self._color],
+          })
+        end
+      end
+    end,
+
+    on_rightclick = function(self, clicker)
+      local color = 1
+      if self._color ~= nil then
+        color = self._color
+      end
+      local form = table.concat({
+        "formspec_version[10]",
+        "size[20,10]",
+        "position[0,0]",
+        "anchor[0,0]",
+        string.format("field[%s;value;%s]", "pos:" .. self.object:get_pos():to_string(), color),
+      })
+      core.show_formspec(clicker:get_player_name(), mod_name .. ":fog_color", form)
+    end,
+  }
+)
+
+core.register_on_player_receive_fields(function(player, formname, fields)
+  if formname ~= mod_name .. ":fog_color" then return end
+  local obj_pos = nil
+  local color = "black"
+  for key, value in pairs(fields) do
+    if string.find(key, "pos") then
+      local index = string.find(key, ":") + 1
+      obj_pos = vector.from_string(string.sub(key, index, #key))
+      color = value
+      break
+    end
+  end
+  if obj_pos ~= nil then
+    local near = core.get_objects_inside_radius(obj_pos, 0)
+    for index, value in ipairs(near) do
+      if not value:is_player() then
+        value:get_luaentity()._color = color
+      end
+    end
+  end
+end)
+
 tg_interactions.register_interactable("sensor_power", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.wiring,
   {
@@ -1214,7 +1286,7 @@ tg_interactions.register_interactable("signal_delay", "none", "", "tg_nodes_misc
         "size[20,10]",
         "position[0,0]",
         "anchor[0,0]",
-        string.format("field[%s;value;%s]", "pos:" .. self.object:get_pos():to_string(),delay),
+        string.format("field[%s;value;%s]", "pos:" .. self.object:get_pos():to_string(), delay),
       })
       core.show_formspec(clicker:get_player_name(), mod_name .. ":signal_delay", form)
     end,
@@ -2404,6 +2476,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "sensor_power"] = true,
       [mod_name .. ":" .. "linked_remote"] = true,
       [mod_name .. ":" .. "signal_delay"] = true,
+      [mod_name .. ":" .. "sensor_fog_changer"] = true,
       [mod_name .. ":" .. "sensor_id_cartridge"] = true,
       [mod_name .. ":" .. "crawling_off_boarding"] = true,
       [mod_name .. ":" .. "door"] = true, -- because the door's hitbox keeps blocking player clicks
