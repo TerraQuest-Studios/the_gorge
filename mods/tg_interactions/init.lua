@@ -612,6 +612,9 @@ local function sendSignal(pos, chain, distance, signal, prev_pos)
             else
               core.sound_play(tg_sound.wield_toggle_on, { pos = obj_pos })
               local message = "this wont work without power"
+              if value:get_luaentity()._message ~= nil then
+                message = value:get_luaentity()._message
+              end
               -- core.chat_send_all(message)
               for _, obj in ipairs(core.get_objects_inside_radius(pos, 5)) do
                 if obj:is_player() then
@@ -1168,7 +1171,7 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     end
   end
   if obj_pos ~= nil then
-    local near = core.get_objects_inside_radius(obj_pos, 1) -- is 64?
+    local near = core.get_objects_inside_radius(obj_pos, 0)
     for index, value in ipairs(near) do
       if not value:is_player() then
         value:get_luaentity()._link_id = tonumber(link_id)
@@ -1240,6 +1243,7 @@ tg_interactions.register_interactable("bit_bridge", "none", "", "tg_nodes_misc.p
     _the_static_data = {
       "_state",
       "_opposite",
+      "_message",
     },
     get_staticdata = function(self)
       return get_staticdata(self)
@@ -1255,10 +1259,46 @@ tg_interactions.register_interactable("bit_bridge", "none", "", "tg_nodes_misc.p
       self:get_luaentity()._state = state
       -- core.log("new state: " .. state)
     end,
+    on_rightclick = function(self, clicker)
+      local current_message = "current state not allowing flow"
+      if self._message ~= nil then
+        current_message = self._message
+      end
+      local form = table.concat({
+        "formspec_version[10]",
+        "size[20,10]",
+        "position[0,0]",
+        "anchor[0,0]",
+        string.format("field[%s;value;%s]", "pos:" .. self.object:get_pos():to_string(), current_message),
+      })
+      core.show_formspec(clicker:get_player_name(), mod_name .. ":bit_bridge", form)
+    end,
     -- on_step = function(self, dtime, moveresult)
     -- end,
   }
 )
+
+core.register_on_player_receive_fields(function(player, formname, fields)
+  if formname ~= mod_name .. ":bit_bridge" then return end
+  local obj_pos = nil
+  local message = ""
+  for key, value in pairs(fields) do
+    if string.find(key, "pos") then
+      local index = string.find(key, ":") + 1
+      obj_pos = vector.from_string(string.sub(key, index, #key))
+      message = value
+      break
+    end
+  end
+  if obj_pos ~= nil then
+    local near = core.get_objects_inside_radius(obj_pos, 0)
+    for index, value in ipairs(near) do
+      if not value:is_player() then
+        value:get_luaentity()._message = message
+      end
+    end
+  end
+end)
 
 tg_interactions.register_interactable("bit_toggler", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.wiring,
@@ -1829,8 +1869,17 @@ tg_player.register_on_step(function(plr, pdata)
 
   local finteractables = {} -- found interactables
 
+  local popup_radius = tg_interactions.popup_radius
+  -- use the wrench range for popup_radis if holding wrench
+  if pdata.wielded.def ~= nil then
+    if pdata.wielded.def.name == PWN then
+      if pdata.wielded.def.range ~= nil then
+        popup_radius = pdata.wielded.def.range
+      end
+    end
+  end
   -- interactable entities within radius (will include player)
-  local within_radius = core.get_objects_inside_radius(pdata.pos, tg_interactions.popup_radius)
+  local within_radius = core.get_objects_inside_radius(pdata.pos, popup_radius)
   -- player will be 1, odd if there is 0 but let's check for that
   -- if #within_radius < 2 then return clear_interactable_indicators(pdata) end
   for _, obj in ipairs(within_radius) do
@@ -2274,6 +2323,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
   description = "Wrench, objects & wiring",
   inventory_image = "tg_interactions_tool.png",
   _to_player = nil,
+  range = 6,
   pointabilities = {
     -- nodes = {
     --   ["default:stone"] = "blocking",
