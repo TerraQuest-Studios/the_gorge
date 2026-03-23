@@ -296,55 +296,8 @@ core.register_entity(mod_name .. ":flash", {
   end,
 })
 
-function tg_torch.toggle_torch_light(player)
-  local pdata = tg_player.get_data(player)
-  local torch = core.registered_nodes[torchname]
 
-  if pdata.using_torch == nil then
-    pdata.using_torch = true
-    core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
-    -- core.log("right")
-    player:set_sky({
-      base_color = "#111",
-      -- base_color = "#681c0e",
-      -- base_color = "#000",
-      type = "plain",
-      clouds = false,
-    })
-    return true
-  end
-
-  pdata.using_torch = not pdata.using_torch
-  if pdata.using_torch == false then
-    core.sound_play(torch.sounds.wield_toggle_off, { obj = player })
-    -- core.log("turn it all off!!")
-    player:set_sky({
-      -- base_color = "#777",
-      -- base_color = "#681c0e",
-      base_color = "#000",
-      type = "plain",
-      clouds = false,
-    })
-    for pos, _ in pairs(active_lights) do
-      core.remove_node(vector.from_string(pos))
-    end
-    return false
-  else
-    player:set_sky({
-      base_color = "#111",
-      -- base_color = "#681c0e",
-      -- base_color = "#000",
-      type = "plain",
-      clouds = false,
-    })
-    core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
-    return true
-  end
-  -- core.log("here: " .. dump(pdata.using_torch))
-end
-
--- update flashlight every time player moves or turns
-tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, lookdir)
+function tg_player.update_torch(plr, pdata, eyepos, lookdir)
   if pdata.using_torch == true then
     local range = 40
     -- get lookat
@@ -428,6 +381,63 @@ tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, look
       active_lights[pos] = true
     end
   end
+end
+
+function tg_torch.toggle_torch_light(player)
+  local pdata = tg_player.get_data(player)
+  local torch = core.registered_nodes[torchname]
+
+  if pdata.using_torch == nil then
+    pdata.using_torch = true
+    core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
+    -- core.log("right")
+    player:set_sky({
+      base_color = "#111",
+      -- base_color = "#681c0e",
+      -- base_color = "#000",
+      type = "plain",
+      clouds = false,
+    })
+    tg_player.update_torch(player, pdata, pdata.eyepos, pdata.lookdir)
+    return true
+  end
+
+  pdata.using_torch = not pdata.using_torch
+  tg_player.update_torch(player, pdata, pdata.eyepos, pdata.lookdir)
+  if pdata.using_torch == false then
+    core.sound_play(torch.sounds.wield_toggle_off, { obj = player })
+    -- core.log("turn it all off!!")
+    player:set_sky({
+      -- base_color = "#777",
+      -- base_color = "#681c0e",
+      base_color = "#000",
+      type = "plain",
+      clouds = false,
+    })
+    for pos, _ in pairs(active_lights) do
+      core.remove_node(vector.from_string(pos))
+    end
+    active_lights = {}
+    return false
+  else
+    player:set_sky({
+      base_color = "#111",
+      -- base_color = "#681c0e",
+      -- base_color = "#000",
+      type = "plain",
+      clouds = false,
+    })
+    core.sound_play(torch.sounds.wield_toggle_on, { obj = player })
+    return true
+  end
+  -- core.log("here: " .. dump(pdata.using_torch))
+end
+
+
+
+-- update flashlight every time player moves or turns
+tg_player.register_on_change_eyepos_or_lookdir(function(plr, pdata, eyepos, lookdir)
+  tg_player.update_torch(plr, pdata, eyepos, lookdir)
 end)
 
 core.register_chatcommand("toggletorch", {
@@ -442,6 +452,6 @@ core.register_chatcommand("toggletorch", {
     else
       state = "OFF"
     end
-    core.chat_send_player(name,"torch "..state)
+    core.chat_send_player(name, "torch " .. state)
   end,
 })
