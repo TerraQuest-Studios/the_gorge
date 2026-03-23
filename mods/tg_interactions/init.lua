@@ -338,7 +338,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
               -- local speed = (self._speed * player_distance) * dtime
               --local speed = math.min(obj_speed * dtime, 1)
               -- self.object:move_to(tg_main.lerp(cur_pos, mid_point, speed), true)
-              self.object:set_velocity(vector.subtract(vector.new(player_pos.x, cur_pos.y, player_pos.z), cur_pos))
+              self.object:set_velocity(vector.subtract(vector.new(player_pos.x, 0, player_pos.z), cur_pos))
             end
             --else
           end
@@ -2506,7 +2506,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       end
     else
       local to_list = { "image[3,1;1,1;tg_interactions_tool.png;]" }
-      local size = vector.new(2, 0, 2)
+      local size = vector.new(5, 0, 2)
       local pos_x = 2
       local pos_y = 0
       local max_items = 9
@@ -2530,7 +2530,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       -- core.log("so what do we have?"..dump(to_list))
       core.show_formspec(placer:get_player_name(), "tg_interactions_menu", table.concat({
         "formspec_version[10]",
-        "size[" .. max_items * size.x .. "," .. "10" .. "]",
+        "size[" .. max_items * size.x .. "," .. "20" .. "]",
         -- "container[1,1]",
         "image[1,3;1,1;tg_interactions_tool.png;]",
         table.concat(to_list),
