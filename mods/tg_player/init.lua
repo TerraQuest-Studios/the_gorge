@@ -27,34 +27,99 @@ function tg_player.pi(player)
   return pi
 end
 
+local function form_builder(player)
+  local p_coll = ""
+  local player_c = tg_interactions.getPlayerCollection(player:get_player_name())
+  local toggles = ""
+  local amount = 0
+  local padding = 0.6
+  -- local list_button_length = 4
+  for index, value in ipairs(player_c.collection) do
+    local item_name_index = string.find(value.name, ":")
+    local item_name = string.sub(string.gsub(value.name, "_", " "), item_name_index + 1, #value.name)
+    if string.find(item_name, "torch") then
+      toggles = toggles .. "button[0,0;2,2;torch;toggle torch]"
+    end
+    local coll = string.format("button[0,%s;4,0.6;preview_%s;%s]", amount, value.name, item_name)
+    p_coll = p_coll .. coll
+    amount = amount + padding
+  end
+  local model_preview = nil
+  local p_meta = player:get_meta():get_string("preview")
+  if p_meta ~= "" then
+    local obj = core.registered_entities[p_meta]
+    if obj ~= nil then
+      model_preview = {
+        model = string.format("model[0,0;4,4;preview;%s;%s;0,0;0;true]", obj.initial_properties.mesh,
+          obj.initial_properties.textures[1]),
+        des = string.format("label[0,5;4,4;%s]", obj._description)
+      }
+    end
+  end
+
+  local the_table = table.concat({
+    "formspec_version[10]",
+    "size[20,8]",
+    "no_prepend[]",
+    "position[0,0]",
+    "container[0.5,0.5]",
+    -- "background9[0,0;4,6;form_button.png^[opacity:20;false;true]",
+    "background[0,0.2;4,6;[fill:1x1:#ffffff05;false]",
+    "anchor[1.0,0]",
+    string.format("label[0,0;0,0;collections ( %s/3 ) ]", #player_c.collection),
+    "style_type[button;bgcolor=#ffffff50]",
+    "scroll_container[0,0.2;4,6;scroll_collectables;vertical;0.5;1]",
+    -- "button[0,0;4,0.6;preview_torch;torch]",
+    -- "button[0,0.7;4,0.6;preview_id_cartridge;id cartridge]",
+    p_coll,
+    "scroll_container_end[]",
+    -- "scrollbar[4,0.2;0.2,6;vertical;scroll_collectables;0]",
+    -- "scrollbaroptions[arrows=hide]",
+    "button[10,8;2,1;preview_id_cartridge;shit]",
+    "container_end[]",
+    -- "anchor[0,0]",
+    "container[7.5,0.5]",
+    "background9[0,0;4.5,4.5;form_button.png^[opacity:20;false;true]",
+    "style[preview;noclip=true]",
+    model_preview and model_preview.model or "",
+    "anchor[0,0]",
+    model_preview and model_preview.des or "",
+    "anchor[0,0]",
+    "container_end[]",
+    "container[14.5,0.5]",
+    "anchor[0,0]",
+    toggles or "",
+    "container_end[]",
+  })
+  return the_table
+end
+
+function tg_player.update_player_inv(player)
+  player:set_inventory_formspec(form_builder(player))
+end
+
 core.register_on_player_receive_fields(function(player, formname, fields)
+  if formname ~= "" then return end
   -- core.log("formname: "..dump(formname))
-  -- core.log("fields: "..dump(fields))
-  if formname == "" then
-    for key, label in pairs(fields) do
-      -- core.log("key: "..dump(key))
-      if key == "torch" then
-        local has_torch = tg_interactions.playerHasCollection(player:get_player_name(),"tg_interactions:torch")
-        if has_torch == true then
-          tg_torch.toggle_torch_light(player)
-        end
+  for key, label in pairs(fields) do
+    -- core.log("key: "..dump(key))
+    if key == "torch" then
+      local has_torch = tg_interactions.playerHasCollection(player:get_player_name(), "tg_interactions:torch")
+      if has_torch == true then
+        tg_torch.toggle_torch_light(player)
       end
+    end
+    local index = string.find(key, "preview_")
+    if index and index > 0 then
+      player:get_meta():set_string("preview", string.sub(key, #"preview_" + 1, #key))
+      tg_player.update_player_inv(player)
     end
   end
 end)
 
 core.register_on_joinplayer(function(player, last_login)
-  player:set_inventory_formspec(
-    table.concat({
-      "formspec_version[10]",
-      "size[20,8]",
-      "no_prepend[]",
-      "position[1,1]",
-      "anchor[1,1]",
-      "button[2,2;2,2;howdy;the_button]",
-      "button[8,2;2,2;torch;toggle torch]",
-    })
-  )
+  player:get_meta():set_string("preview", "") -- reset the preview
+  player:set_inventory_formspec(form_builder(player))
   player:set_sky({
     base_color = tg_main.fog_color.white,
     -- base_color = "#111",
@@ -165,8 +230,8 @@ core.register_on_joinplayer(function(plr)
     obj = plr,
     props = plr:get_properties(),
     name = plr:get_player_name(),
-    time = 0,      -- total time
-    held_keys = {} -- data on each key pressed (time)
+    time = 0,       -- total time
+    held_keys = {}, -- data on each key pressed (time)
   }
   pdatas[#pdatas + 1] = pdata
   -- change texture
@@ -178,8 +243,8 @@ core.register_on_joinplayer(function(plr)
 
   -- have the player start off on the floor (to prevent clipping)
   pdata.start_on_floor = true
-  pdata.crawling = true      -- we're sneaking, we're sneaking!
-  pdata.getting_up = nil     -- stop trying to get up
+  pdata.crawling = true  -- we're sneaking, we're sneaking!
+  pdata.getting_up = nil -- stop trying to get up
   tg_player.change_eye_height(plr, tg_player.eye_height.crawl, pdata)
   plr:set_look_vertical(math.rad(40))
 
@@ -241,20 +306,20 @@ events.step.register(function(plr, pdata)
       if pressed then
         okey.time = okey.time + dtime
         -- once the player starts moving unchain them from the floor
-        for _, value in ipairs({"left","right","up","down","jump"}) do
+        for _, value in ipairs({ "left", "right", "up", "down", "jump" }) do
           -- if the node below a player is the node "climbable_node" set them to crawl mode
-          local pos_below = plr:get_pos()
-          if string.find(core.get_node(pos_below).name,"climbable_node") then
+          local pos_below = plr:get_pos():subtract(vector.new(0, 0.1, 0))
+          if string.find(core.get_node(pos_below).name, "climbable_node") then
             -- core.log("the node is in fact climbable_node")
             pdata.start_on_floor = true
-            pdata.crawling = true      -- we're sneaking, we're sneaking!
-            pdata.getting_up = nil     -- stop trying to get up
+            pdata.crawling = true  -- we're sneaking, we're sneaking!
+            pdata.getting_up = nil -- stop trying to get up
             -- tg_player.change_eye_height(plr, tg_player.eye_height.crawl, pdata)
           else
             if key == value then
               if pdata.start_on_floor == true then
-              pdata.start_on_floor = false
-              pdata.try_getting_up = true
+                pdata.start_on_floor = false
+                pdata.try_getting_up = true
               end
             end
           end
@@ -344,12 +409,12 @@ end)
 events.keypress_step.register(function(plr, pdata, key, time)
   -- start on floor to prevent clipping through nodes
   if pdata.start_on_floor == false then
-    if key ~= "sneak" then return end         -- not pressing sneak
-    if pdata.held_keys.jump then return end   -- JUMPING, AAAH!!!
-    if pdata.getting_up then return end       -- can't crouch if getting up
+    if key ~= "sneak" then return end       -- not pressing sneak
+    if pdata.held_keys.jump then return end -- JUMPING, AAAH!!!
+    if pdata.getting_up then return end     -- can't crouch if getting up
   end
   -- sneaky time
-  local props = pdata.props               -- player's properties
+  local props = pdata.props -- player's properties
   local eheight = props.eye_height
   -- ideal eye height
   local IEH = pdata.crawling and tg_player.eye_height.crawl or

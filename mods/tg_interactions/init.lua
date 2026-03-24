@@ -179,6 +179,8 @@ local function addToPlayerCollection(player_name, item_name)
       value = player_c
     end
   end ]]
+  -- update the player inv/form
+  tg_player.update_player_inv(core.get_player_by_name(player_name))
 end
 
 ---comment
@@ -1527,11 +1529,12 @@ tg_interactions.register_interactable("random_note_rocks_4", "none", "", "tg_nod
 tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", shapes.medium_object,
   {
     _popup_msg = "[ pick up tape ]",
+    _description = "can be used to repair things",
     on_rightclick = function(self, clicker)
       --[[ local playing_sound = ]]
       local message = "this should come in handy."
       core.chat_send_player(clicker:get_player_name(), message)
-      tg_dialog.dialog(clicker, message)
+      tg_dialog.dialog(clicker, message,true)
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
@@ -1551,6 +1554,7 @@ tg_interactions.register_interactable("id_cartridge", "mesh", "id_cartridge.glb"
   shapes.medium_object,
   {
     _popup_msg = "[ pick up id cartridge ]",
+    _description = "grants access to secuirty room",
     on_rightclick = function(self, clicker)
       local message = "i should be able to enter the secuirty room with this"
       core.chat_send_player(clicker:get_player_name(), message)
@@ -1573,6 +1577,7 @@ tg_interactions.register_interactable("id_cartridge", "mesh", "id_cartridge.glb"
 tg_interactions.register_interactable("torch", "mesh", "torch.glb", "torch.png", shapes.medium_object,
   {
     _popup_msg = "[ pick up torch ]",
+    _description = "let there be light!",
     on_rightclick = function(self, clicker)
       core.chat_send_player(clicker:get_player_name(), "darkness be gone")
       tg_dialog.dialog(clicker, "I've heard that these torches can sometimes leak radiation")
