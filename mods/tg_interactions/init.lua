@@ -1019,7 +1019,6 @@ tg_interactions.register_interactable("sensor_fog_changer", "none", "", "tg_node
     },
     on_step = function(self, dtime, moveresult)
       local pos = self.object:get_pos()
-      local chain = {}
       local max_distance = 3.5
       local near_by = core.get_objects_inside_radius(pos, max_distance)
       for index, player in ipairs(near_by) do

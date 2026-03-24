@@ -443,13 +443,6 @@ core.register_chatcommand("toggletorch", {
   description = "toggle torch on/off",
   privs = { privs = true }, -- Require the "privs" privilege to run
   func = function(name, param)
-    local value = tg_torch.toggle_torch_light(core.get_player_by_name(name))
-    local state = ""
-    if value == true then
-      state = "ON"
-    else
-      state = "OFF"
-    end
-    core.chat_send_player(name, "torch " .. state)
+    tg_torch.toggle_torch_light(core.get_player_by_name(name))
   end,
 })

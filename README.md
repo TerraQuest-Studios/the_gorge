@@ -1,6 +1,14 @@
+![image](./repo_assets/poster.webp)
+
+---
+
+#### DISCLAIMER:
+
+This game is still in development.. more is to come.
+
 ## THE GORGE
 
-Your are Trapped deep within a shadowy ravine
+Your are trapped deep within a shadowy ravine
 With a thin line of sight to the outside world
 Will you escape?
 
