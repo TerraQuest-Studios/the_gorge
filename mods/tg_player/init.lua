@@ -32,21 +32,8 @@ local function form_builder(player)
   local player_c = tg_interactions.getPlayerCollection(player:get_player_name())
   local toggles = ""
   local amount = 0
-  local padding = 0.6
+  local padding = 0.7
   -- local list_button_length = 4
-  for index, value in ipairs(player_c.collection) do
-    local item_name_index = string.find(value.name, ":")
-    local item_name = string.sub(string.gsub(value.name, "_", " "), item_name_index + 1, #value.name)
-    if string.find(item_name, "torch") then
-      toggles = toggles .. "button[0,0;2,2;torch;toggle torch]"
-    end
-    if string.find(item_name, "geiger counter") then
-      toggles = toggles .. "button[0,2.5;2,2;geiger_counter;toggle geiger]"
-    end
-    local coll = string.format("button[0,%s;4,0.6;preview_%s;%s]", amount, value.name, item_name)
-    p_coll = p_coll .. coll
-    amount = amount + padding
-  end
   local model_preview = nil
   local p_meta = player:get_meta():get_string("preview")
   if p_meta ~= "" then
@@ -60,6 +47,24 @@ local function form_builder(player)
     end
   end
 
+  for index, value in ipairs(player_c.collection) do
+    local item_name_index = string.find(value.name, ":")
+    local item_name = string.sub(string.gsub(value.name, "_", " "), item_name_index + 1, #value.name)
+    if string.find(item_name, "torch") then
+      toggles = toggles .. "button[0,0;2,2;torch;toggle torch]"
+    end
+    if string.find(item_name, "geiger counter") then
+      toggles = toggles .. "button[0,2.5;2,2;geiger_counter;toggle geiger]"
+    end
+    local coll = string.format("button[0,%s;3.5,0.6;preview_%s;%s]", amount, value.name, item_name)
+    if p_meta ~= "" and string.find(string.gsub(p_meta, "_", " "), item_name) then
+      -- core.log("styled: " .. "preview_" .. value.name)
+      coll = string.format("button[0.2,%s;3.5,0.6;preview_%s;%s]", amount, value.name, item_name)
+    end
+    p_coll = p_coll .. coll
+    amount = amount + padding
+  end
+
   local the_table = table.concat({
     "formspec_version[10]",
     "size[20,8]",
@@ -69,8 +74,8 @@ local function form_builder(player)
     -- "background9[0,0;4,6;form_button.png^[opacity:20;false;true]",
     "background[0,0.2;4,6;[fill:1x1:#ffffff05;false]",
     "anchor[1.0,0]",
-    string.format("label[0,0;0,0;collections ( %s/4 ) ]", #player_c.collection),
-    "style_type[button;bgcolor=#ffffff50]",
+    string.format("label[0,0;0,0;collections ( %s/5 ) ]", #player_c.collection),
+    "style_type[button;border=false;textcolor=white;bgimg=[fill:1x1:#ffffff10]]",
     "scroll_container[0,0.2;4,6;scroll_collectables;vertical;0.5;1]",
     -- "button[0,0;4,0.6;preview_torch;torch]",
     -- "button[0,0.7;4,0.6;preview_id_cartridge;id cartridge]",
@@ -78,9 +83,8 @@ local function form_builder(player)
     "scroll_container_end[]",
     -- "scrollbar[4,0.2;0.2,6;vertical;scroll_collectables;0]",
     -- "scrollbaroptions[arrows=hide]",
-    "button[10,8;2,1;preview_id_cartridge;shit]",
+    -- "button[10,8;2,1;preview_id_cartridge;shit]",
     "container_end[]",
-    -- "anchor[0,0]",
     "container[7.5,0.5]",
     "background9[-0.2,0;4.5,4.5;form_button.png^[opacity:20;false;true]",
     "style[preview;noclip=true]",
@@ -113,14 +117,13 @@ core.register_on_player_receive_fields(function(player, formname, fields)
       end
     end
     if key == "geiger_counter" then
-      local has_torch = tg_interactions.playerHasCollection(player:get_player_name(), "tg_interactions:geiger_counter")
       local player_meta = player:get_meta()
       if player_meta:get_string("_geiger_counter_on") == "true" then
-        player_meta:set_string("_geiger_counter_on","false")
+        player_meta:set_string("_geiger_counter_on", "false")
       elseif player_meta:get_string("_geiger_counter_on") == "false" then
-        player_meta:set_string("_geiger_counter_on","true")
+        player_meta:set_string("_geiger_counter_on", "true")
       else
-        player_meta:set_string("_geiger_counter_on","true")
+        player_meta:set_string("_geiger_counter_on", "true")
       end
     end
     local index = string.find(key, "preview_")
@@ -261,7 +264,7 @@ core.register_on_joinplayer(function(plr)
   pdata.getting_up = nil -- stop trying to get up
   tg_player.change_eye_height(plr, tg_player.eye_height.crawl, pdata)
   plr:set_look_vertical(math.rad(40))
-  plr:get_meta():set_string("_geiger_counter_on","true") -- reset geiger ticking on join
+  plr:get_meta():set_string("_geiger_counter_on", "true") -- reset geiger ticking on join
 
   -- event
   events.join(plr, pdata)
@@ -308,7 +311,7 @@ core.register_globalstep(function(dtime)
 
   -- gieger counter
   tick = tick + 1
-  if tick >= 10 then
+  if tick >= 5 then
     tick = 0
     for _, player in ipairs(core.get_connected_players()) do
       local player_name = player:get_player_name()
@@ -318,24 +321,36 @@ core.register_globalstep(function(dtime)
         if gieger_on ~= "true" then
           return
         end
-        local near_by = core.get_objects_inside_radius(player:get_pos(), 10)
+        local search_distance = 8
+        local near_by = core.get_objects_inside_radius(player:get_pos(), search_distance)
+        -- local closest_pos = vector.new(0,0,0)
+        local last_dist = search_distance
+        local found = false
         for index, value in pairs(near_by) do
           if not value:is_player() then
             if string.find(value:get_luaentity().name, "radioactive_spot") then
               local distance = vector.distance(player:get_pos(), value:get_pos())
-              local cur_count = player_meta:get_int("_geiger_counter")
-              cur_count = cur_count + 1
-              player_meta:set_int("_geiger_counter", cur_count)
-              if cur_count >= distance/2 then
-                cur_count = 0
-                player_meta:set_int("_geiger_counter", cur_count)
-                core.sound_play({ name = "tg_sensor" }, {
-                  gain = 0.6, -- default
-                  -- fade = 100.0, -- default
-                  pitch = 3.0, -- 1.0, -- default
-                })
+              found = true
+              if distance <= last_dist then
+                last_dist = distance
+                -- closest_pos = value:get_pos()
               end
             end
+          end
+        end
+        if found == true then
+          local cur_count = player_meta:get_int("_geiger_counter")
+          cur_count = cur_count + 1
+          local loudness = math.min(1.0 / (last_dist/2), 1.0)
+          player_meta:set_int("_geiger_counter", cur_count)
+          if cur_count >= last_dist / cur_count then
+            cur_count = 0
+            player_meta:set_int("_geiger_counter", cur_count)
+            core.sound_play({ name = "tg_sensor" }, {
+              gain = loudness, -- default
+              -- fade = 100.0, -- default
+              pitch = math.random(3.4,3.8),   -- 1.0, -- default
+            })
           end
         end
       end
