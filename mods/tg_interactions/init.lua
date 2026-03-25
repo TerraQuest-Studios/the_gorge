@@ -1598,6 +1598,30 @@ tg_interactions.register_interactable("radiation_suit", "mesh", "radiation_suit.
     end,
   })
 
+tg_interactions.register_interactable("geiger_counter", "mesh", "geiger_counter.glb", "geiger_counter.png",
+  shapes.medium_object,
+  {
+    _popup_msg = "[ pick up geiger counter ]",
+    _description = "measures ionizing radiation",
+    backface_culling = false, -- needed for this
+    on_rightclick = function(self, clicker)
+      local message = "in this day and age, walking around with one of these is a must"
+      core.chat_send_player(clicker:get_player_name(), message)
+      tg_dialog.dialog(clicker, message)
+      core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
+      })
+      if tg_main.dev_mode == false then
+        self.object:remove()
+        --else
+        -- core.log("after first interaction this will be removed in normal gameplay.")
+      end
+      tg_interactions.addToPlayerCollection(clicker:get_player_name(), self.name)
+    end,
+  })
+
 tg_interactions.register_interactable("torch", "mesh", "torch.glb", "torch.png", shapes.medium_object,
   {
     _popup_msg = "[ pick up torch ]",
@@ -2499,6 +2523,7 @@ core.register_tool(mod_name .. ":" .. "wrench", {
       [mod_name .. ":" .. "bit_toggler"] = true,
       [mod_name .. ":" .. "socket"] = true,
       [mod_name .. ":" .. "sensor"] = true,
+      [mod_name .. ":" .. "radioactive_spot"] = true,
       [mod_name .. ":" .. "sensor_disclaimer"] = true,
       [mod_name .. ":" .. "cave_passage_dialog"] = true,
       [mod_name .. ":" .. "sensor_power"] = true,
