@@ -50,7 +50,7 @@ local function form_builder(player)
     local obj = core.registered_entities[p_meta]
     if obj ~= nil then
       model_preview = {
-        model = string.format("model[0,0;4,4;preview;%s;%s;0,0;0;true]", obj.initial_properties.mesh,
+        model = string.format("model[0,0;4,4;preview;%s;%s;-45,35;true;true]", obj.initial_properties.mesh,
           obj.initial_properties.textures[1]),
         des = string.format("label[0,5;4,4;%s]", obj._description)
       }
@@ -66,7 +66,7 @@ local function form_builder(player)
     -- "background9[0,0;4,6;form_button.png^[opacity:20;false;true]",
     "background[0,0.2;4,6;[fill:1x1:#ffffff05;false]",
     "anchor[1.0,0]",
-    string.format("label[0,0;0,0;collections ( %s/3 ) ]", #player_c.collection),
+    string.format("label[0,0;0,0;collections ( %s/4 ) ]", #player_c.collection),
     "style_type[button;bgcolor=#ffffff50]",
     "scroll_container[0,0.2;4,6;scroll_collectables;vertical;0.5;1]",
     -- "button[0,0;4,0.6;preview_torch;torch]",
@@ -79,7 +79,7 @@ local function form_builder(player)
     "container_end[]",
     -- "anchor[0,0]",
     "container[7.5,0.5]",
-    "background9[0,0;4.5,4.5;form_button.png^[opacity:20;false;true]",
+    "background9[-0.2,0;4.5,4.5;form_button.png^[opacity:20;false;true]",
     "style[preview;noclip=true]",
     model_preview and model_preview.model or "",
     "anchor[0,0]",

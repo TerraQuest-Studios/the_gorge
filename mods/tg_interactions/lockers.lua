@@ -407,6 +407,7 @@ events.locker_opened.register(function(opener, self, holddata, memory)
     if memory.id ~= "radiation_suit" then return end
     tg_dialog.dialog(opener,"hmm, a radiation suit. i should slip this on.",true)
     core.after(3, function()
+        tg_interactions.addToPlayerCollection(opener:get_player_name(), "tg_interactions:radiation_suit")
         tg_cut_scenes.run(opener, { [[slipping into suit]] })
     end)
     if tg_main.dev_mode == true then

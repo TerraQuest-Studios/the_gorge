@@ -170,8 +170,8 @@ end
 
 ---comment
 ---@param player_name string
----@param item_name table
-local function addToPlayerCollection(player_name, item_name)
+---@param item_name string
+function tg_interactions.addToPlayerCollection(player_name, item_name)
   local player_c = tg_interactions.getPlayerCollection(player_name)
   table.insert(player_c.collection, { name = item_name })
   --[[ for key, value in ipairs(players_collections) do
@@ -380,7 +380,7 @@ function tg_interactions.register_draggable(name, model_type, model, texture, sh
         self._popup_msg = popup_text[2]
         players_dragging[pname] = true
 
-        addToPlayerCollection(pname, self.name)
+        tg_interactions.addToPlayerCollection(pname, self.name)
         -- affects sound pitch (recalculate in case of change to weight)
         self._weightfluence = 3 / self._weight -- weight influence
         self._sound_duration = 0.81 / self._weightfluence
@@ -1534,7 +1534,7 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
       --[[ local playing_sound = ]]
       local message = "this should come in handy."
       core.chat_send_player(clicker:get_player_name(), message)
-      tg_dialog.dialog(clicker, message,true)
+      tg_dialog.dialog(clicker, message, true)
       core.sound_play({ name = "tg_paper_footstep" }, {
         gain = 1.0,   -- default
         fade = 100.0, -- default
@@ -1545,7 +1545,7 @@ tg_interactions.register_interactable("tape", "mesh", "tape.glb", "tape.png", sh
         --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
-      addToPlayerCollection(clicker:get_player_name(), self.name)
+      tg_interactions.addToPlayerCollection(clicker:get_player_name(), self.name)
     end,
   })
 
@@ -1570,7 +1570,31 @@ tg_interactions.register_interactable("id_cartridge", "mesh", "id_cartridge.glb"
         --else
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
-      addToPlayerCollection(clicker:get_player_name(), self.name)
+      tg_interactions.addToPlayerCollection(clicker:get_player_name(), self.name)
+    end,
+  })
+
+
+tg_interactions.register_interactable("radiation_suit", "mesh", "radiation_suit.glb", "radiation_suit.png",
+  shapes.medium_object,
+  {
+    _popup_msg = "[ pick up radiation suit ]",
+    _description = "protects wearer from radiation and other hazards",
+    on_rightclick = function(self, clicker)
+      local message = "I should put this on"
+      core.chat_send_player(clicker:get_player_name(), message)
+      tg_dialog.dialog(clicker, message)
+      core.sound_play({ name = "tg_paper_footstep" }, {
+        gain = 1.0,   -- default
+        fade = 100.0, -- default
+        pitch = 1.8,  -- 1.0, -- default
+      })
+      if tg_main.dev_mode == false then
+        self.object:remove()
+        --else
+        -- core.log("after first interaction this will be removed in normal gameplay.")
+      end
+      tg_interactions.addToPlayerCollection(clicker:get_player_name(), self.name)
     end,
   })
 
@@ -1596,7 +1620,7 @@ tg_interactions.register_interactable("torch", "mesh", "torch.glb", "torch.png",
       if tg_main.dev_mode == false then
         self.object:remove()
       end
-      addToPlayerCollection(clicker:get_player_name(), self.name)
+      tg_interactions.addToPlayerCollection(clicker:get_player_name(), self.name)
       -- core.log("collections: "..dump(players_collections))
     end,
   })
