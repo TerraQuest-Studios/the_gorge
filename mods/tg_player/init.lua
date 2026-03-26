@@ -40,6 +40,9 @@ local function form_builder(player)
     if string.find(item_name, "torch") then
       toggles = toggles .. "button[0,0;2,2;torch;toggle torch]"
     end
+    if string.find(item_name, "geiger counter") then
+      toggles = toggles .. "button[0,2.5;2,2;geiger_counter;toggle geiger]"
+    end
     local coll = string.format("button[0,%s;4,0.6;preview_%s;%s]", amount, value.name, item_name)
     p_coll = p_coll .. coll
     amount = amount + padding
@@ -107,6 +110,17 @@ core.register_on_player_receive_fields(function(player, formname, fields)
       local has_torch = tg_interactions.playerHasCollection(player:get_player_name(), "tg_interactions:torch")
       if has_torch == true then
         tg_torch.toggle_torch_light(player)
+      end
+    end
+    if key == "geiger_counter" then
+      local has_torch = tg_interactions.playerHasCollection(player:get_player_name(), "tg_interactions:geiger_counter")
+      local player_meta = player:get_meta()
+      if player_meta:get_string("_geiger_counter_on") == "true" then
+        player_meta:set_string("_geiger_counter_on","false")
+      elseif player_meta:get_string("_geiger_counter_on") == "false" then
+        player_meta:set_string("_geiger_counter_on","true")
+      else
+        player_meta:set_string("_geiger_counter_on","true")
       end
     end
     local index = string.find(key, "preview_")
@@ -247,6 +261,7 @@ core.register_on_joinplayer(function(plr)
   pdata.getting_up = nil -- stop trying to get up
   tg_player.change_eye_height(plr, tg_player.eye_height.crawl, pdata)
   plr:set_look_vertical(math.rad(40))
+  plr:get_meta():set_string("_geiger_counter_on","true") -- reset geiger ticking on join
 
   -- event
   events.join(plr, pdata)
@@ -274,6 +289,8 @@ core.register_on_shutdown(function()
   end
 end)
 
+
+local tick = 0
 -- run each globalstep for more complex interactions
 -- runs player step functionality
 core.register_globalstep(function(dtime)
@@ -287,6 +304,42 @@ core.register_globalstep(function(dtime)
     pdata.props = plr:get_properties()
     -- run overall step event
     events.step(plr, pdata)
+  end
+
+  -- gieger counter
+  tick = tick + 1
+  if tick >= 10 then
+    tick = 0
+    for _, player in ipairs(core.get_connected_players()) do
+      local player_name = player:get_player_name()
+      if tg_interactions.playerHasCollection(player_name, "tg_interactions:geiger_counter") then
+        local player_meta = player:get_meta()
+        local gieger_on = player_meta:get_string("_geiger_counter_on")
+        if gieger_on ~= "true" then
+          return
+        end
+        local near_by = core.get_objects_inside_radius(player:get_pos(), 10)
+        for index, value in pairs(near_by) do
+          if not value:is_player() then
+            if string.find(value:get_luaentity().name, "radioactive_spot") then
+              local distance = vector.distance(player:get_pos(), value:get_pos())
+              local cur_count = player_meta:get_int("_geiger_counter")
+              cur_count = cur_count + 1
+              player_meta:set_int("_geiger_counter", cur_count)
+              if cur_count >= distance/2 then
+                cur_count = 0
+                player_meta:set_int("_geiger_counter", cur_count)
+                core.sound_play({ name = "tg_sensor" }, {
+                  gain = 0.6, -- default
+                  -- fade = 100.0, -- default
+                  pitch = 3.0, -- 1.0, -- default
+                })
+              end
+            end
+          end
+        end
+      end
+    end
   end
 end)
 

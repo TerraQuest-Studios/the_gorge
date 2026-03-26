@@ -1661,6 +1661,7 @@ tg_interactions.register_interactable("geiger_counter", "mesh", "geiger_counter.
         -- core.log("after first interaction this will be removed in normal gameplay.")
       end
       tg_interactions.addToPlayerCollection(clicker:get_player_name(), self.name)
+      clicker:get_meta():set_string("_geiger_counter_on", "true")
     end,
   })
 
