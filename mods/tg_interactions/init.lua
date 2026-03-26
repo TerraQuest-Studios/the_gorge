@@ -1,4 +1,5 @@
 local mod_name = core.get_current_modname()
+local modstor = core.get_mod_storage()
 
 local shapes = tg_nodes["shapes"]
 
@@ -131,6 +132,8 @@ end
 end ]]
 
 --local global_collected = {} -- keycode,visted_area etc..
+---@type table
+local collections = {}
 
 ---@class collection
 ---@field name string
@@ -141,6 +144,24 @@ end ]]
 
 ---@type player_collection{}
 local players_collections
+
+local function save()
+  modstor:set_string("collections", core.serialize(collections))
+end
+
+local function load()
+  collections = core.deserialize(modstor:get_string("collections"))
+end
+
+load()
+
+-- give all players already collected collections
+core.register_on_joinplayer(function(player, last_login)
+  if collections == nil then return end
+  for key, value in pairs(collections) do
+    tg_interactions.addToPlayerCollection(player:get_player_name(), key)
+  end
+end)
 
 ---comment
 ---@param player_name string
@@ -174,6 +195,7 @@ end
 function tg_interactions.addToPlayerCollection(player_name, item_name)
   local player_c = tg_interactions.getPlayerCollection(player_name)
   table.insert(player_c.collection, { name = item_name })
+
   --[[ for key, value in ipairs(players_collections) do
     if value.player_name == player_c.player_name then
       value = player_c
@@ -181,6 +203,17 @@ function tg_interactions.addToPlayerCollection(player_name, item_name)
   end ]]
   -- update the player inv/form
   tg_player.update_player_inv(core.get_player_by_name(player_name))
+
+  -- add to global save if not already there
+  if collections == nil then
+    collections = {}
+  end
+  if collections[item_name] then
+    return
+  else
+    collections[item_name] = true
+  end
+  save()
 end
 
 ---comment
@@ -209,6 +242,7 @@ local function removeFromPlayerCollection(player_name, item_name)
       value = player_c
     end
   end ]]
+  save()
 end
 
 ---comment
@@ -2670,6 +2704,22 @@ core.register_on_player_receive_fields(function(player, formname, fields)
     -- core.add_entity(raycast_result.above, fields["object"], [staticdata])
   end
 end)
+
+-- mainly for testing
+core.register_chatcommand("delcollections", {
+  params = "delcollections <privilege>",
+  description = "reset collections",
+  privs = { privs = true }, -- Require the "privs" privilege to run
+  func = function(name, param)
+    for key, value in pairs(collections) do
+      removeFromPlayerCollection(name, key)
+    end
+    collections = {}
+    tg_player.update_player_inv(core.get_player_by_name(name))
+    save()
+    core.log("collections cleared")
+  end,
+})
 
 -- run other files
 local modpath = core.get_modpath(mod_name)

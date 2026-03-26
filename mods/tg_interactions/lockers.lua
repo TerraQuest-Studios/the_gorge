@@ -253,6 +253,12 @@ local function locker_interact(self, clicker)
         gain = 2,
         pitch = math.random(85, 110)/100
     })
+
+    if clicker:get_player_control().sneak == true then
+      if tg_main.dev_mode == true then
+        self.object:remove()
+      end
+    end
 end
 
 tg_interactions.register_interactable("locker_interactable", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
