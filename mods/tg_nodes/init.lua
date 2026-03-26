@@ -31,6 +31,7 @@ core.register_node("tg_nodes:placeholder", {
 ---@class shape
 local shapes = {
   box = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 },
+  barrel = { -0.35, -0.5, -0.35, 0.35, 0.45, 0.35 },
   thicker_box = { -0.55, -0.55, -0.55, 0.55, 0.55, 0.55 },
   door = { -1.0, -0.5, -0.2, 1.0, 2.5, 0.2 },
   door_flipped = { -0.2, -0.5, -1.0, 0.2, 2.5, 1.0 },
@@ -865,6 +866,12 @@ tg_nodes.register_node("climbable_node", {
     },
   }
 }, "climbable Node")
+
+tg_nodes.register_node_complex("waste_barrel", {
+  mesh = "waste_barrel.glb",
+  raw_texture = "waste_barrel.png",
+  shape = "barrel"
+}, "Radioactive waste")
 
 tg_nodes.register_node_complex("computer", {
   mesh = "computer.glb",

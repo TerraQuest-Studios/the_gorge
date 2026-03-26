@@ -999,7 +999,49 @@ tg_interactions.register_interactable("sensor", "none", "", "tg_nodes_misc.png^[
   }
 )
 
-
+tg_interactions.register_interactable("radioactive_spot", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
+  shapes.wiring,
+  {
+    pointable = false,
+    _popup_msg = "[ radioactive spot ]",
+    _popup_texture = "tg_nodes_misc.png^[sheet:16x16:0,8^[resize:42x42",
+    _popup_hidden = true,
+    _toggle = 0,
+    _player_within = "false",
+    on_step = function(self, dtime, moveresult)
+      local pos = self.object:get_pos()
+      local chain = {}
+      local max_distance = 3.5
+      local near_by = core.get_objects_inside_radius(pos, max_distance)
+      for index, player in ipairs(near_by) do
+        if player:is_player() then
+          local safe = false
+          local has_suit = false
+          if tg_interactions.playerHasCollection(player:get_player_name(), "tg_interactions:radiation_suit") then
+            has_suit = true
+            if tg_interactions.playerHasCollection(player:get_player_name(), "tg_interactions:tape") then
+              safe = true
+            end
+            -- safe to be in area
+          end
+          if has_suit == true then
+            if safe == false then
+              tg_dialog.dialog(player, "need to tape up the holes in this suit first", true)
+            end
+          else
+            tg_dialog.dialog(player, "that substance on the ground does not look safe", true)
+            tg_dialog.dialog(player, "i cant risk getting closer")
+          end
+          if safe == false then
+            local p_pos = player:get_pos()
+            local dir = vector.subtract(p_pos, pos):normalize()
+            player:add_velocity(dir)
+          end
+        end
+      end
+    end,
+  }
+)
 
 tg_interactions.register_interactable("sensor_fog_changer", "none", "", "tg_nodes_misc.png^[sheet:16x16:0,6",
   shapes.wiring,
