@@ -50,19 +50,21 @@ local function form_builder(player)
   for index, value in ipairs(player_c.collection) do
     local item_name_index = string.find(value.name, ":")
     local item_name = string.sub(string.gsub(value.name, "_", " "), item_name_index + 1, #value.name)
-    if string.find(item_name, "torch") then
-      toggles = toggles .. "button[0,0;2,2;torch;toggle torch]"
+    if not string.find(item_name, "draggable") then
+      if string.find(item_name, "torch") then
+        toggles = toggles .. "button[0,0;2,2;torch;toggle torch]"
+      end
+      if string.find(item_name, "geiger counter") then
+        toggles = toggles .. "button[0,2.5;2,2;geiger_counter;toggle geiger]"
+      end
+      local coll = string.format("button[0,%s;3.5,0.6;preview_%s;%s]", amount, value.name, item_name)
+      if p_meta ~= "" and string.find(string.gsub(p_meta, "_", " "), item_name) then
+        -- core.log("styled: " .. "preview_" .. value.name)
+        coll = string.format("button[0.2,%s;3.5,0.6;preview_%s;%s]", amount, value.name, item_name)
+      end
+      p_coll = p_coll .. coll
+      amount = amount + padding
     end
-    if string.find(item_name, "geiger counter") then
-      toggles = toggles .. "button[0,2.5;2,2;geiger_counter;toggle geiger]"
-    end
-    local coll = string.format("button[0,%s;3.5,0.6;preview_%s;%s]", amount, value.name, item_name)
-    if p_meta ~= "" and string.find(string.gsub(p_meta, "_", " "), item_name) then
-      -- core.log("styled: " .. "preview_" .. value.name)
-      coll = string.format("button[0.2,%s;3.5,0.6;preview_%s;%s]", amount, value.name, item_name)
-    end
-    p_coll = p_coll .. coll
-    amount = amount + padding
   end
 
   local the_table = table.concat({
@@ -341,15 +343,15 @@ core.register_globalstep(function(dtime)
         if found == true then
           local cur_count = player_meta:get_int("_geiger_counter")
           cur_count = cur_count + 1
-          local loudness = math.min(1.0 / (last_dist/2), 1.0)
+          local loudness = math.min(1.0 / (last_dist / 2), 1.0)
           player_meta:set_int("_geiger_counter", cur_count)
           if cur_count >= last_dist / cur_count then
             cur_count = 0
             player_meta:set_int("_geiger_counter", cur_count)
             core.sound_play({ name = "tg_sensor" }, {
-              gain = loudness, -- default
+              gain = loudness,              -- default
               -- fade = 100.0, -- default
-              pitch = math.random(3.4,3.8),   -- 1.0, -- default
+              pitch = math.random(3.4, 3.8), -- 1.0, -- default
             })
           end
         end

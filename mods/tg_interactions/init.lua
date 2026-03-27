@@ -208,6 +208,8 @@ function tg_interactions.addToPlayerCollection(player_name, item_name)
   if collections == nil then
     collections = {}
   end
+  -- lets not save draggables
+  if string.find(item_name,"draggable_") then return end
   if collections[item_name] then
     return
   else
