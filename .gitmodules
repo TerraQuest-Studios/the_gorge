@@ -4,6 +4,6 @@
 [submodule "mods/mapsync"]
 	path = mods/mapsync
 	url = https://github.com/BuckarooBanzay/mapsync.git
-[submodule "events_api"]
+[submodule "mods/events_api"]
 	path = mods/events_api
-	url = git@codeberg.org:TPH/events_api
+	url = https://codeberg.org/TPH/events_api
