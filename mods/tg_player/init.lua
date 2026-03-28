@@ -47,10 +47,12 @@ local function form_builder(player)
     end
   end
 
+  local collection_amount = 0
   for index, value in ipairs(player_c.collection) do
     local item_name_index = string.find(value.name, ":")
     local item_name = string.sub(string.gsub(value.name, "_", " "), item_name_index + 1, #value.name)
     if not string.find(item_name, "draggable") then
+      collection_amount = collection_amount + 1
       if string.find(item_name, "torch") then
         toggles = toggles .. "button[0,0;2,2;torch;toggle torch]"
       end
@@ -76,7 +78,7 @@ local function form_builder(player)
     -- "background9[0,0;4,6;form_button.png^[opacity:20;false;true]",
     "background[0,0.2;4,6;[fill:1x1:#ffffff05;false]",
     "anchor[1.0,0]",
-    string.format("label[0,0;0,0;collections ( %s/5 ) ]", #player_c.collection),
+    string.format("label[0,0;0,0;collections ( %s/5 ) ]", collection_amount),
     "style_type[button;border=false;textcolor=white;bgimg=[fill:1x1:#ffffff10]]",
     "scroll_container[0,0.2;4,6;scroll_collectables;vertical;0.5;1]",
     -- "button[0,0;4,0.6;preview_torch;torch]",
