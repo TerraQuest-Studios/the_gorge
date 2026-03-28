@@ -740,10 +740,12 @@ tg_nodes.register_node_complex("vent_closed", {
         )
     -- tg_main.debug_particle(pos_front,"#fff")
     local meta = core.get_meta(pos)
+    meta:set_string("_interactable", "true")
     meta:set_string("_interactable_pos", pos_front:to_string())
     meta:set_string("_popup_msg", "[ open vent ]")
   end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
+    -- core.log("sneaking?",dump(clicker:get_player_control().sneak))
     local facing = tg_main.get_facing(node.param2)
     local pos_below = pos:add(
       vector.new(
@@ -790,6 +792,7 @@ tg_nodes.register_node_complex("vent_open", {
         )
     -- tg_main.debug_particle(pos_front,"#fff")
     local meta = core.get_meta(pos)
+    meta:set_string("_interactable", "true")
     meta:set_string("_interactable_pos", pos_front:to_string())
   end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
@@ -822,6 +825,7 @@ tg_nodes.register_node_complex("vent_open_wide", {
         )
     -- tg_main.debug_particle(pos_front,"#fff")
     local meta = core.get_meta(pos)
+    meta:set_string("_interactable", "true")
     meta:set_string("_interactable_pos", pos_front:to_string())
   end,
   on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)

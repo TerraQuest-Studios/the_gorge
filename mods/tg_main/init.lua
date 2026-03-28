@@ -35,8 +35,20 @@ tg_main.fog_color = {
 core.override_item("", {
   range = tg_main.reach,
   wield_image = "player.png^[sheet:16x13:4,8^[opacity:0",
-  wield_scale = {x = 0.5, y = 0.5, z = 0.5},
+  wield_scale = { x = 0.5, y = 0.5, z = 0.5 },
   use_texture_alpha = true,
+  on_place = function(itemstack, placer, pointed_thing)
+    -- all this to get vents to open while sneaking
+    local pos = pointed_thing.under
+    local meta = core.get_meta(pos)
+    if placer:get_player_control().sneak == true then
+      if meta:get_string("_interactable") ~= "" or meta:get_string("_interactable_pos") ~= "" then
+        core.registered_nodes[core.get_node(pos).name].on_rightclick(pos, core.get_node(pos), placer, itemstack,
+          pointed_thing)
+      end
+    end
+    return core.item_place(itemstack, placer, pointed_thing)
+  end,
   -- color = "#fcdca4",
 })
 
